@@ -1,0 +1,106 @@
+// [locale] layout — Root de toda la app bilingüe
+// Carga el diccionario server-side y lo pasa via LocaleProvider
+// ThemeProvider y GlobalBackground viven aquí
+
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "../globals.css";
+import { notFound } from "next/navigation";
+import { i18nConfig, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/get-dictionary";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { LocaleProvider } from "@/components/layout/LocaleProvider";
+import { GlobalBackground } from "@/components/layout/GlobalBackground";
+import { QueryProvider } from "@/components/layout/QueryProvider";
+
+export async function generateStaticParams() {
+  return i18nConfig.locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEs = locale === "es";
+
+  const alternates = {
+    canonical: `/${locale}`,
+    languages: {
+      es: "/es",
+      en: "/en",
+    } as Record<string, string>,
+  };
+
+  return {
+    title: isEs
+      ? "Knordica — Inmobiliaria Premium en Mérida, Venezuela"
+      : "Knordica — Premium Real Estate in Mérida, Venezuela",
+    description: isEs
+      ? "Seleccionamos, evaluamos y negociamos las mejores propiedades para compradores e inversores exigentes en Mérida."
+      : "We select, evaluate, and negotiate the best properties for discerning buyers and investors in Mérida.",
+    alternates,
+    openGraph: {
+      locale: isEs ? "es_VE" : "en_US",
+      alternateLocale: isEs ? "en_US" : "es_VE",
+    },
+  };
+}
+
+// ─── Inline script to prevent theme flash ─────────────────
+// Must run synchronously before first paint.
+const themeScript = `
+  (function() {
+    try {
+      var stored = localStorage.getItem('knordica-theme');
+      if (stored === 'light' || stored === 'dark') {
+        document.documentElement.setAttribute('data-theme', stored);
+        return;
+      }
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } catch(e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+`;
+
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
+  if (!i18nConfig.locales.includes(locale as Locale)) {
+    notFound();
+  }
+
+  const dict = await getDictionary(locale as Locale);
+
+  return (
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        {/* Prevent flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>
+          <QueryProvider>
+            <LocaleProvider locale={locale as Locale} dict={dict}>
+              {/* Global background — fixed, z-0, behind all content */}
+              <GlobalBackground />
+              {/* Page content — relative, z-10 */}
+              <div className="relative z-10">
+                {children}
+              </div>
+            </LocaleProvider>
+          </QueryProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}

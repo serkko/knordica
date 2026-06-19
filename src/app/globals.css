@@ -1,0 +1,342 @@
+/* ============================================================
+   KNORDICA — GLOBAL STYLES
+   Sistema de diseño completo: tokens, tipografía, base, utils
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* ─── Fuentes auto-hosted desde Fontshare ─────────────────── */
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-VariableItalic.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: optional;
+}
+
+/* ─── Design Tokens — Dark Mode (default) ─────────────────── */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg:          #0C0C0D;
+  --bg-alt:      #111114;
+  --surface:     #17171B;
+  --surface-2:   #1E1E24;
+  --surface-hover: #222229;
+
+  /* Borders */
+  --border:       rgba(255 255 255 / 0.06);
+  --border-strong: rgba(255 255 255 / 0.12);
+  --border-accent: rgba(45 212 191 / 0.25);
+
+  /* Text */
+  --text:         #F0EDE8;
+  --text-2:       #A8A5A0;
+  --text-muted:   #5C5A57;
+
+  /* Accent — Teal frío (accent principal) */
+  --accent:       #2DD4BF;
+  --accent-dim:   rgba(45 212 191 / 0.10);
+  --accent-glow:  rgba(45 212 191 / 0.20);
+
+  /* Accent secundario — Dorado apagado (precios, detalles clave) */
+  --gold:         #C9A96E;
+  --gold-dim:     rgba(201 169 110 / 0.12);
+
+  /* Semantic */
+  --danger:       #EF4444;
+  --success:      #10B981;
+  --warning:      #F59E0B;
+  --info:         #3B82F6;
+
+  /* Shadows */
+  --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.4);
+  --shadow-md:    0 4px 16px rgba(0 0 0 / 0.5);
+  --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.6);
+  --shadow-accent: 0 0 24px rgba(45 212 191 / 0.15);
+}
+
+/* ─── Light Mode tokens ────────────────────────────────────── */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg:          #F5F2EE;
+  --bg-alt:      #EDEAE5;
+  --surface:     #FFFFFF;
+  --surface-2:   #F9F7F4;
+  --surface-hover: #F0EDE8;
+
+  /* Borders */
+  --border:       rgba(0 0 0 / 0.07);
+  --border-strong: rgba(0 0 0 / 0.13);
+  --border-accent: rgba(13 148 136 / 0.25);
+
+  /* Text */
+  --text:         #1C1B19;
+  --text-2:       #6B6865;
+  --text-muted:   #A8A5A1;
+
+  /* Accent */
+  --accent:       #0D9488;
+  --accent-dim:   rgba(13 148 136 / 0.08);
+  --accent-glow:  rgba(13 148 136 / 0.15);
+
+  /* Gold */
+  --gold:         #B8924A;
+  --gold-dim:     rgba(184 146 74 / 0.10);
+
+  /* Semantic (same) */
+  --danger:       #DC2626;
+  --success:      #059669;
+  --warning:      #D97706;
+  --info:         #2563EB;
+
+  /* Shadows */
+  --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.08);
+  --shadow-md:    0 4px 16px rgba(0 0 0 / 0.10);
+  --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.12);
+  --shadow-accent: 0 0 24px rgba(13 148 136 / 0.12);
+}
+
+/* ─── Base Layer ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Satoshi", system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+
+  /* Smooth theme transitions */
+  transition:
+    background-color 250ms ease,
+    color 200ms ease;
+}
+
+/* Theme transition para todos los elementos */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Excluir transiciones de elementos que requieren velocidad */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  transition-duration: 150ms;
+}
+
+/* ─── Tipografía base ──────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabinet Grotesk", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+h2 { font-size: clamp(1.875rem, 3.5vw, 2.75rem); }
+h3 { font-size: clamp(1.375rem, 2.5vw, 1.875rem); }
+h4 { font-size: clamp(1.125rem, 2vw, 1.375rem); }
+
+p {
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ─── Scrollbar styling ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Utility classes ──────────────────────────────────────── */
+
+/* Display font */
+.font-display {
+  font-family: "Cabinet Grotesk", system-ui, sans-serif;
+}
+
+/* Mono (solo admin/datos) */
+.font-mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace !important;
+}
+
+/* Texto con acento teal */
+.text-accent {
+  color: var(--accent);
+}
+
+/* Texto dorado */
+.text-gold {
+  color: var(--gold);
+}
+
+/* Gradient text — teal */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, white) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Container estándar */
+.container-knordica {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 3rem);
+}
+
+/* Section spacing */
+.section-y {
+  padding-block: clamp(4rem, 8vw, 8rem);
+}
+
+.section-y-sm {
+  padding-block: clamp(2rem, 4vw, 4rem);
+}
+
+/* Glass surface */
+.glass {
+  background: rgba(255 255 255 / 0.03);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--border);
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255 255 255 / 0.65);
+}
+
+/* Divider line */
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+/* ─── Animaciones base ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes meshShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.7; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-fade-up   { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-fade-in   { animation: fadeIn 0.5s ease forwards; }
+.animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+
+/* ─── Noise texture overlay (Capa 3) ──────────────────────── */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: overlay;
+}
+
+[data-theme="light"] .noise-overlay {
+  opacity: 0.025;
+  mix-blend-mode: multiply;
+}
+
+/* ─── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
