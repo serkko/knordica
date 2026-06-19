@@ -13,12 +13,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // 1. Enforce file size limit (10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File size exceeds the 10MB limit" },
+        { status: 400 }
+      );
+    }
+
+    // 2. Enforce allowed MIME types (images only)
+    const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"];
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Only JPEG, PNG, WEBP, AVIF, and GIF images are allowed." },
+        { status: 400 }
+      );
+    }
+
     const hasSupabaseKeys = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
                             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD";
 
     if (hasSupabaseKeys) {
       const supabase = await createClient();
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `property-uploads/${fileName}`;
 

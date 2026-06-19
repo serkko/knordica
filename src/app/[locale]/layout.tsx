@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { LocaleProvider } from "@/components/layout/LocaleProvider";
 import { GlobalBackground } from "@/components/layout/GlobalBackground";
 import { QueryProvider } from "@/components/layout/QueryProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export async function generateStaticParams() {
   return i18nConfig.locales.map((locale) => ({ locale }));
@@ -93,6 +94,7 @@ export default async function LocaleLayout({
             <LocaleProvider locale={locale as Locale} dict={dict}>
               {/* Global background — fixed, z-0, behind all content */}
               <GlobalBackground />
+              <ToastProvider />
               {/* Page content — relative, z-10 */}
               <div className="relative z-10">
                 {children}
