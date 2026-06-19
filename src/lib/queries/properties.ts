@@ -65,7 +65,8 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
           lat,
           lng,
           zone:zones(*),
-          translations:property_translations(locale, title, short_description)
+          translations:property_translations(locale, title, short_description),
+          images:property_images(id, url, alt_es, alt_en, is_cover, sort_order)
         `, { count: "exact" })
         .eq("status", "activa");
 
@@ -129,6 +130,8 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
                         item.translations?.[0] || 
                         { title: "Propiedad sin título", short_description: "" };
 
+          const coverImage = item.images?.find((img: any) => img.is_cover) || item.images?.[0] || null;
+
           return {
             id: item.id,
             slug: item.slug,
@@ -147,7 +150,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
             bathrooms: item.bathrooms,
             parking_spaces: item.parking_spaces,
             zone: item.zone,
-            cover_image: null,
+            cover_image: coverImage,
             lat: item.lat ? Number(item.lat) : null,
             lng: item.lng ? Number(item.lng) : null,
             title: trans.title,

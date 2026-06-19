@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getPropertyBySlug, getProperties } from "@/lib/queries/properties";
 import { PropertyDetail } from "@/components/property/PropertyDetail";
 import { RelatedProperties } from "@/components/property/RelatedProperties";
@@ -62,6 +64,17 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       />
 
       <div className="container-knordica">
+        {/* Volver al listado link */}
+        <div className="mb-6">
+          <Link
+            href={`/${locale}/propiedades`}
+            className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors group cursor-pointer"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+            <span>{locale === "es" ? "Volver al listado" : "Back to listings"}</span>
+          </Link>
+        </div>
+
         {/* Main detail layout */}
         <PropertyDetail property={property} />
 
