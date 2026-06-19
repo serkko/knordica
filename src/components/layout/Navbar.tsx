@@ -17,6 +17,7 @@ import {
   Moon,
   Phone,
   ChevronDown,
+  User,
 } from "lucide-react";
 import { KnordicaLogo } from "@/components/ui/KnordicaLogo";
 import { useTheme } from "@/components/layout/ThemeProvider";
@@ -201,6 +202,43 @@ function MobileDrawer({
                   </Link>
                 </motion.div>
               ))}
+
+              {/* Private portals links in mobile menu */}
+              <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
+
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: links.length * 0.05, duration: 0.3 }}
+              >
+                <Link
+                  href={`/${locale}/cliente`}
+                  onClick={onClose}
+                  className={cn(
+                    "block px-4 py-3 rounded-sm text-sm font-semibold",
+                    "text-[var(--accent)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  )}
+                >
+                  {locale === "es" ? "Portal Cliente" : "Client Portal"}
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
+              >
+                <Link
+                  href={`/${locale}/admin`}
+                  onClick={onClose}
+                  className={cn(
+                    "block px-4 py-3 rounded-sm text-sm font-semibold",
+                    "text-[var(--gold)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  )}
+                >
+                  {locale === "es" ? "Panel CRM (Agentes)" : "CRM Dashboard (Agents)"}
+                </Link>
+              </motion.div>
             </nav>
 
             {/* Footer */}
@@ -227,6 +265,61 @@ function MobileDrawer({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+// ─── Private Access Dropdown Component ─────────────────────
+function PrivateAccessDropdown() {
+  const { locale } = useLocale();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs font-semibold uppercase tracking-wider",
+          "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)]",
+          "hover:text-[var(--text)] hover:border-[var(--border-strong)]",
+          "transition-all duration-150 cursor-pointer"
+        )}
+      >
+        <User size={13} className="text-[var(--accent)] shrink-0" />
+        <span>{locale === "es" ? "Acceso" : "Access"}</span>
+        <ChevronDown size={12} className={cn("transition-transform duration-200 shrink-0", isOpen ? "rotate-180" : "")} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-sm shadow-lg py-1.5 z-50 glass"
+          >
+            <Link
+              href={`/${locale}/cliente`}
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+            >
+              {locale === "es" ? "Portal Cliente" : "Client Portal"}
+            </Link>
+            <Link
+              href={`/${locale}/admin`}
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border)]"
+            >
+              {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -314,6 +407,7 @@ export function Navbar() {
           <div className="hidden lg:flex items-center gap-3">
             <LanguageSwitcher compact />
             <ThemeToggle />
+            <PrivateAccessDropdown />
             <a
               href={`https://wa.me/5804122423334`}
               target="_blank"

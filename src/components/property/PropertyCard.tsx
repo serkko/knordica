@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { BedDouble, Bath, Square, MapPin, ArrowUpRight } from "lucide-react";
+import { BedDouble, Bath, Square, MapPin, ArrowUpRight, GitCompare } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useLocale } from "@/components/layout/LocaleProvider";
+import { useComparatorStore } from "@/store/comparator.store";
 import type { PropertyCard as PropertyCardType } from "@/types/property";
 
 interface PropertyCardProps {
@@ -14,6 +15,18 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property }: PropertyCardProps) {
   const { locale, dict } = useLocale();
+  const { addProperty, removeProperty, isCompared } = useComparatorStore();
+  const compared = isCompared(property.id);
+
+  const handleCompareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (compared) {
+      removeProperty(property.id);
+    } else {
+      addProperty(property);
+    }
+  };
 
   const formattedPrice = new Intl.NumberFormat("es-VE", {
     style: "currency",
@@ -43,6 +56,19 @@ export function PropertyCard({ property }: PropertyCardProps) {
       <Card className="h-full flex flex-col overflow-hidden group border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] transition-all">
         {/* Card Image Wrapper */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+          {/* Compare Button */}
+          <button
+            onClick={handleCompareClick}
+            className={`absolute top-4 right-4 z-10 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs ${
+              compared
+                ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
+                : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
+            }`}
+            title={compared ? "Quitar de comparar" : "Comparar propiedad"}
+          >
+            <GitCompare className="h-4 w-4" />
+          </button>
+
           {/* Status Badges */}
           <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5">
             <Badge variant={property.operation === "venta" ? "gold" : "accent"}>
