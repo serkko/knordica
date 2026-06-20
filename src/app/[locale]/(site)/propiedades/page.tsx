@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? "Catálogo de Propiedades en Mérida | Knordica"
       : "Property Catalog in Mérida | Knordica",
     description: isEs
-      ? "Descubre nuestra selección curada de casas, apartamentos y locales comerciales en venta y alquiler en Mérida, Venezuela."
+      ? "Descubre nuestra selección de casas, apartamentos y locales comerciales en venta y alquiler en Mérida, Venezuela."
       : "Discover our curated selection of houses, apartments, and commercial spaces for sale and rent in Mérida, Venezuela.",
   };
 }
@@ -44,7 +44,7 @@ export default async function CatalogPage({ params }: PageProps) {
             {dict.catalog?.title || "Propiedades disponibles"}
           </h1>
           <p className="text-sm md:text-base text-[var(--text-2)] font-light">
-            {dict.catalog?.subtitle || "Selección curada de propiedades en Mérida"}
+            {dict.catalog?.subtitle || "Propiedades seleccionadas en Mérida"}
           </p>
         </div>
       </header>

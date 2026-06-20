@@ -13,11 +13,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: isEs
-      ? "Búsqueda por Mapa en Mérida | Knordica"
-      : "Map Property Search in Mérida | Knordica",
+      ? "Búsqueda por Mapa | Knordica"
+      : "Map Property Search | Knordica",
     description: isEs
-      ? "Navega de forma interactiva y encuentra propiedades de lujo en venta y alquiler en las mejores zonas de Mérida, Venezuela."
-      : "Browse interactively and find luxury properties for sale and rent in the best areas of Mérida, Venezuela.",
+      ? "Navega de forma interactiva y encuentra propiedades seleccionadas en venta y alquiler en los Andes venezolanos."
+      : "Browse interactively and find curated properties for sale and rent in the Venezuelan Andes.",
   };
 }
 

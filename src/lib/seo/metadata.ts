@@ -25,8 +25,8 @@ export function generatePropertyMetadata({
   const description =
     trans.short_description ||
     (isEs
-      ? "Descubre los detalles de esta exclusiva propiedad en Mérida, Venezuela."
-      : "Discover the details of this exclusive property in Mérida, Venezuela.");
+      ? "Explora los detalles de esta propiedad seleccionada en los Andes venezolanos."
+      : "Explore the details of this selected property in the Venezuelan Andes.");
 
   const canonicalUrl = `${siteUrl}/${locale}/propiedades/${property.slug}`;
   const alternateEs = `${siteUrl}/es/propiedades/${property.slug}`;

@@ -9,8 +9,8 @@ VALUES
     'la-pedregosa',
     'La Pedregosa',
     'La Pedregosa',
-    'Una de las zonas residenciales más exclusivas de Mérida, con vistas privilegiadas a la ciudad y cercanía al campus universitario.',
-    'One of Mérida''s most exclusive residential areas, with privileged city views and proximity to the university campus.',
+    'Una de las zonas residenciales seleccionadas en los Andes, con vistas privilegiadas a la ciudad y cercanía al campus universitario.',
+    'One of the selected residential areas in the Andes, with privileged city views and proximity to the university campus.',
     'Mérida',
     8.596,
     -71.140,
@@ -48,8 +48,8 @@ VALUES
     'el-encanto',
     'El Encanto',
     'El Encanto',
-    'Prestigiosa zona residencial de las alturas de Mérida, con clima fresco y vistas panorámicas excepcionales.',
-    'A prestigious residential area in Mérida''s heights, with cool weather and exceptional panoramic views.',
+    'Prestigiosa zona residencial de las alturas de los Andes, con clima fresco y vistas panorámicas excepcionales.',
+    'A prestigious residential area in the heights of the Andes, with cool weather and exceptional panoramic views.',
     'Mérida',
     8.580,
     -71.125,
@@ -88,8 +88,8 @@ VALUES
     'carlos@knordica.com',
     '+58 412 242 3334',
     '5804122423334',
-    'Especialista en propiedades residenciales premium. 10 años en el mercado inmobiliario de Mérida.',
-    'Residential premium property specialist. 10 years in Mérida''s real estate market.',
+    'Especialista en propiedades residenciales seleccionadas. 10 años en el mercado inmobiliario de los Andes venezolanos.',
+    'Specialist in selected residential properties. 10 years in the Venezuelan Andes real estate market.',
     'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&h=256&q=80',
     'senior',
     true
@@ -337,14 +337,14 @@ VALUES
   (
     'd184e2be-80d4-48f8-b391-7db1387d8551', 'es',
     'Casa moderna en La Pedregosa con vistas a la ciudad',
-    'Residencia contemporánea de 4 habitaciones en suite. Acabados de primer nivel, jardín privado y vistas panorámicas privilegiadas sobre la cordillera y la ciudad de Mérida.',
-    'Residencia contemporánea de 4 habitaciones en suite. Acabados de primer nivel, jardín privado y vistas panorámicas privilegiadas.'
+    'Residencia contemporánea de 4 habitaciones en suite. Acabados contemporáneos, jardín privado y vistas panorámicas privilegiadas sobre la cordillera.',
+    'Residencia contemporánea de 4 habitaciones en suite. Acabados contemporáneos, jardín privado y vistas panorámicas privilegiadas.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8551', 'en',
     'Modern house in La Pedregosa with city views',
-    'Contemporary residence featuring 4 en-suite bedrooms. Top-tier finishes, private landscaped garden, and exceptional panoramic views over the Andes range and Mérida city.',
-    'Contemporary residence featuring 4 en-suite bedrooms. Top-tier finishes, private landscaped garden, and exceptional panoramic views.'
+    'Contemporary residence featuring 4 en-suite bedrooms. Contemporary finishes, private landscaped garden, and exceptional panoramic views over the Andes range.',
+    'Contemporary residence featuring 4 en-suite bedrooms. Contemporary finishes, private landscaped garden, and exceptional panoramic views.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8552', 'es',
@@ -361,26 +361,26 @@ VALUES
   (
     'd184e2be-80d4-48f8-b391-7db1387d8553', 'es',
     'Casa de campo en El Encanto con piscina y terreno',
-    'Propiedad de lujo a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.',
-    'Propiedad de lujo a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.'
+    'Propiedad seleccionada a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.',
+    'Propiedad seleccionada a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8553', 'en',
     'Country house in El Encanto with pool and land',
-    'Luxury property at 1,800 meters above sea level. Cool weather, heated pool, formal gardens, and independent guest house.',
-    'Luxury property at 1,800 meters above sea level. Cool weather, heated pool, formal gardens, and independent guest house.'
+    'Selected property at 1,800 meters above sea level. Cool weather, heated pool, formal gardens, and independent guest house.',
+    'Selected property at 1,800 meters above sea level. Cool weather, heated pool, formal gardens, and independent guest house.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8554', 'es',
     'Apartamento ejecutivo en La Pedregosa',
-    'Ideal para ejecutivos y profesionales. Amoblado de alto nivel. Acceso a gimnasio y área social.',
-    'Ideal para ejecutivos y profesionales. Amoblado de alto nivel. Acceso a gimnasio y área social.'
+    'Ideal para ejecutivos y profesionales. Totalmente amoblado y equipado. Acceso a gimnasio y área social.',
+    'Ideal para ejecutivos y profesionales. Totalmente amoblado y equipado. Acceso a gimnasio y área social.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8554', 'en',
     'Executive apartment in La Pedregosa',
-    'Ideal for executives and professionals. High-level furnishings. Access to gym and social area.',
-    'Ideal for executives and professionals. High-level furnishings. Access to gym and social area.'
+    'Ideal for executives and professionals. Fully furnished and equipped. Access to gym and social area.',
+    'Ideal for executives and professionals. Fully furnished and equipped. Access to gym and social area.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8555', 'es',
@@ -421,14 +421,14 @@ VALUES
   (
     'd184e2be-80d4-48f8-b391-7db1387d8558', 'es',
     'Penthouse de 320m² en La Pedregosa — Último piso',
-    'Terraza privada de 180m² con vista 360° de Mérida. Acabados de lujo importados. Única unidad disponible.',
-    'Terraza privada de 180m² con vista 360° de Mérida. Acabados de lujo importados.'
+    'Terraza privada de 180m² con vista 360°. Acabados importados seleccionados. Única unidad disponible.',
+    'Terraza privada de 180m² con vista 360°. Acabados importados seleccionados.'
   ),
   (
     'd184e2be-80d4-48f8-b391-7db1387d8558', 'en',
     '320sqm Penthouse in La Pedregosa — Top floor',
-    'Private terrace of 180sqm with a 360° view of Mérida. Imported luxury finishes. Only unit available.',
-    'Private terrace of 180sqm with a 360° view of Mérida. Imported luxury finishes.'
+    'Private terrace of 180sqm with a 360° view. Imported refined finishes. Only unit available.',
+    'Private terrace of 180sqm with a 360° view. Imported refined finishes.'
   )
 ON CONFLICT (property_id, locale) DO UPDATE SET
   title = EXCLUDED.title,

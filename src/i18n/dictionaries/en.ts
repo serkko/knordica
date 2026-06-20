@@ -14,9 +14,9 @@ const en = {
   },
   hero: {
     badge: "Mérida, Venezuela",
-    title: "Find your next\nproperty in Mérida",
+    title: "Curated properties in Mérida, Venezuela.",
     subtitle:
-      "Premium real estate advisory. We select, evaluate, and negotiate the best properties for discerning buyers and investors.",
+      "Every transaction guided with clarity and real knowledge of the territory.",
     searchLabel: "What are you looking for?",
     operacion: {
       label: "Operation",
@@ -47,7 +47,7 @@ const en = {
   },
   catalog: {
     title: "Available properties",
-    subtitle: "Curated selection of properties in Mérida",
+    subtitle: "Curated selection of properties in Mérida, Venezuela",
     filters: {
       title: "Filters",
       operacion: "Operation",
@@ -96,7 +96,7 @@ const en = {
     },
     badge: {
       destacada: "Featured",
-      exclusiva: "Exclusive",
+      exclusiva: "Selected",
       nueva: "New",
       rebajada: "Price reduced",
     },
@@ -155,31 +155,27 @@ const en = {
   },
   why: {
     title: "Why choose Knordica",
-    subtitle: "We are not just another real estate agency. We are the standard Mérida didn't have.",
+    subtitle: "Curated catalog. Technical criteria. Direct knowledge of the Mérida market.",
     items: [
       {
         numero: "01",
-        titulo: "Rigorous selection",
-        descripcion:
-          "Every property in our catalog has undergone a legal, technical, and market verification process. No improvisation.",
+        titulo: "Real knowledge",
+        descripcion: "We know Mérida from the inside. Every zone, every neighborhood, every price dynamic.",
       },
       {
         numero: "02",
-        titulo: "Real advisory",
-        descripcion:
-          "We don't make transactions, we build relationships. Every client has a dedicated advisor who understands their specific situation.",
+        titulo: "Technical review",
+        descripcion: "Every property in our catalog goes through a real verification process before being published.",
       },
       {
         numero: "03",
-        titulo: "Total transparency",
-        descripcion:
-          "Clear pricing, complete documentation, no surprises. Clarity is part of the premium service we offer.",
+        titulo: "Direct attention",
+        descripcion: "We work with a limited number of transactions to provide direct attention to each one.",
       },
       {
         numero: "04",
-        titulo: "Deep local coverage",
-        descripcion:
-          "We know Mérida at the parish level. Every zone, every neighborhood, every specific market dynamic.",
+        titulo: "No intermediaries",
+        descripcion: "No unnecessary intermediaries. No empty promises.",
       },
     ],
   },
@@ -189,7 +185,7 @@ const en = {
   },
   blog: {
     title: "Market intelligence",
-    subtitle: "Analysis, guides, and insights on the Mérida real estate market",
+    subtitle: "Analysis, guides, and insights on the real estate market in Mérida, Venezuela",
     leer: "Read article",
     categorias: {
       mercado: "Market",
@@ -202,8 +198,8 @@ const en = {
     verTodos: "View all articles",
   },
   contact: {
-    title: "Let's talk",
-    subtitle: "Tell us what you're looking for. Our team will reach out within 24 hours.",
+    title: "Let's talk directly",
+    subtitle: "Via WhatsApp or through our contact form.",
     form: {
       nombre: "Full name",
       email: "Email address",
@@ -224,7 +220,7 @@ const en = {
         message: "Thank you for reaching out. A Knordica advisor will write to you shortly.",
       },
     },
-    whatsapp: "Message on WhatsApp",
+    whatsapp: "WhatsApp",
     oficina: "Mérida Office",
     horario: "Monday to Friday, 8:00 AM – 6:00 PM",
   },
@@ -232,7 +228,7 @@ const en = {
     title: "We are Knordica",
     subtitle: "A real estate firm built with intention, not volume",
     manifiesto:
-      "Knordica was born with a simple conviction: Mérida deserved a different real estate standard. One that combined professional rigor, real transparency, and a client experience worthy of the most demanding market.",
+      "Knordica was founded in Mérida with a clear objective: to operate with the same rigor that any serious real estate market demands. Transparent figures, complete documentation at every closing, and real knowledge of the territory.",
     mision: "Our mission",
     equipo: "The team",
     atribucion: "Designed and developed by",
@@ -264,9 +260,9 @@ const en = {
     },
   },
   footer: {
-    tagline: "Premium real estate in Mérida",
+    tagline: "Real estate in Mérida, Venezuela",
     description:
-      "We select, evaluate, and negotiate the best properties for discerning buyers and investors in Mérida, Venezuela.",
+      "Knordica · Real estate in Mérida, Venezuela · Designed by Xelta Studios.",
     nav: {
       titulo: "Navigation",
       propiedades: "Properties",

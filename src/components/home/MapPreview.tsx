@@ -25,8 +25,8 @@ export function MapPreview() {
             </h2>
             <p className="text-sm md:text-base text-[var(--text-2)] font-light leading-relaxed mb-8">
               {locale === "es"
-                ? "Nuestra herramienta de búsqueda visual te permite ubicar apartamentos y casas en los sectores más exclusivos de Mérida. Filtra precios y dimensiones directamente sobre el mapa del valle."
-                : "Our visual search tool allows you to pinpoint apartments and homes in Mérida's most exclusive neighborhoods. Filter prices and dimensions directly over the valley map."}
+                ? "Nuestra herramienta de búsqueda visual te permite ubicar apartamentos y casas en los sectores de los Andes venezolanos. Filtra precios y dimensiones directamente sobre el mapa del valle."
+                : "Our visual search tool allows you to pinpoint apartments and homes in the Venezuelan Andes' selected neighborhoods. Filter prices and dimensions directly over the valley map."}
             </p>
             <Link href={`/${locale}/mapa`}>
               <Button variant="primary" className="group">
@@ -101,7 +101,7 @@ export function MapPreview() {
               </div>
             </motion.div>
 
-            {/* Dashboard Overlay Mock (gives feeling of a premium dashboard interface) */}
+            {/* Dashboard Overlay Mock (gives feeling of a refined dashboard interface) */}
             <div className="absolute bottom-4 left-4 right-4 glass p-4 rounded-sm flex items-center justify-between shadow-[var(--shadow-md)]">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 bg-[var(--accent-dim)] text-[var(--accent)] rounded-full flex items-center justify-center shrink-0">

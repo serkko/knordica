@@ -15,9 +15,9 @@ const es = {
   },
   hero: {
     badge: "Mérida, Venezuela",
-    title: "Encuentra tu próxima\npropiedad en Mérida",
+    title: "Propiedades seleccionadas en Mérida, Venezuela.",
     subtitle:
-      "Asesoría inmobiliaria de alto nivel. Seleccionamos, evaluamos y negociamos las mejores propiedades para compradores e inversores exigentes.",
+      "Acompañamos cada operación con criterio, claridad y conocimiento real del territorio.",
     searchLabel: "¿Qué estás buscando?",
     operacion: {
       label: "Operación",
@@ -48,7 +48,7 @@ const es = {
   },
   catalog: {
     title: "Propiedades disponibles",
-    subtitle: "Selección curada de propiedades en Mérida",
+    subtitle: "Propiedades seleccionadas en Mérida, Venezuela",
     filters: {
       title: "Filtros",
       operacion: "Operación",
@@ -97,7 +97,7 @@ const es = {
     },
     badge: {
       destacada: "Destacada",
-      exclusiva: "Exclusiva",
+      exclusiva: "Seleccionada",
       nueva: "Nueva",
       rebajada: "Precio rebajado",
     },
@@ -156,31 +156,27 @@ const es = {
   },
   why: {
     title: "Por qué elegir Knordica",
-    subtitle: "No somos una inmobiliaria más. Somos el estándar que el mercado de Mérida no tenía.",
+    subtitle: "Propiedades que verificamos. Criterio técnico. Conocimiento directo del mercado merideño.",
     items: [
       {
         numero: "01",
-        titulo: "Selección rigurosa",
-        descripcion:
-          "Cada propiedad en nuestro catálogo ha pasado por un proceso de verificación legal, técnica y de mercado. Sin improvisación.",
+        titulo: "Conocimiento real",
+        descripcion: "Conocemos Mérida desde adentro. Cada zona, cada urbanización, cada dinámica de precio.",
       },
       {
         numero: "02",
-        titulo: "Asesoría real",
-        descripcion:
-          "No hacemos transacciones, construimos relaciones. Cada cliente tiene un asesor dedicado que entiende su caso específico.",
+        titulo: "Revisión técnica",
+        descripcion: "Cada propiedad en nuestro catálogo pasa por un proceso de revisión real antes de publicarse.",
       },
       {
         numero: "03",
-        titulo: "Transparencia total",
-        descripcion:
-          "Precio claro, documentación completa, sin sorpresas. La claridad es parte del servicio premium que ofrecemos.",
+        titulo: "Atención directa",
+        descripcion: "Trabajamos con un número limitado de operaciones para dar atención directa en cada una.",
       },
       {
         numero: "04",
-        titulo: "Cobertura local profunda",
-        descripcion:
-          "Conocemos Mérida a nivel de parroquia. Cada zona, cada urbanización, cada dinámica de mercado específica.",
+        titulo: "Sin intermediarios",
+        descripcion: "Sin intermediarios innecesarios. Sin promesas vacías.",
       },
     ],
   },
@@ -190,7 +186,7 @@ const es = {
   },
   blog: {
     title: "Inteligencia de mercado",
-    subtitle: "Análisis, guías y perspectivas sobre el mercado inmobiliario de Mérida",
+    subtitle: "Análisis, guías y perspectivas sobre el mercado inmobiliario de Mérida, Venezuela",
     leer: "Leer artículo",
     categorias: {
       mercado: "Mercado",
@@ -203,8 +199,8 @@ const es = {
     verTodos: "Ver todos los artículos",
   },
   contact: {
-    title: "Hablemos",
-    subtitle: "Cuéntanos qué estás buscando. Nuestro equipo estará en contacto contigo en menos de 24 horas.",
+    title: "Hablemos directamente",
+    subtitle: "Vía WhatsApp o a través de nuestro formulario de contacto.",
     form: {
       nombre: "Nombre completo",
       email: "Correo electrónico",
@@ -225,7 +221,7 @@ const es = {
         message: "Gracias por contactarnos. Un asesor de Knordica te escribirá pronto.",
       },
     },
-    whatsapp: "Escribir por WhatsApp",
+    whatsapp: "WhatsApp",
     oficina: "Oficina Mérida",
     horario: "Lunes a viernes, 8:00 AM – 6:00 PM",
   },
@@ -233,7 +229,7 @@ const es = {
     title: "Somos Knordica",
     subtitle: "Una firma inmobiliaria construida con criterio, no con volumen",
     manifiesto:
-      "Knordica nació con una convicción simple: Mérida merecía un estándar inmobiliario distinto. Uno que combinara rigor profesional, transparencia real y una experiencia de cliente a la altura del mercado más exigente.",
+      "Knordica nació en Mérida con un objetivo claro: operar con el mismo rigor que exige cualquier mercado inmobiliario serio. Transparencia en cada cifra, documentación completa en cada cierre, y conocimiento real del territorio.",
     mision: "Nuestra misión",
     equipo: "El equipo",
     atribucion: "Diseñado y desarrollado por",
@@ -265,9 +261,9 @@ const es = {
     },
   },
   footer: {
-    tagline: "Inmobiliaria premium en Mérida",
+    tagline: "Inmobiliaria en Mérida, Venezuela",
     description:
-      "Seleccionamos, evaluamos y negociamos las mejores propiedades para compradores e inversores exigentes en Mérida, Venezuela.",
+      "Knordica · Inmobiliaria en Mérida, Venezuela · Diseñado por Xelta Studios.",
     nav: {
       titulo: "Navegación",
       propiedades: "Propiedades",

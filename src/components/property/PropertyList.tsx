@@ -81,7 +81,7 @@ export function PropertyList({ properties }: PropertyListProps) {
                       className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   ) : (
-                    // Premium Placeholder
+                    // Default Geometric Placeholder
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-radial from-zinc-800 to-zinc-950">
                       <span className="text-[10px] tracking-widest text-[var(--accent)] font-semibold uppercase font-display mb-1">
                         Knordica

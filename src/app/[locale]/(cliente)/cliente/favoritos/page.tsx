@@ -60,8 +60,8 @@ export default function ClienteFavoritos() {
           </h4>
           <p className="text-xs text-[var(--text-2)] max-w-sm font-light leading-relaxed mb-6">
             {locale === "es"
-              ? "Explora nuestro catálogo exclusivo de casas, apartamentos y parcelas en Mérida para agregar elementos a tu lista."
-              : "Explore our exclusive catalog of houses, apartments, and plots in Mérida to add items to your list."}
+              ? "Explora nuestro catálogo de casas, apartamentos y parcelas en los Andes para agregar elementos a tu lista."
+              : "Explore our catalog of houses, apartments, and plots in the Andes to add items to your list."}
           </p>
           <Link href={`/${locale}/propiedades`}>
             <Button variant="primary" className="text-xs uppercase tracking-wider font-display h-10 px-6 rounded-sm">

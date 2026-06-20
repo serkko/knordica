@@ -10,11 +10,11 @@ export const MOCK_ZONES: Zone[] = [
     id: "zone-1",
     slug: "la-pedregosa",
     name_es: "La Pedregosa",
-    name_en: "La Pedregosa",
+    name_en: "Pedregosa Alta",
     description_es:
-      "Una de las zonas residenciales más exclusivas de Mérida, con vistas privilegiadas a la ciudad y cercanía al campus universitario.",
+      "Una de las zonas residenciales más consolidadas de Mérida, con vistas privilegiadas a la ciudad y cercanía al campus universitario.",
     description_en:
-      "One of Mérida's most exclusive residential areas, with privileged city views and proximity to the university campus.",
+      "One of Mérida's most established residential areas, with privileged city views and proximity to the university campus.",
     city: "Mérida",
     lat: 8.596,
     lng: -71.14,
@@ -55,11 +55,11 @@ export const MOCK_ZONES: Zone[] = [
     id: "zone-4",
     slug: "el-encanto",
     name_es: "El Encanto",
-    name_en: "El Encanto",
+    name_en: "La Hechicera heights",
     description_es:
-      "Prestigiosa zona residencial de las alturas de Mérida, con clima fresco y vistas panorámicas excepcionales.",
+      "Zona residencial en las alturas de Mérida, con clima fresco y vistas panorámicas excepcionales.",
     description_en:
-      "A prestigious residential area in Mérida's heights, with cool weather and exceptional panoramic views.",
+      "A residential area in the heights of Mérida, with cool weather and exceptional panoramic views.",
     city: "Mérida",
     lat: 8.58,
     lng: -71.125,
@@ -92,9 +92,9 @@ export const MOCK_AGENTS: Agent[] = [
     phone: "+58 412 242 3334",
     whatsapp: "5804122423334",
     bio_es:
-      "Especialista en propiedades residenciales premium. 10 años en el mercado inmobiliario de Mérida.",
+      "Especialista en propiedades residenciales seleccionadas. 10 años en el mercado inmobiliario de Mérida, Venezuela.",
     bio_en:
-      "Residential premium property specialist. 10 years in Mérida's real estate market.",
+      "Specialist in selected residential properties. 10 years in the Mérida, Venezuela real estate market.",
     avatar_url: null,
     role: "senior",
     active: true,
@@ -137,7 +137,7 @@ export const MOCK_PROPERTIES: (PropertyCard & { images?: PropertyImage[] })[] = 
     zone: MOCK_ZONES[0],
     title: "Casa moderna en La Pedregosa con vistas a la ciudad",
     short_description:
-      "Residencia contemporánea de 4 habitaciones en suite. Acabados de primer nivel, jardín privado y vistas panorámicas privilegiadas.",
+      "Residencia contemporánea de 4 habitaciones en suite. Acabados contemporáneos, jardín privado y vistas panorámicas privilegiadas.",
     cover_image: {
       id: "prop-1-cover",
       property_id: "prop-1",
@@ -179,8 +179,8 @@ export const MOCK_PROPERTIES: (PropertyCard & { images?: PropertyImage[] })[] = 
         id: "prop-1-img4",
         property_id: "prop-1",
         url: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
-        alt_es: "Baño de lujo con acabados premium",
-        alt_en: "Luxury bathroom with premium finishes",
+        alt_es: "Baño moderno con finos acabados",
+        alt_en: "Modern bathroom with refined finishes",
         sort_order: 3,
         is_cover: false,
       }
@@ -266,7 +266,7 @@ export const MOCK_PROPERTIES: (PropertyCard & { images?: PropertyImage[] })[] = 
     zone: MOCK_ZONES[3],
     title: "Casa de campo en El Encanto con piscina y terreno",
     short_description:
-      "Propiedad de lujo a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.",
+      "Propiedad seleccionada a 1.800 msnm. Clima fresco, piscina climatizada, jardines formales y guest house independiente.",
     cover_image: {
       id: "prop-3-cover",
       property_id: "prop-3",
@@ -326,7 +326,7 @@ export const MOCK_PROPERTIES: (PropertyCard & { images?: PropertyImage[] })[] = 
     zone: MOCK_ZONES[0],
     title: "Apartamento ejecutivo en La Pedregosa",
     short_description:
-      "Ideal para ejecutivos y profesionales. Amoblado de alto nivel. Acceso a gimnasio y área social.",
+      "Ideal para ejecutivos y profesionales. Totalmente amoblado y equipado. Acceso a gimnasio y área social.",
     cover_image: {
       id: "prop-4-cover",
       property_id: "prop-4",
@@ -539,7 +539,7 @@ export const MOCK_PROPERTIES: (PropertyCard & { images?: PropertyImage[] })[] = 
     zone: MOCK_ZONES[0],
     title: "Penthouse de 320m² en La Pedregosa — Último piso",
     short_description:
-      "Terraza privada de 180m² con vista 360° de Mérida. Acabados de lujo importados. Única unidad disponible.",
+      "Terraza privada de 180m² con vista 360°. Acabados importados seleccionados. Única unidad disponible.",
     cover_image: {
       id: "prop-8-cover",
       property_id: "prop-8",

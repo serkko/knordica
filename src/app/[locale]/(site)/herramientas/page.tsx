@@ -14,8 +14,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: isEs ? "Herramientas Financieras | Knordica" : "Financial Tools | Knordica",
     description: isEs
-      ? "Calculadora hipotecaria, proyecciones de rendimiento de inversión y comparador de propiedades de lujo en Mérida, Venezuela."
-      : "Mortgage calculator, investment yield projections, and luxury property comparator in Mérida, Venezuela.",
+      ? "Calculadora hipotecaria, proyecciones de rendimiento de inversión y comparador de propiedades en los Andes venezolanos."
+      : "Mortgage calculator, investment yield projections, and property comparator in the Venezuelan Andes.",
   };
 }
 

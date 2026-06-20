@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: isEs ? "Sobre Nosotros | Knordica" : "About Us | Knordica",
     description: isEs
-      ? "Conoce a Knordica, la firma inmobiliaria digital líder en Mérida, Venezuela. Descubre nuestra historia, equipo y filosofía."
-      : "Meet Knordica, the leading digital real estate firm in Mérida, Venezuela. Discover our history, team, and philosophy.",
+      ? "Conoce a Knordica, firma inmobiliaria en Mérida, Venezuela. Descubre nuestra historia, equipo y filosofía."
+      : "Meet Knordica, a real estate firm in Mérida, Venezuela. Discover our history, team, and philosophy.",
   };
 }
 
@@ -33,7 +33,7 @@ export default async function NosotrosPage({ params }: PageProps) {
             {locale === "es" ? "Quiénes Somos" : "Who We Are"}
           </span>
           <h1 className="text-3xl md:text-5xl font-bold font-display tracking-tight text-[var(--text)] leading-tight mb-2">
-            {locale === "es" ? "El estándar digital de Mérida" : "Mérida's digital standard"}
+            {locale === "es" ? "Inmobiliaria digital en Mérida, Venezuela" : "Digital real estate firm in Mérida, Venezuela"}
           </h1>
           <p className="text-sm md:text-base text-[var(--text-2)] font-light">
             {locale === "es" 
@@ -49,13 +49,13 @@ export default async function NosotrosPage({ params }: PageProps) {
           <div className="lg:col-span-7 flex flex-col gap-6 text-sm text-[var(--text-2)] font-light leading-relaxed">
             <p>
               {locale === "es" 
-                ? "Nacimos en Mérida con una visión clara: romper con la informalidad del sector inmobiliario tradicional. Creemos que la adquisición o venta de un inmueble no es una simple transacción; es la materialización de un logro de vida o un paso estratégico de inversión."
-                : "We were born in Mérida with a clear vision: to break away from the informality of traditional real estate. We believe that acquiring or selling a property is not a simple transaction; it is the materialization of a life achievement or a strategic investment step."}
+                ? "Nacimos en Mérida con un objetivo claro: romper con la informalidad del sector inmobiliario tradicional. Cada operación que gestionamos pasa por un proceso de verificación legal, técnica y de mercado antes de llegar al cliente."
+                : "We were founded in Mérida with a clear goal: to break from the informality of traditional real estate. Every transaction we manage goes through a legal, technical, and market verification process before reaching the client."}
             </p>
             <p>
               {locale === "es"
-                ? "Por eso, nos aliamos con firmas líderes de diseño digital como Xelta Studios para construir una plataforma que ponga a Mérida en el mapa global. Cada listado que representamos recibe un tratamiento de primera clase, desde fotografías curadas y descripciones bilingües de rigor técnico, hasta análisis detallados de plusvalía y geolocalización interactiva."
-                : "That's why we partnered with leading digital design firms like Xelta Studios to build a platform that puts Mérida on the global map. Every listing we represent receives first-class treatment, from curated photography and technically precise bilingual descriptions to detailed appreciation analysis and interactive geolocation."}
+                ? "Por eso, nos aliamos con firmas de diseño digital como Xelta Studios para construir una plataforma que ponga a nuestro territorio en el mapa global. Cada listado que representamos recibe un tratamiento de primera clase, desde fotografías seleccionadas y descripciones bilingües de rigor técnico, hasta análisis detallados de plusvalía y geolocalización interactiva."
+                : "That's why we partnered with digital design firms like Xelta Studios to build a platform that puts our territory on the global map. Every listing we represent receives first-class treatment, from curated photography and technically precise bilingual descriptions to detailed appreciation analysis and interactive geolocation."}
             </p>
           </div>
           
@@ -65,8 +65,8 @@ export default async function NosotrosPage({ params }: PageProps) {
             </span>
             <p className="text-xs font-mono text-[var(--text-2)] leading-relaxed italic">
               {locale === "es"
-                ? "\"El diseño y la tecnología de Knordica fueron creados bajo el estándar visual premium de Xelta Studios, garantizando una experiencia interactiva sin fricciones, sofisticada y enfocada en el usuario.\""
-                : "\"Knordica's design and technology were crafted under Xelta Studios' premium visual standard, ensuring a frictionless, sophisticated, and user-centric interactive experience.\""}
+                ? "\"El diseño y la tecnología de Knordica fueron creados bajo el estándar visual de Xelta Studios, garantizando una experiencia interactiva sin fricciones, fluida y enfocada en el usuario.\""
+                : "\"Knordica's design and technology were crafted under Xelta Studios' visual standard, ensuring a frictionless, fluid, and user-centric interactive experience.\""}
             </p>
           </div>
         </div>
@@ -80,7 +80,7 @@ export default async function NosotrosPage({ params }: PageProps) {
               <Award className="h-5 w-5" />
             </div>
             <h3 className="font-display font-bold text-base text-[var(--text)]">
-              {locale === "es" ? "Excelencia Curada" : "Curated Excellence"}
+              {locale === "es" ? "Selección rigurosa" : "Curated Excellence"}
             </h3>
             <p className="text-xs text-[var(--text-2)] font-light leading-relaxed">
               {locale === "es"

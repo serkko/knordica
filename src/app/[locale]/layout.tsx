@@ -36,11 +36,11 @@ export async function generateMetadata({
 
   return {
     title: isEs
-      ? "Knordica — Inmobiliaria Premium en Mérida, Venezuela"
-      : "Knordica — Premium Real Estate in Mérida, Venezuela",
+      ? "Knordica · Propiedades en los Andes venezolanos"
+      : "Knordica · Real estate in the Venezuelan Andes",
     description: isEs
-      ? "Seleccionamos, evaluamos y negociamos las mejores propiedades para compradores e inversores exigentes en Mérida."
-      : "We select, evaluate, and negotiate the best properties for discerning buyers and investors in Mérida.",
+      ? "Catálogo de propiedades seleccionadas en los Andes venezolanos. Acompañamos cada operación con criterio y conocimiento real del territorio."
+      : "Curated property listings in the Venezuelan Andes. Every transaction guided with clarity and real knowledge of the territory.",
     alternates,
     openGraph: {
       locale: isEs ? "es_VE" : "en_US",

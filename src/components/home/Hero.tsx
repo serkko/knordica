@@ -64,7 +64,7 @@ export function Hero({ zones, stats }: HeroProps) {
               <span key={i} className="block">
                 {line}
               </span>
-            )) || "Encuentra tu próxima propiedad en Mérida"}
+            )) || "Propiedades seleccionadas en Mérida, Venezuela."}
           </motion.h1>
 
           {/* Subtitle */}
@@ -73,7 +73,7 @@ export function Hero({ zones, stats }: HeroProps) {
             className="text-base sm:text-lg md:text-xl text-[var(--text-2)] max-w-2xl mb-12 font-body font-light leading-relaxed"
           >
             {dict.hero?.subtitle ||
-              "Asesoría inmobiliaria de alto nivel. Seleccionamos, evaluamos y negociamos las mejores propiedades para compradores e inversores exigentes."}
+              "Acompañamos cada operación con criterio, claridad y conocimiento real del territorio."}
           </motion.p>
 
           {/* Search form */}
@@ -99,7 +99,7 @@ export function Hero({ zones, stats }: HeroProps) {
                 <AnimatedCounter value={stats.zonas} />
               </span>
               <span className="text-xs uppercase tracking-wider text-[var(--text-muted)] font-medium mt-1">
-                {dict.hero?.stats?.zonas || "zonas en Mérida"}
+                {dict.hero?.stats?.zonas || "zonas registradas"}
               </span>
             </div>
             <div className="flex flex-col items-center md:items-start text-center md:text-left">

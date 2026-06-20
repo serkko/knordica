@@ -19,7 +19,15 @@ export function generatePropertyStructuredData({
     };
 
   const name = trans.title;
-  const description = trans.description || trans.short_description || "";
+  let description = trans.description || trans.short_description || "";
+  // Sanitize description: remove self-praise / correct positioning
+  description = description
+    .replace(/Mérida, Venezuela/g, locale === "es" ? "los Andes venezolanos" : "Venezuelan Andes")
+    .replace(/exclusiva/gi, "seleccionada")
+    .replace(/exclusive/gi, "selected")
+    .replace(/lujo/gi, "excelentes acabados")
+    .replace(/luxury/gi, "refined finishes");
+
   const url = `${siteUrl}/${locale}/propiedades/${property.slug}`;
 
   const image = property.images && property.images.length > 0
@@ -35,7 +43,7 @@ export function generatePropertyStructuredData({
     "image": image,
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": property.zone?.city || "Mérida",
+      "addressLocality": property.zone?.city || (locale === "es" ? "los Andes venezolanos" : "Venezuelan Andes"),
       "addressRegion": "Mérida",
       "addressCountry": "VE",
       "streetAddress": locale === "es" ? property.address_es || "" : property.address_en || "",

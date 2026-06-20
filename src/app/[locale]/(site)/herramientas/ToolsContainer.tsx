@@ -36,7 +36,7 @@ export default function ToolsContainer() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Premium Tab Bar */}
+      {/* Tab Navigation Bar */}
       <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
         {tabs.map((tab) => (
           <button

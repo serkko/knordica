@@ -13,7 +13,7 @@ export function FinalCTA() {
   const whatsappMessage = encodeURIComponent(
     locale === "es"
       ? "Hola, estoy interesado en recibir asesoría sobre propiedades en Mérida."
-      : "Hello, I am interested in receiving advice about properties in Mérida."
+      : "Hello, I am interested in receiving advice about properties in Mérida, Venezuela."
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 

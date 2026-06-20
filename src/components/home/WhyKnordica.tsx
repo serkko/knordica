@@ -41,13 +41,13 @@ export function WhyKnordica() {
       numero: "03",
       titulo: "Transparencia total",
       descripcion:
-        "Precio claro, documentación completa, sin sorpresas. La claridad es parte del servicio premium que ofrecemos.",
+        "Precio claro, documentación completa, sin sorpresas. La claridad es parte del servicio directo que ofrecemos.",
     },
     {
       numero: "04",
       titulo: "Cobertura local profunda",
       descripcion:
-        "Conocemos Mérida a nivel de parroquia. Cada zona, cada urbanización, cada dinámica de mercado específica.",
+        "Conocemos el territorio a nivel profundo. Cada zona, cada urbanización, cada dinámica de mercado específica.",
     },
   ];
 
@@ -60,7 +60,7 @@ export function WhyKnordica() {
             {dict.why?.title || "Por qué elegir Knordica"}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-[var(--text)]">
-            {dict.why?.subtitle || "No somos una inmobiliaria más. Somos el estándar que el mercado de Mérida no tenía."}
+            {dict.why?.subtitle || "Propiedades que verificamos. Criterio técnico. Conocimiento directo del mercado merideño."}
           </h2>
         </div>
 

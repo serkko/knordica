@@ -43,7 +43,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
               {dict.property?.badge?.destacada || "Destacadas"}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-[var(--text)]">
-              {dict.catalog?.subtitle || "Selección curada de propiedades en Mérida"}
+              {dict.catalog?.subtitle || "Propiedades seleccionadas en Mérida"}
             </h2>
           </div>
           <Link

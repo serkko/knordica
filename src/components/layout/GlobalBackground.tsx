@@ -1,6 +1,6 @@
 "use client";
 
-// GlobalBackground — Sistema de fondo premium global
+// GlobalBackground — Sistema de fondo global
 // Capa 1: Campo geométrico flotante (SVG lines + polygons)
 // Capa 2: Mesh gradient ambiental
 // Capa 3: Noise/textura (via CSS globals)
