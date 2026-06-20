@@ -13,6 +13,8 @@ import { LocaleProvider } from "@/components/layout/LocaleProvider";
 import { GlobalBackground } from "@/components/layout/GlobalBackground";
 import { QueryProvider } from "@/components/layout/QueryProvider";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ReactLenis } from "@/lib/lenis";
+import ScrollToTop from "@/components/ui/ScrollToTop";
 
 import Script from "next/script";
 
@@ -101,19 +103,22 @@ export default async function LocaleLayout({
         <Script id="theme-script" strategy="beforeInteractive">
           {themeScript}
         </Script>
-        <ThemeProvider>
-          <QueryProvider>
-            <LocaleProvider locale={locale as Locale} dict={dict}>
-              {/* Global background — fixed, z-0, behind all content */}
-              <GlobalBackground />
-              <ToastProvider />
-              {/* Page content — relative, z-10 */}
-              <div className="relative z-10">
-                {children}
-              </div>
-            </LocaleProvider>
-          </QueryProvider>
-        </ThemeProvider>
+        <ReactLenis root>
+          <ThemeProvider>
+            <QueryProvider>
+              <LocaleProvider locale={locale as Locale} dict={dict}>
+                {/* Global background — fixed, z-0, behind all content */}
+                <GlobalBackground />
+                <ToastProvider />
+                {/* Page content — relative, z-10 */}
+                <div className="relative z-10">
+                  {children}
+                </div>
+                <ScrollToTop />
+              </LocaleProvider>
+            </QueryProvider>
+          </ThemeProvider>
+        </ReactLenis>
       </body>
     </html>
   );

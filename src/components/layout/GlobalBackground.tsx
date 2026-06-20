@@ -70,18 +70,6 @@ export function GlobalBackground() {
         <rect width="100%" height="100%" filter="url(#globals-noise)" />
       </svg>
 
-      {/* CAPA 2 — Grilla arquitectónica */}
-      <div
-        className="absolute inset-0 pointer-events-none select-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-          opacity: 0.04,
-        }}
-      />
 
       {/* CAPA 3 — Gradiente atmosférico */}
       {!prefersReduced && (

@@ -24,6 +24,7 @@ import type { Locale } from "@/i18n/config";
 function useNavLinks() {
   const { dict, locale } = useLocale();
   return [
+    { href: `/${locale}`, label: locale === "es" ? "Inicio" : "Home" },
     { href: `/${locale}/propiedades`, label: dict.nav.propiedades },
     { href: `/${locale}/mapa`, label: dict.nav.mapa },
     { href: `/${locale}/blog`, label: dict.nav.blog },
@@ -326,6 +327,9 @@ export function Navbar() {
   const navLinks = useNavLinks();
   const pathname = usePathname();
 
+  const isHome = pathname === `/${locale}` || pathname === `/${locale}/`;
+  const isOverHero = isHome && !scrolled;
+
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 30);
   }, []);
@@ -342,6 +346,34 @@ export function Navbar() {
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .nav-link-item {
+          position: relative;
+          transition: color 0.15s ease;
+        }
+        .nav-link-item::after {
+          content: '';
+          position: absolute;
+          bottom: 2px;
+          left: 0;
+          width: 100%;
+          height: 1px;
+          background-color: var(--color-gold);
+          transform: scaleX(0);
+          transform-origin: center;
+          transition: transform 0.2s ease;
+        }
+        .nav-link-item:hover::after {
+          transform: scaleX(1);
+        }
+        .nav-link-active {
+          color: var(--color-gold) !important;
+          border-bottom: 1px solid var(--color-gold) !important;
+        }
+        .nav-link-active::after {
+          display: none !important;
+        }
+      `}} />
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -381,27 +413,22 @@ export function Navbar() {
             aria-label="Navegación principal"
           >
             {navLinks.map((link) => {
-              const isActive = pathname.startsWith(link.href);
+              const isActive = link.href === `/${locale}`
+                ? pathname === `/${locale}` || pathname === `/${locale}/`
+                : pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "relative px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-widest rounded-sm",
-                    "transition-colors duration-150",
-                    isActive
-                      ? "text-[var(--color-text)]"
-                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                    "nav-link-item px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-widest rounded-sm",
+                    isActive ? "nav-link-active" : "",
+                    isOverHero
+                      ? (isActive ? "" : "text-[rgba(232,228,222,0.7)] hover:text-[#FDFCFA]")
+                      : (isActive ? "" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]")
                   )}
                 >
                   {link.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[var(--color-primary)]"
-                      transition={{ duration: 0.3 }}
-                    />
-                  )}
                 </Link>
               );
             })}
@@ -412,16 +439,20 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             <PrivateAccessDropdown />
-            <a
+            <motion.a
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
               href={`https://wa.me/5804122423334`}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "flex items-center gap-2 px-4 py-1.5 text-[0.7rem] uppercase tracking-wider rounded-lg font-medium transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md border-0"
+                "flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-all duration-180 border-0 cursor-pointer shadow-sm text-sm"
               )}
               style={{
                 backgroundColor: "var(--color-gold)",
-                color: "var(--color-text-inverse)"
+                color: "var(--color-text-inverse)",
+                transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "var(--color-gold-hover)";
@@ -432,7 +463,7 @@ export function Navbar() {
             >
               <Phone size={11} />
               <span>{dict.nav.ctaBtn}</span>
-            </a>
+            </motion.a>
           </div>
 
           {/* Mobile trigger */}

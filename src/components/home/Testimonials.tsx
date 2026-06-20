@@ -40,7 +40,17 @@ export function Testimonials({ testimonials }: TestimonialsProps) {
   };
 
   return (
-    <section className="section-y border-t border-[var(--border)] bg-[var(--bg-alt)]/50">
+    <section className="section-y border-t border-[var(--border)] bg-[var(--bg-alt)]/50 relative overflow-hidden">
+      {/* Strategic Grid Repositioning */}
+      <div 
+        className="absolute inset-0 pointer-events-none select-none"
+        style={{
+          backgroundImage: 'linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)',
+          backgroundSize: '80px 80px',
+          opacity: 0.04
+        }}
+        aria-hidden="true"
+      />
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 md:mb-16">
