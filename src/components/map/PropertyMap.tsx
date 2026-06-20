@@ -117,7 +117,7 @@ export default function PropertyMap({
     validProperties.forEach((p) => {
       const priceText = formatPriceCompact(p.price, p.price_currency);
       const isHovered = hoveredPropertyId === p.id;
-      const color = p.operation === "venta" ? "#C9A96E" : "#2DD4BF";
+      const color = p.operation === "venta" ? "#c9a96e" : "#d4b87a";
 
       // HTML custom price-tag marker
       const customIcon = L.divIcon({
@@ -156,7 +156,7 @@ export default function PropertyMap({
           <p class="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)] mb-0.5">${p.operation}</p>
           <h4 class="text-xs font-bold text-white line-clamp-1 mb-1 font-display">${p.title}</h4>
           <p class="text-xs font-bold text-[var(--gold)] mb-1">${new Intl.NumberFormat("es-VE", { style: "currency", currency: p.price_currency, maximumFractionDigits: 0 }).format(p.price)}</p>
-          <a href="/es/propiedades/${p.slug}" class="text-[10px] font-semibold uppercase text-teal-400 hover:underline">Ver detalles →</a>
+          <a href="/es/propiedades/${p.slug}" class="text-[10px] font-semibold uppercase text-[var(--accent)] hover:underline">Ver detalles →</a>
         </div>
       `;
 

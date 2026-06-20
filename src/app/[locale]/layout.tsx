@@ -14,6 +14,8 @@ import { GlobalBackground } from "@/components/layout/GlobalBackground";
 import { QueryProvider } from "@/components/layout/QueryProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 
+import Script from "next/script";
+
 export async function generateStaticParams() {
   return i18nConfig.locales.map((locale) => ({ locale }));
 }
@@ -84,11 +86,12 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head>
-        {/* Prevent flash of wrong theme */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+      <head />
       <body>
+        {/* Prevent flash of wrong theme */}
+        <Script id="theme-script" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
         <ThemeProvider>
           <QueryProvider>
             <LocaleProvider locale={locale as Locale} dict={dict}>

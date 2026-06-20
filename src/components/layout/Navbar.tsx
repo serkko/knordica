@@ -1,11 +1,5 @@
 "use client";
 
-// Navbar — Sticky, scroll-aware, bilingüe, theme toggle, logo animado
-// - Transparente en top, glass al scroll
-// - Language switch cambia locale en URL preservando pathname
-// - Theme toggle con transición suave
-// - Mobile: hamburger + drawer
-
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -39,53 +33,38 @@ function useNavLinks() {
 }
 
 // ─── Language Switcher ─────────────────────────────────────
-function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+function LanguageSwitcher() {
   const { locale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
   function switchLocale(newLocale: Locale) {
-    // Replace current locale in URL
     const segments = pathname.split("/");
     segments[1] = newLocale;
     router.push(segments.join("/"));
   }
 
-  const other: Locale = locale === "es" ? "en" : "es";
-
-  if (compact) {
-    return (
-      <button
-        onClick={() => switchLocale(other)}
-        className={cn(
-          "text-xs font-medium tracking-widest uppercase px-2.5 py-1.5 rounded-sm",
-          "border border-[var(--border)] text-[var(--text-2)]",
-          "hover:text-[var(--text)] hover:border-[var(--border-strong)]",
-          "transition-all duration-150"
-        )}
-        aria-label={`Switch to ${other === "en" ? "English" : "Español"}`}
-      >
-        {other.toUpperCase()}
-      </button>
-    );
-  }
-
   return (
-    <div className="flex items-center gap-1">
-      {(["es", "en"] as Locale[]).map((l) => (
-        <button
-          key={l}
-          onClick={() => switchLocale(l)}
-          className={cn(
-            "text-xs font-medium tracking-widest uppercase px-2 py-1 rounded-sm transition-all duration-150",
-            l === locale
-              ? "text-[var(--accent)] bg-[var(--accent-dim)]"
-              : "text-[var(--text-muted)] hover:text-[var(--text-2)]"
-          )}
-        >
-          {l.toUpperCase()}
-        </button>
-      ))}
+    <div className="flex items-center gap-1.5 text-[0.7rem] font-medium font-body select-none">
+      <button
+        onClick={() => switchLocale("es")}
+        className={cn(
+          "transition-all duration-150 uppercase cursor-pointer tracking-wider",
+          locale === "es" ? "text-[var(--accent)] font-semibold" : "text-[var(--text-muted)] hover:text-[var(--text-2)]"
+        )}
+      >
+        ES
+      </button>
+      <span className="text-[rgba(255,255,255,0.15)] text-[10px]">|</span>
+      <button
+        onClick={() => switchLocale("en")}
+        className={cn(
+          "transition-all duration-150 uppercase cursor-pointer tracking-wider",
+          locale === "en" ? "text-[var(--accent)] font-semibold" : "text-[var(--text-muted)] hover:text-[var(--text-2)]"
+        )}
+      >
+        EN
+      </button>
     </div>
   );
 }
@@ -100,7 +79,7 @@ function ThemeToggle() {
       className={cn(
         "w-8 h-8 flex items-center justify-center rounded-sm",
         "text-[var(--text-2)] hover:text-[var(--text)]",
-        "hover:bg-[var(--surface-2)] transition-all duration-150"
+        "hover:bg-[var(--surface-2)] transition-all duration-150 cursor-pointer"
       )}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
@@ -166,15 +145,15 @@ function MobileDrawer({
             className={cn(
               "fixed right-0 top-0 bottom-0 z-50 w-72",
               "flex flex-col",
-              "bg-[var(--bg-alt)] border-l border-[var(--border)]"
+              "bg-[#0a0908] border-l border-[rgba(255,255,255,0.08)]"
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border)]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[rgba(255,255,255,0.08)]">
               <KnordicaLogo size={24} withText animate={false} />
               <button
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -204,7 +183,7 @@ function MobileDrawer({
               ))}
 
               {/* Private portals links in mobile menu */}
-              <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
+              <div className="border-t border-[rgba(255,255,255,0.08)] my-3 pt-3 opacity-60" />
 
               <motion.div
                 initial={{ opacity: 0, x: 16 }}
@@ -242,15 +221,15 @@ function MobileDrawer({
             </nav>
 
             {/* Footer */}
-            <div className="px-6 py-5 border-t border-[var(--border)] space-y-4">
+            <div className="px-6 py-5 border-t border-[rgba(255,255,255,0.08)] space-y-4">
               <a
                 href={`https://wa.me/5804122423334`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 rounded-sm",
+                  "flex items-center justify-center gap-2 w-full py-3 rounded-lg",
                   "bg-[var(--accent)] text-black font-semibold text-sm",
-                  "hover:opacity-90 transition-opacity"
+                  "hover:opacity-90 transition-opacity cursor-pointer"
                 )}
               >
                 <Phone size={15} />
@@ -282,15 +261,15 @@ function PrivateAccessDropdown() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-xs font-semibold uppercase tracking-wider",
+          "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.7rem] font-medium uppercase tracking-wider",
           "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)]",
           "hover:text-[var(--text)] hover:border-[var(--border-strong)]",
           "transition-all duration-150 cursor-pointer"
         )}
       >
-        <User size={13} className="text-[var(--accent)] shrink-0" />
+        <User size={12} className="text-[var(--accent)] shrink-0" />
         <span>{locale === "es" ? "Acceso" : "Access"}</span>
-        <ChevronDown size={12} className={cn("transition-transform duration-200 shrink-0", isOpen ? "rotate-180" : "")} />
+        <ChevronDown size={11} className={cn("transition-transform duration-200 shrink-0", isOpen ? "rotate-180" : "")} />
       </button>
 
       <AnimatePresence>
@@ -300,7 +279,7 @@ function PrivateAccessDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-sm shadow-lg py-1.5 z-50 glass"
+            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[rgba(255,255,255,0.08)] rounded-lg shadow-lg py-1.5 z-50 glass"
           >
             <Link
               href={`/${locale}/cliente`}
@@ -312,7 +291,7 @@ function PrivateAccessDropdown() {
             <Link
               href={`/${locale}/admin`}
               onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border)]"
+              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[rgba(255,255,255,0.08)]"
             >
               {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
             </Link>
@@ -332,7 +311,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   const handleScroll = useCallback(() => {
-    setScrolled(window.scrollY > 20);
+    setScrolled(window.scrollY > 30);
   }, []);
 
   useEffect(() => {
@@ -352,23 +331,24 @@ export function Navbar() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "fixed top-0 left-0 right-0 z-30",
-          "transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-30 h-16 flex items-center transition-all duration-400",
           scrolled
-            ? "bg-[var(--bg)]/90 backdrop-blur-xl border-b border-[var(--border)] py-3 shadow-md"
-            : "bg-transparent py-5"
+            ? "bg-[#0a0908]/85 backdrop-blur-[20px] border-b border-[rgba(255,255,255,0.07)] shadow-md"
+            : "bg-transparent border-b border-transparent"
         )}
         role="banner"
       >
         <div className="container-knordica flex items-center justify-between gap-6">
           {/* Logo */}
-          <Link href={`/${locale}`} aria-label="Knordica — inicio">
-            <KnordicaLogo
-              size={28}
-              withText
-              animate={true}
-              color="var(--text)"
-            />
+          <Link href={`/${locale}`} aria-label="Knordica — inicio" className="inline-block">
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+              <KnordicaLogo
+                size={28}
+                withText
+                animate={true}
+                color="var(--text)"
+              />
+            </motion.div>
           </Link>
 
           {/* Desktop Nav */}
@@ -383,7 +363,7 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "relative px-3 py-1.5 text-sm font-medium rounded-sm",
+                    "relative px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-widest rounded-sm",
                     "transition-colors duration-150",
                     isActive
                       ? "text-[var(--accent)]"
@@ -394,7 +374,7 @@ export function Navbar() {
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute bottom-0 left-3 right-3 h-px bg-[var(--accent)]"
+                      className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[var(--accent)]"
                       transition={{ duration: 0.3 }}
                     />
                   )}
@@ -404,8 +384,8 @@ export function Navbar() {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden lg:flex items-center gap-3">
-            <LanguageSwitcher compact />
+          <div className="hidden lg:flex items-center gap-4">
+            <LanguageSwitcher />
             <ThemeToggle />
             <PrivateAccessDropdown />
             <a
@@ -413,20 +393,17 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-semibold",
-                "bg-[var(--accent)] text-black",
-                "hover:opacity-90 transition-opacity duration-150",
-                "shadow-sm"
+                "flex items-center gap-2 px-4 py-1.5 border border-[var(--accent)] text-[var(--accent)] text-[0.7rem] uppercase tracking-wider rounded-lg font-medium transition-all duration-300 hover:bg-[var(--accent)] hover:text-black cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]"
               )}
             >
-              <Phone size={13} />
-              {dict.nav.ctaBtn}
+              <Phone size={11} />
+              <span>{dict.nav.ctaBtn}</span>
             </a>
           </div>
 
           {/* Mobile trigger */}
           <button
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-all"
+            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-all cursor-pointer"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
             aria-expanded={mobileOpen}

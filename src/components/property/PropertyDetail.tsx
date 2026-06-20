@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BedDouble, Bath, Square, Car, MapPin, User, MessageCircle, Mail, Calendar, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { BedDouble, Bath, Square, Car, MapPin, MessageCircle, Mail, Calendar, Sparkles } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { formatPrice, formatArea } from "@/lib/utils/format";
 import { LeadForm } from "@/components/forms/LeadForm";
@@ -27,7 +26,6 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
     };
 
   const formattedPrice = formatPrice(property.price, property.price_currency, locale);
-  const formattedAreaTotal = formatArea(property.area_total, locale);
   const formattedAreaBuilt = formatArea(property.area_built, locale);
 
   const getPropertyTypeLabel = (type: string) => {
@@ -66,10 +64,10 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
       {/* Grid Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Side (Content) */}
-        <div className="lg:col-span-8 flex flex-col gap-8">
+        {/* Left Side (65% width equivalent in 12-col grid = col-span-8) */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Header titles and Share */}
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[var(--border)]">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[rgba(255,255,255,0.08)]">
             <div className="flex flex-col gap-2">
               {/* Operation type & Tag */}
               <div className="flex items-center gap-2">
@@ -83,10 +81,10 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 </span>
               </div>
 
-              {/* Title */}
-              <h2 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-[var(--text)] leading-snug">
+              {/* Title (SEO h1) */}
+              <h1 className="text-2xl md:text-[2rem] font-light font-display tracking-tight text-[var(--text)] leading-snug" style={{ letterSpacing: "-0.03em" }}>
                 {trans.title}
-              </h2>
+              </h1>
 
               {/* Location pin */}
               <div className="flex items-center gap-1.5 text-xs text-[var(--text-2)] font-light">
@@ -101,77 +99,89 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Share and Action */}
             <div className="shrink-0 flex sm:flex-col items-start sm:items-end gap-2">
-              <span className="text-2xl md:text-3xl font-bold font-display text-[var(--gold)]">
+              <span className="text-2xl md:text-[1.8rem] font-semibold font-display text-[var(--accent)] tracking-tight">
                 {formattedPrice}
               </span>
               <PropertyShare slug={property.slug} title={trans.title} />
             </div>
           </div>
 
-          {/* Features Row Card */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 border border-[var(--border)] bg-[var(--surface-2)]/50 rounded-sm">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 border border-[var(--border)] rounded-full flex items-center justify-center text-[var(--text-muted)] shrink-0">
-                <BedDouble className="h-4.5 w-4.5" />
+          {/* Features Row Grid (2x2) */}
+          <div className="grid grid-cols-2 gap-6 p-6 border border-[rgba(255,255,255,0.08)] bg-[var(--surface-1)] rounded-xl">
+            {/* Rooms */}
+            <div className="flex items-center gap-4">
+              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+                <BedDouble className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-semibold font-display">
+              <div className="flex flex-col">
+                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
                   {locale === "es" ? "Habitaciones" : "Bedrooms"}
-                </p>
-                <p className="text-sm font-bold text-[var(--text)]">{property.bedrooms ?? "-"}</p>
+                </span>
+                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
+                  {property.bedrooms ?? "-"}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 border border-[var(--border)] rounded-full flex items-center justify-center text-[var(--text-muted)] shrink-0">
-                <Bath className="h-4.5 w-4.5" />
+            {/* Baths */}
+            <div className="flex items-center gap-4">
+              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+                <Bath className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-semibold font-display">
+              <div className="flex flex-col">
+                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
                   {locale === "es" ? "Baños" : "Bathrooms"}
-                </p>
-                <p className="text-sm font-bold text-[var(--text)]">{property.bathrooms ?? "-"}</p>
+                </span>
+                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
+                  {property.bathrooms ?? "-"}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 border border-[var(--border)] rounded-full flex items-center justify-center text-[var(--text-muted)] shrink-0">
-                <Square className="h-4.5 w-4.5" />
+            {/* Area */}
+            <div className="flex items-center gap-4">
+              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+                <Square className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-semibold font-display">
+              <div className="flex flex-col">
+                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
                   {locale === "es" ? "Área construida" : "Built area"}
-                </p>
-                <p className="text-sm font-bold text-[var(--text)]">{formattedAreaBuilt}</p>
+                </span>
+                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
+                  {formattedAreaBuilt}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 border border-[var(--border)] rounded-full flex items-center justify-center text-[var(--text-muted)] shrink-0">
-                <Car className="h-4.5 w-4.5" />
+            {/* Parking */}
+            <div className="flex items-center gap-4">
+              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+                <Car className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-semibold font-display">
+              <div className="flex flex-col">
+                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
                   {locale === "es" ? "Estacionamientos" : "Parking"}
-                </p>
-                <p className="text-sm font-bold text-[var(--text)]">{property.parking_spaces ?? "-"}</p>
+                </span>
+                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
+                  {property.parking_spaces ?? "-"}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Description */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 my-2">
             <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
               {dict.property?.detail?.descripcion || "Descripción"}
             </h3>
-            <p className="text-sm md:text-base text-[var(--text-2)] leading-relaxed font-light whitespace-pre-line">
+            <p className="text-sm md:text-base text-[var(--text-2)] leading-relaxed font-light whitespace-pre-line max-w-[60ch]">
               {trans.description || trans.short_description || (locale === "es" ? "Sin descripción disponible." : "No description available.")}
             </p>
           </div>
 
           {/* Technical features & details */}
           {property.features && property.features.length > 0 && (
-            <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-8">
+            <div className="flex flex-col gap-4 border-t border-[rgba(255,255,255,0.08)] pt-6">
               <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
                 {dict.property?.detail?.caracteristicas || "Detalles adicionales"}
               </h3>
@@ -188,12 +198,11 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           )}
 
           {/* Map Section */}
-          <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-8">
+          <div className="flex flex-col gap-4 border-t border-[rgba(255,255,255,0.08)] pt-6">
             <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
               {dict.property?.detail?.ubicacion || "Ubicación"}
             </h3>
-            <div className="h-[280px] w-full border border-[var(--border)] rounded-sm overflow-hidden bg-[var(--surface-2)] relative">
-              {/* Static simple visual coordinates preview layer */}
+            <div className="h-[280px] w-full border border-[rgba(255,255,255,0.08)] rounded-lg overflow-hidden bg-[var(--surface-2)] relative">
               <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,var(--border-strong)_1px,transparent_1px),linear-gradient(to_bottom,var(--border-strong)_1px,transparent_1px)] bg-[size:16px_16px]" />
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                 <MapPin className="h-8 w-8 text-[var(--accent)] mb-2" />
@@ -208,20 +217,20 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           </div>
         </div>
 
-        {/* Right Side (Sticky Agent panel) */}
-        <div className="lg:col-span-4 sticky top-24 flex flex-col gap-6">
-          {/* Agent info summary */}
-          <div className="p-6 border border-[var(--border)] bg-[var(--surface)] rounded-sm glass flex flex-col gap-4">
+        {/* Right Side (Sticky Agent panel, 35% width equivalent = col-span-4) */}
+        <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-6">
+          {/* Agent info summary card */}
+          <div className="p-6 border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] rounded-xl flex flex-col gap-6 shadow-xl">
             <div className="flex items-center gap-4">
               {/* Avatar placeholder */}
-              <div className="h-12 w-12 rounded-full border border-[var(--border-strong)] bg-zinc-800 flex items-center justify-center text-[var(--accent)] font-display font-bold shrink-0">
+              <div className="h-12 w-12 rounded-full border border-[rgba(255,255,255,0.08)] bg-[var(--surface-elevated)] flex items-center justify-center text-[var(--accent)] font-display font-semibold shrink-0">
                 {property.agent?.full_name ? property.agent.full_name[0] : "A"}
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)] font-semibold font-display">
+                <p className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
                   {locale === "es" ? "Asesor asignado" : "Assigned Advisor"}
                 </p>
-                <h4 className="text-base font-bold font-display tracking-tight text-[var(--text)] mt-0.5">
+                <h4 className="text-base font-semibold font-display tracking-tight text-[var(--text)] mt-0.5 leading-tight">
                   {property.agent?.full_name || "Asesor Inmobiliario Knordica"}
                 </h4>
               </div>
@@ -229,16 +238,16 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Quick Whatsapp direct connect CTA */}
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full">
-              <Button variant="primary" className="w-full bg-[#25D366] hover:bg-[#20ba59] border-0 text-white text-xs uppercase tracking-wider h-10 font-display">
-                <MessageCircle className="h-4 w-4 fill-current stroke-none" />
+              <button className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] transition-all text-white text-xs font-bold uppercase tracking-wider h-11 rounded-lg cursor-pointer shadow-md hover:shadow-[#25D366]/10">
+                <MessageCircle className="h-4 w-4 fill-current stroke-none animate-pulse" />
                 <span>{dict.property?.detail?.whatsapp || "Escribir por WhatsApp"}</span>
-              </Button>
+              </button>
             </a>
           </div>
 
           {/* Form switch tabs */}
           <div className="flex flex-col gap-4">
-            <div className="flex border-b border-[var(--border)]">
+            <div className="flex border-b border-[rgba(255,255,255,0.08)]">
               <button
                 onClick={() => setActiveTab("contact")}
                 className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider font-display border-b-2 transition-all cursor-pointer ${

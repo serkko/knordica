@@ -32,19 +32,19 @@ export function HeroSearch({ zones }: HeroSearchProps) {
   return (
     <form
       onSubmit={handleSearch}
-      className="w-full max-w-4xl glass rounded-sm p-2 flex flex-col md:flex-row gap-2 shadow-[var(--shadow-lg)]"
+      className="w-full max-w-4xl glass rounded-xl p-1.5 flex flex-col md:flex-row gap-2 shadow-2xl md:h-14 items-center"
     >
-      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 p-2">
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
         {/* Operación */}
-        <div className="flex flex-col justify-center px-3 border-b sm:border-b-0 sm:border-r border-[var(--border)] pb-2 sm:pb-0">
-          <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-1">
+        <div className="flex flex-col justify-center px-3 border-b sm:border-b-0 sm:border-r border-[rgba(255,255,255,0.08)] pb-2 sm:pb-0">
+          <label className="text-[9px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-0.5">
             {dict.hero?.operacion?.label || "Operación"}
           </label>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setOperation("venta")}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors cursor-pointer ${
                 operation === "venta"
                   ? "text-[var(--accent)] font-semibold"
                   : "text-[var(--text-2)] hover:text-[var(--text)]"
@@ -56,7 +56,7 @@ export function HeroSearch({ zones }: HeroSearchProps) {
             <button
               type="button"
               onClick={() => setOperation("alquiler")}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors cursor-pointer ${
                 operation === "alquiler"
                   ? "text-[var(--accent)] font-semibold"
                   : "text-[var(--text-2)] hover:text-[var(--text)]"
@@ -68,8 +68,8 @@ export function HeroSearch({ zones }: HeroSearchProps) {
         </div>
 
         {/* Tipo de Propiedad */}
-        <div className="flex flex-col justify-center px-3 border-b sm:border-b-0 sm:border-r border-[var(--border)] pb-2 sm:pb-0">
-          <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-1">
+        <div className="flex flex-col justify-center px-3 border-b sm:border-b-0 sm:border-r border-[rgba(255,255,255,0.08)] pb-2 sm:pb-0">
+          <label className="text-[9px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-0.5">
             {dict.hero?.tipo?.label || "Tipo"}
           </label>
           <select
@@ -104,7 +104,7 @@ export function HeroSearch({ zones }: HeroSearchProps) {
 
         {/* Zona */}
         <div className="flex flex-col justify-center px-3 pb-2 sm:pb-0">
-          <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-1">
+          <label className="text-[9px] uppercase tracking-wider font-semibold text-[var(--text-muted)] font-display mb-0.5">
             {dict.hero?.zona?.label || "Zona"}
           </label>
           <select
@@ -125,9 +125,9 @@ export function HeroSearch({ zones }: HeroSearchProps) {
         </div>
       </div>
 
-      <Button type="submit" variant="primary" className="h-12 md:h-auto w-full md:w-32 rounded-sm shrink-0">
+      <Button type="submit" variant="primary" className="h-11 md:h-11 w-full md:w-32 rounded-lg shrink-0 font-display text-xs uppercase tracking-wider flex items-center justify-center gap-2">
         <Search className="h-4 w-4" />
-        <span className="md:hidden lg:inline">{dict.hero?.searchBtn || "Buscar"}</span>
+        <span>{dict.hero?.searchBtn || "Buscar"}</span>
       </Button>
     </form>
   );

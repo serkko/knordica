@@ -34,33 +34,34 @@
 :root,
 [data-theme="dark"] {
   /* Backgrounds */
-  --bg:          #0C0C0D;
-  --bg-alt:      #111114;
-  --surface:     #17171B;
-  --surface-2:   #1E1E24;
-  --surface-hover: #222229;
+  --bg:          #0a0908;
+  --bg-alt:      #111010;
+  --surface:     #111010;
+  --surface-2:   #181614;
+  --surface-hover: #1f1d1b;
 
   /* Borders */
   --border:       rgba(255 255 255 / 0.06);
   --border-strong: rgba(255 255 255 / 0.12);
-  --border-accent: rgba(45 212 191 / 0.25);
+  --border-accent: rgba(201 169 110 / 0.25);
 
   /* Text */
-  --text:         #F0EDE8;
-  --text-2:       #A8A5A0;
-  --text-muted:   #5C5A57;
+  --text:         #f0ede8;
+  --text-2:       #8a8278;
+  --text-muted:   #4a4642;
 
-  /* Accent — Teal frío (accent principal) */
-  --accent:       #2DD4BF;
-  --accent-dim:   rgba(45 212 191 / 0.10);
-  --accent-glow:  rgba(45 212 191 / 0.20);
+  /* Accent — Gold arena (accent principal) */
+  --accent:       #c9a96e;
+  --accent-hover: #d4b87a;
+  --accent-dim:   rgba(201 169 110 / 0.15);
+  --accent-glow:  rgba(201 169 110 / 0.20);
 
   /* Accent secundario — Dorado apagado (precios, detalles clave) */
-  --gold:         #C9A96E;
+  --gold:         #c9a96e;
   --gold-dim:     rgba(201 169 110 / 0.12);
 
   /* Semantic */
-  --danger:       #EF4444;
+  --danger:       #c0392b;
   --success:      #10B981;
   --warning:      #F59E0B;
   --info:         #3B82F6;
@@ -69,39 +70,44 @@
   --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.4);
   --shadow-md:    0 4px 16px rgba(0 0 0 / 0.5);
   --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.6);
-  --shadow-accent: 0 0 24px rgba(45 212 191 / 0.15);
+  --shadow-accent: 0 0 24px rgba(201 169 110 / 0.15);
+
+  /* Background variables */
+  --noise-opacity: 0.025;
+  --grid-line:    rgba(255, 255, 255, 1);
 }
 
 /* ─── Light Mode tokens ────────────────────────────────────── */
 [data-theme="light"] {
   /* Backgrounds */
-  --bg:          #F5F2EE;
-  --bg-alt:      #EDEAE5;
-  --surface:     #FFFFFF;
-  --surface-2:   #F9F7F4;
-  --surface-hover: #F0EDE8;
+  --bg:          #f7f5f2;
+  --bg-alt:      #f0ede8;
+  --surface:     #ffffff;
+  --surface-2:   #f0ede8;
+  --surface-hover: #ffffff;
 
   /* Borders */
   --border:       rgba(0 0 0 / 0.07);
   --border-strong: rgba(0 0 0 / 0.13);
-  --border-accent: rgba(13 148 136 / 0.25);
+  --border-accent: rgba(138 104 48 / 0.25);
 
   /* Text */
-  --text:         #1C1B19;
-  --text-2:       #6B6865;
-  --text-muted:   #A8A5A1;
+  --text:         #1a1714;
+  --text-2:       #6b6560;
+  --text-muted:   #a8a5a1;
 
   /* Accent */
-  --accent:       #0D9488;
-  --accent-dim:   rgba(13 148 136 / 0.08);
-  --accent-glow:  rgba(13 148 136 / 0.15);
+  --accent:       #8a6830;
+  --accent-hover: #755628;
+  --accent-dim:   rgba(138 104 48 / 0.08);
+  --accent-glow:  rgba(138 104 48 / 0.15);
 
   /* Gold */
-  --gold:         #B8924A;
-  --gold-dim:     rgba(184 146 74 / 0.10);
+  --gold:         #8a6830;
+  --gold-dim:     rgba(138 104 48 / 0.10);
 
   /* Semantic (same) */
-  --danger:       #DC2626;
+  --danger:       #c0392b;
   --success:      #059669;
   --warning:      #D97706;
   --info:         #2563EB;
@@ -110,7 +116,11 @@
   --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.08);
   --shadow-md:    0 4px 16px rgba(0 0 0 / 0.10);
   --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.12);
-  --shadow-accent: 0 0 24px rgba(13 148 136 / 0.12);
+  --shadow-accent: 0 0 24px rgba(138 104 48 / 0.12);
+
+  /* Background variables */
+  --noise-opacity: 0.015;
+  --grid-line:    rgba(0, 0, 0, 1);
 }
 
 /* ─── Base Layer ───────────────────────────────────────────── */
@@ -128,10 +138,11 @@ html {
 
 body {
   background-color: var(--bg);
-  color: var(--text);
+  color: var(--text-2);
   font-family: "Satoshi", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -164,16 +175,33 @@ textarea,
 /* ─── Tipografía base ──────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-family: "Cabinet Grotesk", system-ui, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.02em;
   line-height: 1.1;
   color: var(--text);
 }
 
-h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
-h2 { font-size: clamp(1.875rem, 3.5vw, 2.75rem); }
-h3 { font-size: clamp(1.375rem, 2.5vw, 1.875rem); }
-h4 { font-size: clamp(1.125rem, 2vw, 1.375rem); }
+h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: clamp(1.875rem, 3.5vw, 2.75rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: clamp(1.375rem, 2.5vw, 1.875rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h4 {
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
 
 p {
   color: var(--text-2);
@@ -329,6 +357,21 @@ a {
 [data-theme="light"] .noise-overlay {
   opacity: 0.025;
   mix-blend-mode: multiply;
+}
+
+/* ─── Premium Typography Helpers ───────────────────────────── */
+.text-premium-label {
+  font-family: "Satoshi", system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.premium-price {
+  font-family: "Cabinet Grotesk", system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Reduced motion ───────────────────────────────────────── */

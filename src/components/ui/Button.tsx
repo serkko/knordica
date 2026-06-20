@@ -13,11 +13,11 @@ export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "onDrag" | 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-display font-medium tracking-wide rounded-sm cursor-pointer select-none transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 disabled:pointer-events-none disabled:opacity-50";
+      "inline-flex items-center justify-center font-display font-medium tracking-wide rounded-sm cursor-pointer select-none transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:pointer-events-none disabled:opacity-50";
 
     const variants = {
       primary:
-        "bg-[var(--accent)] text-[var(--bg)] shadow-[var(--shadow-sm)] hover:bg-[color-mix(in_srgb,var(--accent)_85%,#000)] dark:hover:bg-[color-mix(in_srgb,var(--accent)_85%,#fff)]",
+        "bg-[var(--accent)] text-[var(--bg)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)]",
       secondary:
         "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:border-[var(--border-strong)]",
       outline:
@@ -25,9 +25,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ghost:
         "bg-transparent text-[var(--text-2)] hover:bg-[var(--surface)] hover:text-[var(--text)]",
       gold:
-        "bg-[var(--gold)] text-[var(--bg)] shadow-[var(--shadow-sm)] hover:bg-[color-mix(in_srgb,var(--gold)_85%,#000)] dark:hover:bg-[color-mix(in_srgb,var(--gold)_85%,#fff)]",
+        "bg-[var(--gold)] text-[var(--bg)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)]",
       danger:
-        "bg-[var(--danger)] text-white shadow-[var(--shadow-sm)] hover:bg-red-600",
+        "bg-[var(--danger)] text-white shadow-[var(--shadow-sm)] hover:bg-[color-mix(in_srgb,var(--danger)_85%,#fff)] dark:hover:bg-[color-mix(in_srgb,var(--danger)_85%,#000)]",
     };
 
     const sizes = {

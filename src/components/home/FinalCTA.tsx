@@ -18,7 +18,7 @@ export function FinalCTA() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
-    <section className="section-y border-t border-[var(--border)] relative overflow-hidden bg-radial from-teal-950/10 dark:from-teal-950/20 via-transparent to-transparent">
+    <section className="section-y border-t border-[var(--border)] relative overflow-hidden bg-radial from-[var(--accent-dim)] via-transparent to-transparent">
       {/* Decorative gradient spot */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[var(--accent-glow)] filter blur-[120px] pointer-events-none select-none -z-10 opacity-60" />
 

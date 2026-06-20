@@ -317,7 +317,7 @@ export default function MortgageCalculator() {
                       dataKey="principalPaid"
                       stackId="2"
                       stroke="var(--accent)"
-                      fill="var(--accent-teal-dim)"
+                      fill="var(--accent-dim)"
                       name={locale === "es" ? "Capital Pagado" : "Principal Paid"}
                     />
                   </AreaChart>

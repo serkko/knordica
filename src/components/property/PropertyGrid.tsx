@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { PropertyCard } from "./PropertyCard";
+import { cn } from "@/lib/utils/cn";
 import type { PropertyCard as PropertyCardType } from "@/types/property";
 
 interface PropertyGridProps {
@@ -31,12 +32,17 @@ export function PropertyGrid({ properties }: PropertyGridProps) {
     <motion.div
       variants={containerVariants}
       initial="hidden"
-      animate="show"
+      whileInView="show"
+      viewport={{ once: true, margin: "-100px" }}
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 w-full"
     >
-      {properties.map((property) => (
-        <motion.div key={property.id} variants={itemVariants} className="h-full">
-          <PropertyCard property={property} />
+      {properties.map((property, index) => (
+        <motion.div
+          key={property.id}
+          variants={itemVariants}
+          className={cn("h-full", index === 0 && "lg:col-span-2")}
+        >
+          <PropertyCard property={property} isFeatured={index === 0} />
         </motion.div>
       ))}
     </motion.div>

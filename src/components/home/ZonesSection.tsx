@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import type { Zone, PropertyCard } from "@/types/property";
 
@@ -38,14 +37,14 @@ export function ZonesSection({ zones, properties }: ZonesSectionProps) {
   };
 
   return (
-    <section className="section-y border-t border-[var(--border)] bg-[var(--bg-alt)]/50">
+    <section className="section-y border-t border-[rgba(255,255,255,0.08)] bg-[#0a0908]">
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 md:mb-16">
           <span className="text-[10px] uppercase tracking-widest text-[var(--accent)] font-semibold font-display block mb-2">
             {dict.zones?.title || "Zonas de Mérida"}
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-[var(--text)]">
+          <h2 className="text-3xl md:text-4xl font-light font-display tracking-tight text-[var(--text)]">
             {dict.zones?.subtitle || "Conoce las principales urbanizaciones y sectores donde trabajamos"}
           </h2>
         </div>
@@ -66,37 +65,52 @@ export function ZonesSection({ zones, properties }: ZonesSectionProps) {
             return (
               <motion.div key={zone.id} variants={itemVariants} className="h-full">
                 <Link href={`/${locale}/propiedades?zona=${zone.slug}`} className="block h-full group">
-                  <Card className="h-full p-6 flex flex-col justify-between border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:shadow-[var(--shadow-md)] transition-all">
-                    <div>
-                      {/* Icon & Count */}
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="h-10 w-10 border border-[var(--border-strong)] rounded-full flex items-center justify-center text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
-                          <MapPin className="h-5 w-5" />
+                  <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-zinc-900 group cursor-pointer h-full min-h-[240px]">
+                    
+                    {/* Background Image / Placeholder */}
+                    {zone.cover_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={zone.cover_image_url}
+                        alt={name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-radial from-zinc-800 to-zinc-950 opacity-80" />
+                    )}
+
+                    {/* Dark overlay gradient that lightens on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0908]/90 via-[#0a0908]/40 to-black/30 group-hover:from-[#0a0908]/80 group-hover:via-[#0a0908]/30 group-hover:to-black/20 transition-all duration-500 z-10" />
+
+                    {/* Content */}
+                    <div className="absolute inset-0 p-6 z-20 flex flex-col justify-between">
+                      {/* Top section: pin and properties count */}
+                      <div className="flex justify-between items-start">
+                        <div className="h-8 w-8 border border-[rgba(255,255,255,0.15)] rounded-full flex items-center justify-center text-white/70 group-hover:text-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
+                          <MapPin className="h-4 w-4" />
                         </div>
-                        <span className="text-xs font-mono text-[var(--text-muted)]">
+                        <span className="text-[11px] font-mono text-white/50 bg-[#0a0908]/50 backdrop-blur-xs px-2 py-0.5 rounded-sm">
                           {count} {dict.zones?.propiedades || "propiedades"}
                         </span>
                       </div>
 
-                      {/* Name */}
-                      <h3 className="text-xl font-bold font-display tracking-tight mb-3 text-[var(--text)] group-hover:text-[var(--accent)] transition-colors">
-                        {name}
-                      </h3>
-
-                      {/* Description */}
-                      {description && (
-                        <p className="text-sm text-[var(--text-2)] leading-relaxed font-light mb-6">
-                          {description}
-                        </p>
-                      )}
+                      {/* Bottom section: details */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-[1.1rem] font-normal font-display text-white tracking-tight leading-tight group-hover:text-[var(--accent)] transition-colors">
+                          {name}
+                        </h3>
+                        {description && (
+                          <p className="text-[0.75rem] text-white/70 line-clamp-2 leading-relaxed font-light font-body">
+                            {description}
+                          </p>
+                        )}
+                        <div className="inline-flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-wider font-display text-white/50 group-hover:text-[var(--accent)] transition-colors mt-1">
+                          <span>{dict.zones?.explorar || "Explorar zona"}</span>
+                          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
                     </div>
-
-                    {/* CTA Link */}
-                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider font-display text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors mt-auto">
-                      <span>{dict.zones?.explorar || "Explorar zona"}</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </Card>
+                  </div>
                 </Link>
               </motion.div>
             );

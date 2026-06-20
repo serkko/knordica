@@ -1,19 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { BedDouble, Bath, Square, MapPin, ArrowUpRight, GitCompare } from "lucide-react";
+import { BedDouble, Bath, Square, MapPin, GitCompare } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { useComparatorStore } from "@/store/comparator.store";
 import type { PropertyCard as PropertyCardType } from "@/types/property";
+import { cn } from "@/lib/utils/cn";
 
 interface PropertyCardProps {
   property: PropertyCardType;
+  isFeatured?: boolean;
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, isFeatured = false }: PropertyCardProps) {
   const { locale, dict } = useLocale();
   const { addProperty, removeProperty, isCompared } = useComparatorStore();
   const compared = isCompared(property.id);
@@ -47,80 +47,215 @@ export function PropertyCard({ property }: PropertyCardProps) {
     return types[type] || type;
   };
 
-  return (
-    <motion.div
-      whileHover={{ y: -8 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="h-full"
-    >
-      <Link href={`/${locale}/propiedades/${property.slug}`} className="block h-full">
-        <Card className="h-full flex flex-col overflow-hidden group border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] transition-all">
-          {/* Card Image Wrapper */}
-          <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-            {/* Compare Button */}
-            <button
-              onClick={handleCompareClick}
-              className={`absolute top-4 right-4 z-10 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs ${
-                compared
-                  ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
-                  : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
-              }`}
-              title={compared ? "Quitar de comparar" : "Comparar propiedad"}
-            >
-              <GitCompare className="h-4 w-4" />
-            </button>
+  const badgeTextClass = "font-body font-medium uppercase text-[0.65rem] tracking-[0.1em]";
 
-            {/* Status Badges */}
-            <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1.5">
-              <Badge variant={property.operation === "venta" ? "gold" : "accent"}>
-                {property.operation === "venta"
-                  ? dict.property?.operation?.venta || "Venta"
-                  : dict.property?.operation?.alquiler || "Alquiler"}
-              </Badge>
-
-              {property.exclusive && (
-                <Badge variant="accent">
-                  {dict.property?.badge?.exclusiva || "Exclusiva"}
-                </Badge>
-              )}
-
-              {property.new_listing && (
-                <Badge variant="success">
-                  {dict.property?.badge?.nueva || "Nueva"}
-                </Badge>
-              )}
-            </div>
-
-            {/* Placeholder/Actual image */}
+  // --- FEATURED CARD DESIGN (index 0 / superimposed layout) ---
+  if (isFeatured) {
+    return (
+      <motion.div
+        whileHover={{ 
+          y: -6,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4)"
+        }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="h-full rounded-lg overflow-hidden"
+      >
+        <Link href={`/${locale}/propiedades/${property.slug}`} className="block h-full group">
+          <div className="relative aspect-[4/3] sm:aspect-[16/9] w-full h-full flex flex-col border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] transition-colors duration-200 rounded-lg overflow-hidden">
+            
+            {/* Cover Image */}
             {property.cover_image?.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={property.cover_image.url}
                 alt={property.title}
-                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-106"
               />
             ) : (
-              // Default Geometric Placeholder
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-radial from-zinc-800 to-zinc-950">
                 <span className="text-[10px] tracking-widest text-[var(--accent)] font-semibold uppercase font-display mb-1">
                   Knordica
                 </span>
-                <span className="text-[11px] font-mono text-[var(--text-muted)]">
-                  {getPropertyTypeLabel(property.property_type)}
-                </span>
-                <div className="absolute bottom-4 right-4 h-6 w-6 border border-[var(--border-strong)] rounded-full flex items-center justify-center text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
-                  <ArrowUpRight className="h-3 w-3" />
+              </div>
+            )}
+
+            {/* Gradient Overlay for text legibility */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0908]/95 via-[#0a0908]/50 to-transparent z-10" />
+
+            {/* Compare Button */}
+            <button
+              onClick={handleCompareClick}
+              className={cn(
+                "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
+                compared
+                  ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
+                  : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
+              )}
+              title={compared ? "Quitar de comparar" : "Comparar propiedad"}
+            >
+              <GitCompare className="h-4 w-4" />
+            </button>
+
+            {/* Badges container */}
+            <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-1.5 pointer-events-none">
+              {/* Badge Operacion */}
+              <div className={cn(
+                badgeTextClass,
+                "px-2 py-1 rounded-sm bg-[#0a0908]/75 backdrop-blur-[8px] text-[var(--accent)]"
+              )}>
+                {property.operation === "venta"
+                  ? dict.property?.operation?.venta || "Venta"
+                  : dict.property?.operation?.alquiler || "Alquiler"}
+              </div>
+
+              {/* Badge Exclusiva */}
+              {property.exclusive && (
+                <div className={cn(
+                  badgeTextClass,
+                  "px-2 py-1 rounded-sm bg-[var(--accent)] text-[#1a1714] font-semibold"
+                )}>
+                  {dict.property?.badge?.exclusiva || "Exclusiva"}
                 </div>
+              )}
+            </div>
+
+            {/* Superimposed Text content */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="max-w-xl">
+                {/* Title */}
+                <h4 className="font-display font-normal text-base sm:text-lg md:text-xl text-white tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200">
+                  {property.title}
+                </h4>
+
+                {/* Location Zone */}
+                <div className="flex items-center gap-1 text-[0.75rem] text-[#8a8278] font-body mt-2">
+                  <MapPin size={12} className="shrink-0" />
+                  <span>
+                    {property.zone
+                      ? locale === "es"
+                        ? property.zone.name_es
+                        : property.zone.name_en
+                      : "Mérida"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start sm:items-end gap-2.5 shrink-0">
+                {/* Price Overlay */}
+                <div className="px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
+                  {formattedPrice}
+                </div>
+
+                {/* Specs row */}
+                <div className="flex items-center gap-2.5 text-[0.8rem] font-body font-medium text-[#f0ede8]">
+                  <div className="flex items-center gap-1">
+                    <BedDouble size={14} className="text-[#8a8278]" />
+                    <span>{property.bedrooms ?? "-"}</span>
+                  </div>
+                  <span className="text-[#8a8278] text-[10px] select-none">·</span>
+                  <div className="flex items-center gap-1">
+                    <Bath size={14} className="text-[#8a8278]" />
+                    <span>{property.bathrooms ?? "-"}</span>
+                  </div>
+                  <span className="text-[#8a8278] text-[10px] select-none">·</span>
+                  <div className="flex items-center gap-1">
+                    <Square size={14} className="text-[#8a8278]" />
+                    <span>{property.area_total ?? property.area_built ?? "-"} m²</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </Link>
+      </motion.div>
+    );
+  }
+
+  // --- STANDARD CARD DESIGN ---
+  return (
+    <motion.div
+      whileHover={{ 
+        y: -6,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.4)"
+      }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="h-full rounded-lg overflow-hidden"
+    >
+      <Link href={`/${locale}/propiedades/${property.slug}`} className="block h-full group">
+        <div className="h-full flex flex-col border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] transition-colors duration-200 rounded-lg overflow-hidden">
+          {/* Image ratio 4:3 fixed */}
+          <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900 rounded-t-lg">
+            {/* Compare Button */}
+            <button
+              onClick={handleCompareClick}
+              className={cn(
+                "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
+                compared
+                  ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
+                  : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
+              )}
+              title={compared ? "Quitar de comparar" : "Comparar propiedad"}
+            >
+              <GitCompare className="h-4 w-4" />
+            </button>
+
+            {/* Badges container */}
+            <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-1.5 pointer-events-none">
+              {/* Badge Operacion */}
+              <div className={cn(
+                badgeTextClass,
+                "px-2 py-1 rounded-sm bg-[#0a0908]/75 backdrop-blur-[8px] text-[var(--accent)]"
+              )}>
+                {property.operation === "venta"
+                  ? dict.property?.operation?.venta || "Venta"
+                  : dict.property?.operation?.alquiler || "Alquiler"}
+              </div>
+
+              {/* Badge Exclusiva */}
+              {property.exclusive && (
+                <div className={cn(
+                  badgeTextClass,
+                  "px-2 py-1 rounded-sm bg-[var(--accent)] text-[#1a1714] font-semibold"
+                )}>
+                  {dict.property?.badge?.exclusiva || "Exclusiva"}
+                </div>
+              )}
+            </div>
+
+            {/* Price Badge absolute bottom left */}
+            <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
+              {formattedPrice}
+            </div>
+
+            {/* Cover Image */}
+            {property.cover_image?.url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={property.cover_image.url}
+                alt={property.title}
+                className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-106"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-radial from-zinc-800 to-zinc-950">
+                <span className="text-[10px] tracking-widest text-[var(--accent)] font-semibold uppercase font-display mb-1">
+                  Knordica
+                </span>
               </div>
             )}
           </div>
 
           {/* Card Body */}
-          <div className="flex-1 p-5 flex flex-col justify-between">
+          <div className="flex-1 p-5 flex flex-col justify-between gap-4">
             <div>
-              {/* Zone and Location */}
-              <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] font-medium mb-2.5">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
+              {/* Title Cabinet Grotesk 400, 0.95rem, color text */}
+              <h4 className="font-display font-normal text-[0.95rem] text-[var(--text)] tracking-tight leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200">
+                {property.title}
+              </h4>
+
+              {/* Zone / Location Satoshi 400, 0.75rem, text-muted */}
+              <div className="flex items-center gap-1 text-[0.75rem] text-[var(--text-muted)] font-body mt-2">
+                <MapPin size={12} className="shrink-0" />
                 <span>
                   {property.zone
                     ? locale === "es"
@@ -129,59 +264,27 @@ export function PropertyCard({ property }: PropertyCardProps) {
                     : "Mérida"}
                 </span>
               </div>
-
-              {/* Title */}
-              <h4 className="text-base font-bold text-[var(--text)] tracking-tight leading-snug mb-2 font-display group-hover:text-[var(--accent)] transition-colors line-clamp-1">
-                {property.title}
-              </h4>
-
-              {/* Description */}
-              {property.short_description && (
-                <p className="text-xs text-[var(--text-2)] line-clamp-2 mb-4 leading-relaxed font-light">
-                  {property.short_description}
-                </p>
-              )}
             </div>
 
-            <div>
-              {/* Features Row */}
-              <div className="grid grid-cols-3 gap-2 py-3 border-y border-[var(--border)] mb-4 text-[var(--text-2)] text-xs">
-                <div className="flex items-center gap-1.5 justify-center">
-                  <BedDouble className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  <span>
-                    {property.bedrooms ?? "-"} {dict.property?.features?.habitaciones || "hab"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 justify-center">
-                  <Bath className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  <span>
-                    {property.bathrooms ?? "-"} {dict.property?.features?.banos || "baños"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 justify-center">
-                  <Square className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  <span>
-                    {property.area_total ?? property.area_built ?? "-"}{" "}
-                    {dict.property?.features?.area || "m²"}
-                  </span>
-                </div>
+            {/* Specs row separated by point · */}
+            <div className="flex items-center gap-2.5 text-[0.8rem] font-body font-medium text-[var(--text-2)] border-t border-[var(--border)] pt-3.5">
+              <div className="flex items-center gap-1">
+                <BedDouble size={14} className="text-[var(--text-muted)]" />
+                <span>{property.bedrooms ?? "-"}</span>
               </div>
-
-              {/* Price & Details Link */}
-              <div className="flex items-center justify-between mt-2 pt-1">
-                <span className="text-lg font-bold font-display text-[var(--gold)]">
-                  {formattedPrice}
-                </span>
-                <div
-                  className="text-xs font-semibold uppercase tracking-wider font-display text-[var(--text-2)] group-hover:text-[var(--accent)] transition-colors flex items-center gap-1"
-                >
-                  <span>{dict.common?.verMas || "Ver más"}</span>
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </div>
+              <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
+              <div className="flex items-center gap-1">
+                <Bath size={14} className="text-[var(--text-muted)]" />
+                <span>{property.bathrooms ?? "-"}</span>
+              </div>
+              <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
+              <div className="flex items-center gap-1">
+                <Square size={14} className="text-[var(--text-muted)]" />
+                <span>{property.area_total ?? property.area_built ?? "-"} m²</span>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </Link>
     </motion.div>
   );

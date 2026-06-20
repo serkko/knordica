@@ -52,14 +52,14 @@ export function WhyKnordica() {
   ];
 
   return (
-    <section className="section-y border-t border-[var(--border)] overflow-hidden">
+    <section className="section-y border-t border-[rgba(255,255,255,0.08)] bg-[#0a0908] overflow-hidden">
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-16 md:mb-24">
           <span className="text-[10px] uppercase tracking-widest text-[var(--accent)] font-semibold font-display block mb-2">
             {dict.why?.title || "Por qué elegir Knordica"}
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold font-display tracking-tight text-[var(--text)]">
+          <h2 className="text-3xl md:text-4xl font-light font-display tracking-tight text-[var(--text)]">
             {dict.why?.subtitle || "Propiedades que verificamos. Criterio técnico. Conocimiento directo del mercado merideño."}
           </h2>
         </div>
@@ -78,13 +78,13 @@ export function WhyKnordica() {
               variants={itemVariants}
               className="flex flex-col relative"
             >
-              {/* Giant number */}
-              <span className="text-5xl md:text-6xl font-display font-black text-[var(--border-strong)] select-none leading-none mb-4 block">
+              {/* Giant number counter */}
+              <span className="font-display font-light text-[var(--accent)] select-none leading-none mb-4 block" style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}>
                 {item.numero}
               </span>
 
-              {/* Title */}
-              <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)] mb-3">
+              {/* Title label */}
+              <h3 className="text-[0.7rem] uppercase tracking-wider font-semibold font-body text-[var(--text-muted)] mb-3">
                 {item.titulo}
               </h3>
 
@@ -95,7 +95,7 @@ export function WhyKnordica() {
 
               {/* Divider lines between items in desktop */}
               {index < 3 && (
-                <div className="hidden lg:block absolute top-0 -right-4 h-full w-[1px] bg-linear-to-b from-[var(--border)] via-[var(--border-strong)]/30 to-transparent" />
+                <div className="hidden lg:block absolute top-0 -right-4 h-full w-[1px] bg-[rgba(255,255,255,0.08)]" />
               )}
             </motion.div>
           ))}

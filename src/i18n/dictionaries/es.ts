@@ -279,8 +279,8 @@ const es = {
     },
     whatsapp: "WhatsApp",
     copyright: "© 2025 Knordica. Todos los derechos reservados.",
-    atribucion: "Diseñado y desarrollado por",
-    xelta: "Xelta Studios",
+    atribucion: "Sitio forjado por",
+    xelta: "XELTA Studios",
   },
   common: {
     verMas: "Ver más",

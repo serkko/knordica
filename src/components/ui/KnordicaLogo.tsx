@@ -115,11 +115,10 @@ export function KnordicaLogo({
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display font-bold tracking-tight"
+          className="font-display font-semibold uppercase tracking-widest"
           style={{
-            fontSize: size * 0.65,
+            fontSize: size * 0.5,
             color,
-            letterSpacing: "-0.03em",
           }}
         >
           Knordica
