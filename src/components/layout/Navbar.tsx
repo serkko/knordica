@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -145,12 +146,19 @@ function MobileDrawer({
             className={cn(
               "fixed right-0 top-0 bottom-0 z-50 w-72",
               "flex flex-col",
-              "bg-[#0a0908] border-l border-[rgba(255,255,255,0.08)]"
+              "bg-[var(--color-surface)] border-l border-[var(--color-border)]"
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[rgba(255,255,255,0.08)]">
-              <KnordicaLogo size={24} withText animate={false} />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-border)]">
+              <Image
+                src="/logo.webp"
+                alt="Knordica"
+                width={140}
+                height={48}
+                priority
+                className="h-10 w-auto object-contain"
+              />
               <button
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
@@ -183,7 +191,7 @@ function MobileDrawer({
               ))}
 
               {/* Private portals links in mobile menu */}
-              <div className="border-t border-[rgba(255,255,255,0.08)] my-3 pt-3 opacity-60" />
+              <div className="border-t border-[var(--color-divider)] my-3 pt-3 opacity-60" />
 
               <motion.div
                 initial={{ opacity: 0, x: 16 }}
@@ -221,16 +229,24 @@ function MobileDrawer({
             </nav>
 
             {/* Footer */}
-            <div className="px-6 py-5 border-t border-[rgba(255,255,255,0.08)] space-y-4">
+            <div className="px-6 py-5 border-t border-[var(--color-divider)] space-y-4">
               <a
                 href={`https://wa.me/5804122423334`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 rounded-lg",
-                  "bg-[var(--accent)] text-black font-semibold text-sm",
-                  "hover:opacity-90 transition-opacity cursor-pointer"
+                  "flex items-center justify-center gap-2 w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 cursor-pointer border-0"
                 )}
+                style={{
+                  backgroundColor: "var(--color-gold)",
+                  color: "var(--color-text-inverse)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-gold-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-gold)";
+                }}
               >
                 <Phone size={15} />
                 {dict.nav.ctaBtn}
@@ -332,21 +348,29 @@ export function Navbar() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
           "fixed top-0 left-0 right-0 z-30 h-16 flex items-center transition-all duration-400",
-          scrolled
-            ? "bg-[#0a0908]/85 backdrop-blur-[20px] border-b border-[rgba(255,255,255,0.07)] shadow-md"
-            : "bg-transparent border-b border-transparent"
+          scrolled ? "shadow-md" : ""
         )}
+        style={scrolled ? {
+          backgroundColor: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid var(--color-divider)"
+        } : {
+          backgroundColor: "transparent",
+          borderBottom: "1px solid transparent"
+        }}
         role="banner"
       >
         <div className="container-knordica flex items-center justify-between gap-6">
           {/* Logo */}
           <Link href={`/${locale}`} aria-label="Knordica — inicio" className="inline-block">
             <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
-              <KnordicaLogo
-                size={28}
-                withText
-                animate={true}
-                color="var(--text)"
+              <Image
+                src="/logo.webp"
+                alt="Knordica"
+                width={140}
+                height={48}
+                priority
+                className="h-10 w-auto object-contain"
               />
             </motion.div>
           </Link>
@@ -366,15 +390,15 @@ export function Navbar() {
                     "relative px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-widest rounded-sm",
                     "transition-colors duration-150",
                     isActive
-                      ? "text-[var(--accent)]"
-                      : "text-[var(--text-2)] hover:text-[var(--text)]"
+                      ? "text-[var(--color-text)]"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
                   )}
                 >
                   {link.label}
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[var(--accent)]"
+                      className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-[3px] h-[3px] rounded-full bg-[var(--color-primary)]"
                       transition={{ duration: 0.3 }}
                     />
                   )}
@@ -393,8 +417,18 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "flex items-center gap-2 px-4 py-1.5 border border-[var(--accent)] text-[var(--accent)] text-[0.7rem] uppercase tracking-wider rounded-lg font-medium transition-all duration-300 hover:bg-[var(--accent)] hover:text-black cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]"
+                "flex items-center gap-2 px-4 py-1.5 text-[0.7rem] uppercase tracking-wider rounded-lg font-medium transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md border-0"
               )}
+              style={{
+                backgroundColor: "var(--color-gold)",
+                color: "var(--color-text-inverse)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-gold-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--color-gold)";
+              }}
             >
               <Phone size={11} />
               <span>{dict.nav.ctaBtn}</span>

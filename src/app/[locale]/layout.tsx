@@ -48,6 +48,10 @@ export async function generateMetadata({
       locale: isEs ? "es_VE" : "en_US",
       alternateLocale: isEs ? "en_US" : "es_VE",
     },
+    icons: {
+      icon: '/logo.webp',
+      apple: '/logo.webp',
+    },
   };
 }
 
@@ -86,7 +90,12 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head />
+      <head>
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=satoshi@400,500,700,800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         {/* Prevent flash of wrong theme */}
         <Script id="theme-script" strategy="beforeInteractive">

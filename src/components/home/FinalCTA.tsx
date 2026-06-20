@@ -34,13 +34,13 @@ export function FinalCTA() {
             {dict.contact?.title || "Hablemos"}
           </span>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight text-[var(--text)] mb-6 max-w-2xl mx-auto leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-display tracking-tight text-[var(--color-text)] mb-6 max-w-2xl mx-auto leading-tight">
             {locale === "es"
               ? "¿Listo para encontrar tu propiedad ideal?"
               : "Ready to find your ideal property?"}
           </h2>
 
-          <p className="text-sm sm:text-base text-[var(--text-2)] max-w-xl mx-auto mb-10 font-light leading-relaxed">
+          <p className="text-sm sm:text-base text-[var(--color-text-muted)] max-w-xl mx-auto mb-10 font-light leading-relaxed">
             {dict.contact?.subtitle ||
               "Cuéntanos qué estás buscando. Nuestro equipo estará en contacto contigo en menos de 24 horas."}
           </p>
@@ -48,7 +48,21 @@ export function FinalCTA() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             {/* WhatsApp CTA */}
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-              <Button variant="primary" className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20ba59] border-0 text-white font-display uppercase tracking-wider text-xs h-12 px-8">
+              <Button 
+                variant="primary" 
+                className="w-full sm:w-auto border-0 font-display uppercase tracking-wider text-xs h-12 px-8 transition-colors duration-300"
+                style={{
+                  backgroundColor: "var(--color-gold)",
+                  color: "var(--color-text-inverse)",
+                  backgroundImage: "none"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-gold-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-gold)";
+                }}
+              >
                 <MessageCircle className="h-4.5 w-4.5 fill-current stroke-none" />
                 <span>{dict.contact?.whatsapp || "Escribir por WhatsApp"}</span>
               </Button>
@@ -56,7 +70,21 @@ export function FinalCTA() {
 
             {/* Email Contact Page */}
             <Link href={`/${locale}/contacto`} className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto font-display uppercase tracking-wider text-xs h-12 px-8">
+              <Button 
+                variant="outline" 
+                className="w-full sm:w-auto font-display uppercase tracking-wider text-xs h-12 px-8 transition-colors duration-300"
+                style={{
+                  border: "1px solid var(--color-primary)",
+                  color: "var(--color-primary)",
+                  backgroundColor: "transparent"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--color-primary-highlight)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
                 <Mail className="h-4 w-4" />
                 <span>{locale === "es" ? "Formulario de contacto" : "Contact form"}</span>
               </Button>

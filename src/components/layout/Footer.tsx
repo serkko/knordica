@@ -10,11 +10,13 @@ import {
   Linkedin,
   Facebook,
 } from "lucide-react";
-import { KnordicaLogo } from "@/components/ui/KnordicaLogo";
+import Image from "next/image";
 import { useLocale } from "@/components/layout/LocaleProvider";
+import { useTheme } from "@/components/layout/ThemeProvider";
 
 export function Footer() {
   const { dict, locale } = useLocale();
+  const { theme } = useTheme();
   const year = new Date().getFullYear();
 
   const navLinks = [
@@ -28,25 +30,34 @@ export function Footer() {
 
   return (
     <footer
-      className="relative border-t border-[rgba(255,255,255,0.06)] bg-[#050505] pt-20 pb-12 overflow-hidden text-[#8a8278] z-10"
+      className="relative border-t border-[var(--color-divider)] pt-20 pb-12 overflow-hidden text-[var(--color-text-muted)] z-10"
+      style={{
+        backgroundColor: theme === "light" ? "var(--color-surface-offset)" : "var(--color-bg)"
+      }}
       aria-label="Pie de página"
     >
       {/* Top accent bar */}
-      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30" />
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--color-divider)] to-transparent opacity-30" />
 
       {/* Decorative Background Lighting/Glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] dark:opacity-[0.06]">
-        <div className="absolute -bottom-36 -left-36 w-80 h-80 rounded-full bg-[var(--accent)] blur-[100px]" />
+        <div className="absolute -bottom-36 -left-36 w-80 h-80 rounded-full bg-[var(--color-primary)] blur-[100px]" />
         {/* Subtle grid pattern layer */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:32px_32px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-divider)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-divider)_1px,transparent_1px)] bg-[size:32px_32px] opacity-15" />
       </div>
 
       <div className="container-knordica relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
           {/* Column 1: Brand & Description */}
           <div className="flex flex-col items-start gap-5">
-            <KnordicaLogo size={28} withText animate={false} />
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed max-w-xs">
+            <Image
+              src="/logo.webp"
+              alt="Knordica"
+              width={120}
+              height={40}
+              className="h-8 w-auto object-contain"
+            />
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed max-w-xs">
               {dict.footer.description || "Knordica · Propiedades seleccionadas en Mérida, Venezuela. Acompañamos cada cierre con rigor, claridad y conocimiento del territorio."}
             </p>
             {/* Social channels */}
@@ -55,7 +66,7 @@ export function Footer() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.08)] bg-white/5 flex items-center justify-center text-white/70 hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Instagram size={14} />
               </a>
@@ -63,7 +74,7 @@ export function Footer() {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.08)] bg-white/5 flex items-center justify-center text-white/70 hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Linkedin size={14} />
               </a>
@@ -71,7 +82,7 @@ export function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.08)] bg-white/5 flex items-center justify-center text-white/70 hover:bg-[var(--accent)] hover:text-black hover:border-[var(--accent)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Facebook size={14} />
               </a>
@@ -80,27 +91,27 @@ export function Footer() {
 
           {/* Column 2: Properties Link mapping */}
           <div className="flex flex-col items-start gap-5">
-            <h4 className="font-bold text-[var(--text)] uppercase text-xs tracking-wider border-l-2 border-[var(--accent)] pl-3">
+            <h4 className="font-bold text-[var(--color-text)] uppercase text-xs tracking-wider border-l-2 border-[var(--color-primary)] pl-3">
               {locale === "es" ? "Catálogo" : "Catalog"}
             </h4>
             <ul className="space-y-3 text-xs flex flex-col items-start">
               <li>
-                <Link href={`/${locale}/propiedades?operacion=venta`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/propiedades?operacion=venta`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {locale === "es" ? "Propiedades en Venta" : "Properties for Sale"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/propiedades?operacion=alquiler`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/propiedades?operacion=alquiler`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {locale === "es" ? "Propiedades en Alquiler" : "Properties for Rent"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/propiedades`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/propiedades`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {locale === "es" ? "Listado Completo" : "All Listings"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/mapa`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/mapa`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {dict.footer.nav.mapa || "Buscar por mapa"}
                 </Link>
               </li>
@@ -109,34 +120,34 @@ export function Footer() {
 
           {/* Column 3: Company Sitemap */}
           <div className="flex flex-col items-start gap-5">
-            <h4 className="font-bold text-[var(--text)] uppercase text-xs tracking-wider border-l-2 border-[var(--accent)] pl-3">
+            <h4 className="font-bold text-[var(--color-text)] uppercase text-xs tracking-wider border-l-2 border-[var(--color-primary)] pl-3">
               {locale === "es" ? "Empresa" : "Company"}
             </h4>
             <ul className="space-y-3 text-xs flex flex-col items-start">
               {navLinks.slice(4).map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="hover:text-[var(--accent)] transition-colors">
+                  <Link href={link.href} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                     {link.label}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link href={`/${locale}/herramientas`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/herramientas`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {dict.footer.nav.herramientas || "Herramientas"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/blog`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/blog`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {dict.footer.nav.blog || "Blog"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/privacidad`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/privacidad`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {dict.footer.legal.privacidad || "Privacidad"}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/terminos`} className="hover:text-[var(--accent)] transition-colors">
+                <Link href={`/${locale}/terminos`} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   {dict.footer.legal.terminos || "Términos"}
                 </Link>
               </li>
@@ -145,36 +156,39 @@ export function Footer() {
 
           {/* Column 4: Contact & Office */}
           <div className="flex flex-col items-start gap-5">
-            <h4 className="font-bold text-[var(--text)] uppercase text-xs tracking-wider border-l-2 border-[var(--accent)] pl-3">
+            <h4 className="font-bold text-[var(--color-text)] uppercase text-xs tracking-wider border-l-2 border-[var(--color-primary)] pl-3">
               {locale === "es" ? "Oficina" : "Office"}
             </h4>
             <ul className="space-y-3.5 text-xs flex flex-col items-start">
               <li className="flex gap-2.5 items-start">
-                <MapPin size={14} className="text-[var(--accent)] shrink-0 mt-0.5" />
-                <span>{dict.contact.oficina} — Mérida, Venezuela</span>
+                <MapPin size={14} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
+                <span className="text-[var(--color-text-muted)]">{dict.contact.oficina} — Mérida, Venezuela</span>
               </li>
               <li className="flex gap-2.5 items-center">
-                <Phone size={14} className="text-[var(--accent)] shrink-0" />
-                <a href="tel:+584122423334" className="hover:text-[var(--accent)] transition-colors">
+                <Phone size={14} className="text-[var(--color-primary)] shrink-0" />
+                <a href="tel:+584122423334" className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   +58 412 242 3334
                 </a>
               </li>
               <li className="flex gap-2.5 items-center">
-                <Mail size={14} className="text-[var(--accent)] shrink-0" />
-                <a href="mailto:contacto@knordica.com" className="hover:text-[var(--accent)] transition-colors">
+                <Mail size={14} className="text-[var(--color-primary)] shrink-0" />
+                <a href="mailto:contacto@knordica.com" className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                   contacto@knordica.com
                 </a>
               </li>
               <li className="flex gap-2.5 items-start">
-                <Clock size={14} className="text-[var(--accent)] shrink-0 mt-0.5" />
-                <span>{dict.contact.horario}</span>
+                <Clock size={14} className="text-[var(--color-primary)] shrink-0 mt-0.5" />
+                <span className="text-[var(--color-text-muted)]">{dict.contact.horario}</span>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Footer Bottom (Copyright and Xelta Signature block sharing same integrated bg layout) */}
-        <div className="border-t border-[rgba(255,255,255,0.06)] pt-8 relative z-[2000]">
+        <div 
+          className="pt-8 relative z-[2000]"
+          style={{ borderTop: "1px solid var(--color-divider)" }}
+        >
           <style dangerouslySetInnerHTML={{ __html: `
             .xelta-footer-row {
               display: flex;
@@ -182,7 +196,7 @@ export function Footer() {
               align-items: center;
               justify-content: center;
               font-size: 13px;
-              color: #757575;
+              color: var(--color-text-faint);
               margin: 0;
               width: 100%;
               gap: 0.5rem;
@@ -191,7 +205,7 @@ export function Footer() {
 
             .xelta-footer-row strong {
               font-weight: 600;
-              color: #a1a1aa; /* adapted to stand out elegantly in client dark theme */
+              color: var(--color-text);
             }
 
             .xelta-footer-sep {

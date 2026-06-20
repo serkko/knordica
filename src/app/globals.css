@@ -31,34 +31,81 @@
 }
 
 /* ─── Design Tokens — Dark Mode (default) ─────────────────── */
+:root {
+  --color-bg:               #F4F2EE;
+  --color-surface:          #F8F6F2;
+  --color-surface-2:        #FDFCFA;
+  --color-surface-offset:   #EAE7E1;
+  --color-surface-offset-2: #E0DDD6;
+  --color-surface-dynamic:  #D5D1C8;
+  --color-divider:          #CCC8BF;
+  --color-border:           #BEB9AF;
+
+  --color-text:             #111010;
+  --color-text-muted:       #6E6B66;
+  --color-text-faint:       #B0ACA6;
+  --color-text-inverse:     #F4F2EE;
+
+  --color-primary:          #8A7D6E;
+  --color-primary-hover:    #6E6358;
+  --color-primary-active:   #524A42;
+  --color-primary-highlight:#EDE9E3;
+
+  --color-gold:             #A8864A;
+  --color-gold-hover:       #8A6A32;
+  --color-gold-active:      #6E5020;
+  --color-gold-highlight:   #F0E8D8;
+
+  /* Sombras cálidas tono mármol */
+  --shadow-sm: 0 1px 2px oklch(0.15 0.01 60 / 0.08);
+  --shadow-md: 0 4px 12px oklch(0.15 0.01 60 / 0.10);
+  --shadow-lg: 0 12px 32px oklch(0.15 0.01 60 / 0.14);
+}
+
 :root,
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg:          #0a0908;
-  --bg-alt:      #111010;
-  --surface:     #111010;
-  --surface-2:   #181614;
-  --surface-hover: #1f1d1b;
+  /* Phase 2 Color System Definition */
+  --color-bg:               #141210;
+  --color-surface:          #1A1815;
+  --color-surface-2:        #1F1D1A;
+  --color-surface-offset:   #1C1A17;
+  --color-surface-offset-2: #232019;
+  --color-surface-dynamic:  #2C2924;
+  --color-divider:          #282420;
+  --color-border:           #353028;
+  --color-text:             #E8E4DE;
+  --color-text-muted:       #9A9590;
+  --color-text-faint:       #5C5854;
+  --color-text-inverse:     #141210;
+  --color-primary:          #C4B49A;
+  --color-primary-hover:    #D4C8B0;
+  --color-primary-active:   #E0D8C8;
+  --color-primary-highlight:#2A2620;
+  --color-gold:             #C9962A;
+  --color-gold-hover:       #D4A840;
+  --color-gold-active:      #DFC060;
+  --color-gold-highlight:   #2E2518;
 
-  /* Borders */
-  --border:       rgba(255 255 255 / 0.06);
-  --border-strong: rgba(255 255 255 / 0.12);
-  --border-accent: rgba(201 169 110 / 0.25);
+  /* Aliasing Old Layout Variables to New Premium Palette */
+  --bg:                     var(--color-bg);
+  --bg-alt:                 var(--color-surface-offset);
+  --surface:                var(--color-surface);
+  --surface-2:              var(--color-surface-2);
+  --surface-hover:          var(--color-surface-dynamic);
+  --border:                 var(--color-border);
+  --border-strong:          var(--color-divider);
+  --border-accent:          var(--color-gold);
 
-  /* Text */
-  --text:         #f0ede8;
-  --text-2:       #8a8278;
-  --text-muted:   #4a4642;
+  --text:                   var(--color-text);
+  --text-2:                 #D0C9C0; /* warm high contrast champagne text for highly legible body copy */
+  --text-muted:             #9C968E; /* clearly visible secondary text */
 
-  /* Accent — Gold arena (accent principal) */
-  --accent:       #c9a96e;
-  --accent-hover: #d4b87a;
-  --accent-dim:   rgba(201 169 110 / 0.15);
-  --accent-glow:  rgba(201 169 110 / 0.20);
-
-  /* Accent secundario — Dorado apagado (precios, detalles clave) */
-  --gold:         #c9a96e;
-  --gold-dim:     rgba(201 169 110 / 0.12);
+  --accent:                 var(--color-gold);
+  --accent-hover:           var(--color-gold-hover);
+  --accent-dim:             var(--color-gold-highlight);
+  --accent-glow:            rgba(201 169 110 / 0.20);
+  --gold:                   var(--color-gold);
+  --gold-dim:               var(--color-gold-highlight);
 
   /* Semantic */
   --danger:       #c0392b;
@@ -67,9 +114,9 @@
   --info:         #3B82F6;
 
   /* Shadows */
-  --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.4);
-  --shadow-md:    0 4px 16px rgba(0 0 0 / 0.5);
-  --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.6);
+  --shadow-sm: 0 1px 2px oklch(0.05 0.01 60 / 0.30);
+  --shadow-md: 0 4px 12px oklch(0.05 0.01 60 / 0.40);
+  --shadow-lg: 0 12px 32px oklch(0.05 0.01 60 / 0.50);
   --shadow-accent: 0 0 24px rgba(201 169 110 / 0.15);
 
   /* Background variables */
@@ -79,32 +126,48 @@
 
 /* ─── Light Mode tokens ────────────────────────────────────── */
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg:          #f7f5f2;
-  --bg-alt:      #f0ede8;
-  --surface:     #ffffff;
-  --surface-2:   #f0ede8;
-  --surface-hover: #ffffff;
+  /* Phase 2 Color System Definition */
+  --color-bg:               #F4F2EE;
+  --color-surface:          #F8F6F2;
+  --color-surface-2:        #FDFCFA;
+  --color-surface-offset:   #EAE7E1;
+  --color-surface-offset-2: #E0DDD6;
+  --color-surface-dynamic:  #D5D1C8;
+  --color-divider:          #CCC8BF;
+  --color-border:           #BEB9AF;
+  --color-text:             #111010;
+  --color-text-muted:       #6E6B66;
+  --color-text-faint:       #B0ACA6;
+  --color-text-inverse:     #F4F2EE;
+  --color-primary:          #8A7D6E;
+  --color-primary-hover:    #6E6358;
+  --color-primary-active:   #524A42;
+  --color-primary-highlight:#EDE9E3;
+  --color-gold:             #A8864A;
+  --color-gold-hover:       #8A6A32;
+  --color-gold-active:      #6E5020;
+  --color-gold-highlight:   #F0E8D8;
 
-  /* Borders */
-  --border:       rgba(0 0 0 / 0.07);
-  --border-strong: rgba(0 0 0 / 0.13);
-  --border-accent: rgba(138 104 48 / 0.25);
+  /* Aliasing Old Layout Variables to New Premium Palette */
+  --bg:                     var(--color-bg);
+  --bg-alt:                 var(--color-surface-offset);
+  --surface:                var(--color-surface);
+  --surface-2:              var(--color-surface-2);
+  --surface-hover:          var(--color-surface-dynamic);
+  --border:                 var(--color-border);
+  --border-strong:          var(--color-divider);
+  --border-accent:          var(--color-gold);
 
-  /* Text */
-  --text:         #1a1714;
-  --text-2:       #6b6560;
-  --text-muted:   #a8a5a1;
+  --text:                   var(--color-text);
+  --text-2:                 #3E3A35; /* high contrast rich dark charcoal-brown for body copy */
+  --text-muted:             #6E6962; /* clearly visible secondary text */
 
-  /* Accent */
-  --accent:       #8a6830;
-  --accent-hover: #755628;
-  --accent-dim:   rgba(138 104 48 / 0.08);
-  --accent-glow:  rgba(138 104 48 / 0.15);
-
-  /* Gold */
-  --gold:         #8a6830;
-  --gold-dim:     rgba(138 104 48 / 0.10);
+  --accent:                 var(--color-gold);
+  --accent-hover:           var(--color-gold-hover);
+  --accent-dim:             var(--color-gold-highlight);
+  --accent-glow:            rgba(138 104 48 / 0.15);
+  --gold:                   var(--color-gold);
+  --gold-dim:               var(--color-gold-highlight);
 
   /* Semantic (same) */
   --danger:       #c0392b;
@@ -113,9 +176,9 @@
   --info:         #2563EB;
 
   /* Shadows */
-  --shadow-sm:    0 1px 3px rgba(0 0 0 / 0.08);
-  --shadow-md:    0 4px 16px rgba(0 0 0 / 0.10);
-  --shadow-lg:    0 12px 40px rgba(0 0 0 / 0.12);
+  --shadow-sm: 0 1px 2px oklch(0.15 0.01 60 / 0.08);
+  --shadow-md: 0 4px 12px oklch(0.15 0.01 60 / 0.10);
+  --shadow-lg: 0 12px 32px oklch(0.15 0.01 60 / 0.14);
   --shadow-accent: 0 0 24px rgba(138 104 48 / 0.12);
 
   /* Background variables */

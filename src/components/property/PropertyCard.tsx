@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BedDouble, Bath, Square, MapPin, GitCompare } from "lucide-react";
 import { motion } from "framer-motion";
@@ -17,6 +18,13 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
   const { locale, dict } = useLocale();
   const { addProperty, removeProperty, isCompared } = useComparatorStore();
   const compared = isCompared(property.id);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isComparedActive = isMounted ? compared : false;
 
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -87,11 +95,11 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
               onClick={handleCompareClick}
               className={cn(
                 "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
-                compared
+                isComparedActive
                   ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
                   : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
               )}
-              title={compared ? "Quitar de comparar" : "Comparar propiedad"}
+              title={isComparedActive ? "Quitar de comparar" : "Comparar propiedad"}
             >
               <GitCompare className="h-4 w-4" />
             </button>
@@ -115,6 +123,34 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
                   "px-2 py-1 rounded-sm bg-[var(--accent)] text-[#1a1714] font-semibold"
                 )}>
                   {dict.property?.badge?.exclusiva || "Exclusiva"}
+                </div>
+              )}
+
+              {/* Badge Destacada */}
+              {property.featured && (
+                <div 
+                  className={cn(badgeTextClass, "px-2 py-1 rounded-sm")}
+                  style={{
+                    backgroundColor: "var(--color-gold-highlight)",
+                    color: "var(--color-gold)",
+                    border: "none"
+                  }}
+                >
+                  {dict.property?.badge?.destacada || "Destacada"}
+                </div>
+              )}
+
+              {/* Badge Disponible */}
+              {property.status === "activa" && (
+                <div 
+                  className={cn(badgeTextClass, "px-2 py-1 rounded-sm")}
+                  style={{
+                    backgroundColor: "var(--color-primary-highlight)",
+                    color: "var(--color-primary)",
+                    border: "none"
+                  }}
+                >
+                  {dict.property?.status?.activa || "Disponible"}
                 </div>
               )}
             </div>
@@ -191,11 +227,11 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
               onClick={handleCompareClick}
               className={cn(
                 "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
-                compared
+                isComparedActive
                   ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
                   : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
               )}
-              title={compared ? "Quitar de comparar" : "Comparar propiedad"}
+              title={isComparedActive ? "Quitar de comparar" : "Comparar propiedad"}
             >
               <GitCompare className="h-4 w-4" />
             </button>
@@ -219,6 +255,34 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
                   "px-2 py-1 rounded-sm bg-[var(--accent)] text-[#1a1714] font-semibold"
                 )}>
                   {dict.property?.badge?.exclusiva || "Exclusiva"}
+                </div>
+              )}
+
+              {/* Badge Destacada */}
+              {property.featured && (
+                <div 
+                  className={cn(badgeTextClass, "px-2 py-1 rounded-sm")}
+                  style={{
+                    backgroundColor: "var(--color-gold-highlight)",
+                    color: "var(--color-gold)",
+                    border: "none"
+                  }}
+                >
+                  {dict.property?.badge?.destacada || "Destacada"}
+                </div>
+              )}
+
+              {/* Badge Disponible */}
+              {property.status === "activa" && (
+                <div 
+                  className={cn(badgeTextClass, "px-2 py-1 rounded-sm")}
+                  style={{
+                    backgroundColor: "var(--color-primary-highlight)",
+                    color: "var(--color-primary)",
+                    border: "none"
+                  }}
+                >
+                  {dict.property?.status?.activa || "Disponible"}
                 </div>
               )}
             </div>

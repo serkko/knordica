@@ -84,19 +84,29 @@ export function Hero({ zones, stats }: HeroProps) {
           className="w-full max-w-4xl text-center flex flex-col items-center"
         >
           {/* Tag Label with Lines */}
-          <motion.div variants={badgeVariants} className="mb-6 flex items-center gap-3 select-none">
-            <div className="h-[1px] w-10 bg-[rgba(255,255,255,0.15)]" />
-            <span className="text-[0.7rem] uppercase tracking-[0.15em] text-[var(--accent)] font-medium font-body">
+          <motion.div variants={badgeVariants} className="mb-6 select-none">
+            <span 
+              className="inline-block text-[0.7rem] uppercase tracking-[0.15em] font-medium font-body px-4 py-1.5"
+              style={{
+                backgroundColor: "transparent",
+                border: "1px solid var(--color-primary)",
+                color: "var(--color-primary)",
+                borderRadius: "9999px",
+              }}
+            >
               MÉRIDA · VENEZUELA
             </span>
-            <div className="h-[1px] w-10 bg-[rgba(255,255,255,0.15)]" />
           </motion.div>
 
           {/* Title */}
           <motion.h1
             variants={wordContainerVariants}
             className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight mb-6 font-display max-w-4xl leading-[1.05] flex flex-wrap justify-center gap-x-[0.25em]"
-            style={{ fontSize: "clamp(2.8rem, 6vw, 5rem)", letterSpacing: "-0.04em" }}
+            style={{ 
+              fontSize: "clamp(2.8rem, 6vw, 5rem)", 
+              letterSpacing: "-0.04em",
+              color: "var(--color-text)" 
+            }}
           >
             {titleText.split(" ").map((word, i) => (
               <span key={i} className="inline-block overflow-hidden py-1">
@@ -113,7 +123,8 @@ export function Hero({ zones, stats }: HeroProps) {
           {/* Subtitle */}
           <motion.p
             variants={subtitleVariants}
-            className="text-base sm:text-lg md:text-xl text-[var(--text-2)] max-w-2xl mb-12 font-body font-light leading-relaxed"
+            className="text-base sm:text-lg md:text-xl max-w-2xl mb-12 font-body font-light leading-relaxed"
+            style={{ color: "var(--color-text-muted)" }}
           >
             {dict.hero?.subtitle ||
               "Acompañamos cada operación con criterio, claridad y conocimiento real del territorio."}
@@ -127,7 +138,7 @@ export function Hero({ zones, stats }: HeroProps) {
           {/* Micro Stats Banner */}
           <motion.div
             variants={statsVariants}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12 w-full max-w-3xl border-t border-[rgba(255,255,255,0.08)] pt-8"
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12 w-full max-w-3xl border-t border-[var(--color-divider)] pt-8"
           >
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
               <span className="text-3xl md:text-4xl font-display font-bold text-[var(--text)]">
@@ -173,7 +184,7 @@ export function Hero({ zones, stats }: HeroProps) {
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          className="w-[18px] h-[30px] rounded-full border border-[rgba(255,255,255,0.15)] flex justify-center p-1"
+          className="w-[18px] h-[30px] rounded-full border border-[var(--color-border)] flex justify-center p-1"
         >
           <div className="w-[3px] h-[6px] rounded-full bg-[var(--accent)]" />
         </motion.div>

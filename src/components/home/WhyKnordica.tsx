@@ -52,7 +52,7 @@ export function WhyKnordica() {
   ];
 
   return (
-    <section className="section-y border-t border-[rgba(255,255,255,0.08)] bg-[#0a0908] overflow-hidden">
+    <section className="section-y border-t border-[var(--color-divider)] bg-[var(--color-bg)] overflow-hidden">
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-16 md:mb-24">
@@ -79,23 +79,31 @@ export function WhyKnordica() {
               className="flex flex-col relative"
             >
               {/* Giant number counter */}
-              <span className="font-display font-light text-[var(--accent)] select-none leading-none mb-4 block" style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}>
+              <span className="font-display font-light select-none leading-none mb-4 block" style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", color: "var(--color-gold)" }}>
                 {item.numero}
               </span>
 
               {/* Title label */}
-              <h3 className="text-[0.7rem] uppercase tracking-wider font-semibold font-body text-[var(--text-muted)] mb-3">
+              <h3 
+                className="text-[0.7rem] uppercase tracking-wider font-semibold font-body text-[var(--text-muted)] mb-3"
+                style={{
+                  color: "var(--color-text)"
+                }}
+              >
                 {item.titulo}
               </h3>
 
               {/* Description */}
-              <p className="text-sm text-[var(--text-2)] leading-relaxed font-light">
+              <p className="text-sm text-[var(--color-text-muted)] leading-relaxed font-light">
                 {item.descripcion}
               </p>
 
               {/* Divider lines between items in desktop */}
               {index < 3 && (
-                <div className="hidden lg:block absolute top-0 -right-4 h-full w-[1px] bg-[rgba(255,255,255,0.08)]" />
+                <div 
+                  className="hidden lg:block absolute top-0 -right-4 h-full w-[1px]" 
+                  style={{ backgroundColor: "var(--color-divider)" }}
+                />
               )}
             </motion.div>
           ))}
