@@ -64,13 +64,34 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
             price_reduced,
             price,
             price_currency,
+            price_negotiable,
             area_total,
             area_built,
+            area_hectares,
             bedrooms,
             bathrooms,
+            half_bathrooms,
             parking_spaces,
+            parking_covered,
             lat,
             lng,
+            municipio,
+            show_exact_location,
+            has_water_tank,
+            has_generator,
+            has_ac,
+            has_internet,
+            has_security_24h,
+            furnished,
+            condition,
+            floor_number,
+            amenities,
+            listing_badge,
+            completeness_score,
+            video_url,
+            price_per_night,
+            min_nights,
+            max_guests,
             zone:zones(*),
             translations:property_translations(locale, title, short_description),
             images:property_images(id, url, alt_es, alt_en, is_cover, sort_order)
@@ -103,6 +124,30 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
       }
       if (filters.nuevas) {
         query = query.eq("new_listing", true);
+      }
+      if (filters.municipio) {
+        query = query.eq("municipio", filters.municipio);
+      }
+      if (filters.furnished) {
+        query = query.eq("furnished", filters.furnished);
+      }
+      if (filters.has_ac) {
+        query = query.eq("has_ac", true);
+      }
+      if (filters.has_generator) {
+        query = query.eq("has_generator", true);
+      }
+      if (filters.allows_pets) {
+        query = query.eq("allows_pets", true);
+      }
+      if (filters.has_pool) {
+        query = query.contains("amenities", ["piscina"]);
+      }
+      if (filters.min_area) {
+        query = query.gte("area_built", filters.min_area);
+      }
+      if (filters.max_area) {
+        query = query.lte("area_built", filters.max_area);
       }
 
       // Sorting
@@ -162,6 +207,14 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
             lng: item.lng ? Number(item.lng) : null,
             title: trans.title,
             short_description: trans.short_description,
+            
+            // New schema_v2 fields
+            listing_badge: item.listing_badge,
+            has_generator: item.has_generator,
+            has_water_tank: item.has_water_tank,
+            has_ac: item.has_ac,
+            furnished: item.furnished,
+            municipio: item.municipio,
           };
         });
 
@@ -258,6 +311,7 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
             agent:agents(*),
             images:property_images(*),
             features:property_features(*),
+            videos:property_videos(*),
             translations:property_translations(*)
           `)
           .eq("slug", slug)
@@ -316,5 +370,5 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
       { id: "f1", property_id: foundMock.id, category: "general", key: "clima", value_es: "Clima de montaña", value_en: "Mountain weather", icon: "cloud" },
       { id: "f2", property_id: foundMock.id, category: "seguridad", key: "vigilancia", value_es: "Vigilancia privada", value_en: "Private security", icon: "shield" }
     ]
-  };
+  } as any as Property;
 }

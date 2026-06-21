@@ -42,6 +42,14 @@ export function useFavorites() {
               bedrooms,
               bathrooms,
               parking_spaces,
+              listing_badge,
+              has_generator,
+              has_water_tank,
+              has_ac,
+              furnished,
+              municipio,
+              price_per_night,
+              min_nights,
               zone:zones(*),
               translations:property_translations(locale, title, short_description)
             )
@@ -85,6 +93,14 @@ export function useFavorites() {
                 cover_image: null, // images populated during mapping
                 title: trans.title,
                 short_description: trans.short_description,
+                
+                // New schema_v2 fields
+                listing_badge: p.listing_badge,
+                has_generator: p.has_generator,
+                has_water_tank: p.has_water_tank,
+                has_ac: p.has_ac,
+                furnished: p.furnished,
+                municipio: p.municipio,
               } as PropertyCard;
             })
             .filter((p): p is PropertyCard => p !== null);
