@@ -1,85 +1,104 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useFiltersStore } from "@/store/filters.store";
 import type { PropertyFilters, PropertyOperation, PropertyType } from "@/types/property";
 
 export function useFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { filters, setFilters, updateFilter, resetFilters } = useFiltersStore();
-  const isInitialSync = useRef(true);
 
-  // Sync URL search parameters to Zustand store on mount/URL change
-  useEffect(() => {
-    if (!isInitialSync.current) return;
+  // Compute filters synchronously from URL search parameters on every render
+  const filters: PropertyFilters = {};
 
-    const params: PropertyFilters = {};
+  const op = searchParams.get("operacion");
+  if (op === "venta" || op === "alquiler") {
+    filters.operacion = op as PropertyOperation;
+  }
 
-    const op = searchParams.get("operacion");
-    if (op === "venta" || op === "alquiler") {
-      params.operacion = op as PropertyOperation;
+  const tipo = searchParams.get("tipo");
+  if (tipo) filters.tipo = tipo as PropertyType;
+
+  const zona = searchParams.get("zona");
+  if (zona) filters.zona = zona;
+
+  const pMin = searchParams.get("precio_min");
+  if (pMin) filters.precio_min = parseInt(pMin, 10);
+
+  const pMax = searchParams.get("precio_max");
+  if (pMax) filters.precio_max = parseInt(pMax, 10);
+
+  const hab = searchParams.get("habitaciones");
+  if (hab) filters.habitaciones = parseInt(hab, 10);
+
+  const ban = searchParams.get("banos");
+  if (ban) filters.banos = parseInt(ban, 10);
+
+  const pool = searchParams.get("has_pool");
+  if (pool === "true") filters.has_pool = true;
+
+  const ac = searchParams.get("has_ac");
+  if (ac === "true") filters.has_ac = true;
+
+  const gen = searchParams.get("has_generator");
+  if (gen === "true") filters.has_generator = true;
+
+  const sec = searchParams.get("has_security");
+  if (sec === "true") filters.has_security = true;
+
+  const elev = searchParams.get("has_elevator");
+  if (elev === "true") filters.has_elevator = true;
+
+  const pets = searchParams.get("allows_pets");
+  if (pets === "true") filters.allows_pets = true;
+
+  const furn = searchParams.get("furnished");
+  if (furn === "true") filters.furnished = true;
+
+  const dest = searchParams.get("destacadas");
+  if (dest === "true") filters.destacadas = true;
+
+  const nue = searchParams.get("nuevas");
+  if (nue === "true") filters.nuevas = true;
+
+  const minArea = searchParams.get("min_area");
+  if (minArea) filters.min_area = parseInt(minArea, 10);
+
+  const maxArea = searchParams.get("max_area");
+  if (maxArea) filters.max_area = parseInt(maxArea, 10);
+
+  const mun = searchParams.get("municipio");
+  if (mun) filters.municipio = mun;
+
+  const sort = searchParams.get("sort");
+  if (sort) filters.sort = sort as any;
+
+  const page = searchParams.get("page");
+  if (page) filters.page = parseInt(page, 10);
+
+  // Update a single filter by replacing the query parameters in the URL
+  const updateFilter = <K extends keyof PropertyFilters>(key: K, value: PropertyFilters[K]) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (value === undefined || value === null || value === "") {
+      params.delete(key);
+    } else {
+      params.set(key, value.toString());
     }
 
-    const tipo = searchParams.get("tipo");
-    if (tipo) params.tipo = tipo as PropertyType;
-
-    const zona = searchParams.get("zona");
-    if (zona) params.zona = zona;
-
-    const pMin = searchParams.get("precio_min");
-    if (pMin) params.precio_min = parseInt(pMin, 10);
-
-    const pMax = searchParams.get("precio_max");
-    if (pMax) params.precio_max = parseInt(pMax, 10);
-
-    const hab = searchParams.get("habitaciones");
-    if (hab) params.habitaciones = parseInt(hab, 10);
-
-    const ban = searchParams.get("banos");
-    if (ban) params.banos = parseInt(ban, 10);
-
-    const aMin = searchParams.get("area_min");
-    if (aMin) params.area_min = parseInt(aMin, 10);
-
-    const aMax = searchParams.get("area_max");
-    if (aMax) params.area_max = parseInt(aMax, 10);
-
-    const sort = searchParams.get("sort");
-    if (sort) params.sort = sort as any;
-
-    const page = searchParams.get("page");
-    if (page) params.page = parseInt(page, 10);
-
-    if (Object.keys(params).length > 0) {
-      setFilters(params);
+    // Reset page to 1 when any filter other than page changes
+    if (key !== "page") {
+      params.delete("page");
     }
-    isInitialSync.current = false;
-  }, [searchParams, setFilters]);
-
-  // Sync Zustand store changes to URL search parameters
-  useEffect(() => {
-    if (isInitialSync.current) return;
-
-    const params = new URLSearchParams();
-
-    if (filters.operacion) params.set("operacion", filters.operacion);
-    if (filters.tipo) params.set("tipo", filters.tipo);
-    if (filters.zona) params.set("zona", filters.zona);
-    if (filters.precio_min) params.set("precio_min", filters.precio_min.toString());
-    if (filters.precio_max) params.set("precio_max", filters.precio_max.toString());
-    if (filters.habitaciones) params.set("habitaciones", filters.habitaciones.toString());
-    if (filters.banos) params.set("banos", filters.banos.toString());
-    if (filters.area_min) params.set("area_min", filters.area_min.toString());
-    if (filters.area_max) params.set("area_max", filters.area_max.toString());
-    if (filters.sort && filters.sort !== "recientes") params.set("sort", filters.sort);
-    if (filters.page && filters.page > 1) params.set("page", filters.page.toString());
 
     const query = params.toString();
     router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
-  }, [filters, pathname, router]);
+  };
+
+  // Reset all filters by replacing the URL with the clean pathname
+  const resetFilters = () => {
+    router.replace(pathname, { scroll: false });
+  };
 
   return { filters, updateFilter, resetFilters };
 }

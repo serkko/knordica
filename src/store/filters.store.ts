@@ -13,7 +13,7 @@ interface FiltersState {
 }
 
 const initialFilters: PropertyFilters = {
-  operacion: "venta",
+  operacion: undefined,
   tipo: undefined,
   zona: undefined,
   precio_min: undefined,
@@ -33,8 +33,8 @@ export const useFiltersStore = create<FiltersState>((set) => ({
   filters: initialFilters,
   view: "grid",
   setFilters: (newFilters) =>
-    set((state) => ({
-      filters: { ...state.filters, ...newFilters },
+    set(() => ({
+      filters: { ...initialFilters, ...newFilters },
     })),
   updateFilter: (key, value) =>
     set((state) => ({

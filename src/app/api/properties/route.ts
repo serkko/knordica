@@ -19,6 +19,18 @@ export async function GET(request: Request) {
       sort: (searchParams.get("sort") as any) || undefined,
       page: searchParams.get("page") ? parseInt(searchParams.get("page")!, 10) : 1,
       per_page: searchParams.get("per_page") ? parseInt(searchParams.get("per_page")!, 10) : 12,
+      has_pool: searchParams.get("has_pool") === "true" ? true : undefined,
+      has_ac: searchParams.get("has_ac") === "true" ? true : undefined,
+      has_generator: searchParams.get("has_generator") === "true" ? true : undefined,
+      has_security: searchParams.get("has_security") === "true" ? true : undefined,
+      has_elevator: searchParams.get("has_elevator") === "true" ? true : undefined,
+      allows_pets: searchParams.get("allows_pets") === "true" ? true : undefined,
+      furnished: searchParams.get("furnished") === "true" ? true : undefined,
+      destacadas: searchParams.get("destacadas") === "true" ? true : undefined,
+      nuevas: searchParams.get("nuevas") === "true" ? true : undefined,
+      min_area: searchParams.get("min_area") ? parseInt(searchParams.get("min_area")!, 10) : undefined,
+      max_area: searchParams.get("max_area") ? parseInt(searchParams.get("max_area")!, 10) : undefined,
+      municipio: searchParams.get("municipio") || undefined,
     };
 
     const result = await getProperties(filters);

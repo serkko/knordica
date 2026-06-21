@@ -32,8 +32,7 @@ export function PropertyGrid({ properties }: PropertyGridProps) {
     <motion.div
       variants={containerVariants}
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-100px" }}
+      animate="show"
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 w-full"
     >
       {properties.map((property, index) => (
