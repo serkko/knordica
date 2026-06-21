@@ -145,7 +145,7 @@ export interface Property {
   status: 'activa' | 'reservada' | 'vendida' | 'alquilada' | 'inactiva' | 'cerrada';
   operation: 'venta' | 'alquiler' | 'vacacional';
   property_type: 'casa' | 'apartamento' | 'local' | 'terreno' | 'finca' | 'oficina' | 'proyecto' | 'townhouse' | 'penthouse' | 'terreno_lote' | 'edificio' | 'galpon' | 'habitacion' | 'hacienda_finca' | 'anexo';
-  
+
   // Badges de identidad
   featured: boolean;
   exclusive: boolean;
@@ -154,21 +154,21 @@ export interface Property {
   price_negotiable: boolean;
   listing_badge: string | null;   // texto libre premium: "OPORTUNIDAD", "ÚLTIMA UNIDAD", etc.
   completeness_score: number;     // 0–100
-  
+
   // Precio
   price: number;
   price_currency: string;
   price_per_m2?: number | null;
   maintenance_fee?: number | null;
   maintenance_fee_currency?: string | null;
-  
+
   // Dimensiones
   area_built: number | null;       // m²
   area_total: number | null;       // m² terreno total
   area_hectares: number | null;    // para fincas
   floors: number | null;           // pisos totales del inmueble
   floor_number: number | null;     // piso en que está (apartamentos)
-  
+
   // Habitáculos
   bedrooms: number | null;
   bathrooms: number | null;
@@ -176,11 +176,11 @@ export interface Property {
   parking_spaces: number | null;
   service_rooms?: number | null;
   storage_rooms?: number | null;
-  
+
   // Año y estado de construcción
   year_built: number | null;
   construction_status?: 'terminado' | 'en_planos' | 'en_construccion' | 'entrega_inmediata' | null;
-  
+
   // Amenidades booleanas (las 20)
   has_pool: boolean;
   has_garden: boolean;
@@ -202,7 +202,7 @@ export interface Property {
   has_terrace?: boolean;
   has_balcony?: boolean;
   has_solar_panels?: boolean;
-  
+
   // Ubicación
   address_es: string | null;
   address_en: string | null;
@@ -210,13 +210,13 @@ export interface Property {
   lat: number | null;
   lng: number | null;
   zone?: Zone | null;
-  
+
   // Media
   images: PropertyImage[];
   videos: PropertyVideo[];
   virtual_tour_url?: string | null;
   video_url?: string | null;        // YouTube/Vimeo embed
-  
+
   // Agente
   agent_id: string | null;
   agent: {
@@ -231,11 +231,11 @@ export interface Property {
     bio_en: string | null;
     languages?: string[] | null;     // ["Español", "Inglés"]
   } | null;
-  
+
   // Contenido
   translations: PropertyTranslation[];
   features: PropertyFeature[];     // pares key/value adicionales
-  
+
   // SEO / metadata
   created_at: string;
   updated_at: string;
@@ -265,14 +265,27 @@ export interface PropertyCard {
   lng?: number | null;
   title: string;
   short_description: string | null;
-  
+
   // New schema_v2 optional fields
-  listing_badge?: ListingBadge;
+  listing_badge?: string | null;
   has_generator?: boolean;
   has_water_tank?: boolean;
   has_ac?: boolean;
-  furnished?: FurnishedStatus;
-  municipio?: Municipio | null;
+  furnished?: boolean;
+  municipio?: string | null;
+
+  // --- NUEVOS a añadir ---
+  price_per_m2?: number | null;
+  price_negotiable?: boolean;
+  half_bathrooms?: number | null;
+  year_built?: number | null;
+  construction_status?: 'terminado' | 'en_planos' | 'en_construccion' | 'entrega_inmediata' | null;
+  has_pool?: boolean;
+  has_security?: boolean;
+  has_elevator?: boolean;
+  allows_pets?: boolean;
+  has_balcony?: boolean;
+  has_terrace?: boolean;
 }
 
 export interface PropertyFilters {

@@ -87,6 +87,8 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
             floor_number,
             amenities,
             listing_badge,
+            has_elevator,
+            allows_pets,
             completeness_score,
             video_url,
             price_per_night,
@@ -213,8 +215,20 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
             has_generator: item.has_generator,
             has_water_tank: item.has_water_tank,
             has_ac: item.has_ac,
-            furnished: item.furnished,
+            furnished: item.furnished === "completo" || item.furnished === "parcial" || item.furnished === "totalmente" || item.furnished === true,
             municipio: item.municipio,
+
+            // New property-card fields
+            price_negotiable: item.price_negotiable,
+            price_per_m2: item.area_built ? Math.round(Number(item.price) / item.area_built) : null,
+            half_bathrooms: item.half_bathrooms,
+            construction_status: null,
+            has_pool: Array.isArray(item.amenities) ? item.amenities.includes("piscina") : false,
+            has_security: item.has_security_24h || (Array.isArray(item.amenities) ? item.amenities.includes("seguridad") : false),
+            has_elevator: item.has_elevator,
+            allows_pets: item.allows_pets,
+            has_balcony: Array.isArray(item.amenities) ? item.amenities.includes("balcon") : false,
+            has_terrace: Array.isArray(item.amenities) ? item.amenities.includes("terraza") : false,
           };
         });
 

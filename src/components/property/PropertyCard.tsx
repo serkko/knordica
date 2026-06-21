@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BedDouble, Bath, Square, MapPin, GitCompare } from "lucide-react";
+import { 
+  BedDouble, Bath, Square, MapPin, GitCompare, 
+  Car, Waves, Zap, Shield, Wind, PawPrint, Sofa, ArrowUpDown 
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { useComparatorStore } from "@/store/comparator.store";
@@ -145,7 +148,9 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
               )}>
                 {property.operation === "venta"
                   ? dict.property?.operation?.venta || "Venta"
-                  : dict.property?.operation?.alquiler || "Alquiler"}
+                  : property.operation === "alquiler"
+                  ? dict.property?.operation?.alquiler || "Alquiler"
+                  : locale === "es" ? "Vacacional" : "Vacation"}
               </div>
 
               {/* Badge Exclusiva */}
@@ -185,6 +190,44 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
                   {dict.property?.status?.activa || "Disponible"}
                 </div>
               )}
+
+              {/* Badge Nuevo Ingreso */}
+              {property.new_listing && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-emerald-600/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Nuevo' : 'New'}
+                </div>
+              )}
+
+              {/* Badge Precio Reducido */}
+              {property.price_reduced && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-rose-700/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Precio ↓' : 'Price ↓'}
+                </div>
+              )}
+
+              {/* Badge listing_badge texto libre */}
+              {property.listing_badge && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-[var(--accent)]/90 text-black backdrop-blur-[8px]")}>
+                  {property.listing_badge}
+                </div>
+              )}
+
+              {/* Badge reservada/vendida/alquilada */}
+              {property.status === 'reservada' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-amber-700/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Reservada' : 'Reserved'}
+                </div>
+              )}
+              {property.status === 'vendida' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-red-900/90 text-white/80 backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Vendida' : 'Sold'}
+                </div>
+              )}
+              {property.status === 'alquilada' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-blue-800/90 text-white/80 backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Alquilada' : 'Rented'}
+                </div>
+              )}
             </div>
 
             {/* Superimposed Text content */}
@@ -210,8 +253,21 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
 
               <div className="flex flex-col items-start sm:items-end gap-2.5 shrink-0">
                 {/* Price Overlay */}
-                <div className="px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
-                  {formattedPrice}
+                <div className="flex flex-col items-start sm:items-end">
+                  <div className="px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
+                    {formattedPrice}
+                    {property.price_negotiable && (
+                      <span className="ml-1.5 text-[0.55rem] font-mono text-[var(--accent)] uppercase tracking-wider align-middle">
+                        {locale === 'es' ? 'negociable' : 'negotiable'}
+                      </span>
+                    )}
+                  </div>
+                  {/* Precio/m² — solo si existe */}
+                  {property.price_per_m2 && (
+                    <div className="text-[0.6rem] font-mono text-white/50 leading-none mt-0.5">
+                      ${property.price_per_m2.toLocaleString()}/m²
+                    </div>
+                  )}
                 </div>
 
                 {/* Specs row */}
@@ -287,7 +343,9 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
               )}>
                 {property.operation === "venta"
                   ? dict.property?.operation?.venta || "Venta"
-                  : dict.property?.operation?.alquiler || "Alquiler"}
+                  : property.operation === "alquiler"
+                  ? dict.property?.operation?.alquiler || "Alquiler"
+                  : locale === "es" ? "Vacacional" : "Vacation"}
               </div>
 
               {/* Badge Exclusiva */}
@@ -327,11 +385,61 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
                   {dict.property?.status?.activa || "Disponible"}
                 </div>
               )}
+
+              {/* Badge Nuevo Ingreso */}
+              {property.new_listing && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-emerald-600/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Nuevo' : 'New'}
+                </div>
+              )}
+
+              {/* Badge Precio Reducido */}
+              {property.price_reduced && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-rose-700/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Precio ↓' : 'Price ↓'}
+                </div>
+              )}
+
+              {/* Badge listing_badge texto libre */}
+              {property.listing_badge && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-[var(--accent)]/90 text-black backdrop-blur-[8px]")}>
+                  {property.listing_badge}
+                </div>
+              )}
+
+              {/* Badge reservada/vendida/alquilada */}
+              {property.status === 'reservada' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-amber-700/90 text-white backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Reservada' : 'Reserved'}
+                </div>
+              )}
+              {property.status === 'vendida' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-red-900/90 text-white/80 backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Vendida' : 'Sold'}
+                </div>
+              )}
+              {property.status === 'alquilada' && (
+                <div className={cn(badgeTextClass, "px-2 py-1 rounded-sm bg-blue-800/90 text-white/80 backdrop-blur-[8px]")}>
+                  {locale === 'es' ? 'Alquilada' : 'Rented'}
+                </div>
+              )}
             </div>
 
-            {/* Price Badge absolute bottom left */}
-            <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
-              {formattedPrice}
+            {/* Price Badge absolute bottom left flex layout */}
+            <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-0.5">
+              <div className="px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
+                {formattedPrice}
+                {property.price_negotiable && (
+                  <span className="ml-1.5 text-[0.55rem] font-mono text-[var(--accent)] uppercase tracking-wider align-middle">
+                    {locale === 'es' ? 'negociable' : 'negotiable'}
+                  </span>
+                )}
+              </div>
+              {property.price_per_m2 && (
+                <div className="text-[0.6rem] font-mono text-white/45 leading-none px-1">
+                  ${property.price_per_m2.toLocaleString()}/m²
+                </div>
+              )}
             </div>
 
             {/* 3D Glass shimmer overlay */}
@@ -367,6 +475,27 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
                 {property.title}
               </h4>
 
+              {/* Construction status chip */}
+              {property.construction_status && property.construction_status !== 'terminado' && (
+                <div className="mt-1">
+                  {property.construction_status === 'en_planos' && (
+                    <span className="text-[0.6rem] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-blue-900/40 text-blue-400 border border-blue-800/50">
+                      {locale === 'es' ? 'En planos' : 'Pre-sale'}
+                    </span>
+                  )}
+                  {property.construction_status === 'en_construccion' && (
+                    <span className="text-[0.6rem] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-amber-900/40 text-amber-400 border border-amber-800/50">
+                      {locale === 'es' ? 'En construcción' : 'Under construction'}
+                    </span>
+                  )}
+                  {property.construction_status === 'entrega_inmediata' && (
+                    <span className="text-[0.6rem] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-emerald-900/40 text-emerald-400 border border-emerald-800/50">
+                      {locale === 'es' ? 'Entrega inmediata' : 'Move-in ready'}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Zone / Location Satoshi 400, 0.75rem, text-muted */}
               <div className="flex items-center gap-1 text-[0.75rem] text-[var(--text-muted)] font-body mt-2">
                 <MapPin size={12} className="shrink-0" />
@@ -380,22 +509,82 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
               </div>
             </div>
 
-            {/* Specs row separated by point · */}
-            <div className="flex items-center gap-2.5 text-[0.8rem] font-body font-medium text-[var(--text-2)] border-t border-[var(--border)] pt-3.5">
-              <div className="flex items-center gap-1">
-                <BedDouble size={14} className="text-[var(--text-muted)]" />
-                <span>{property.bedrooms ?? "-"}</span>
+            <div className="flex flex-col gap-2">
+              {/* Specs row */}
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.8rem] font-body font-medium text-[var(--text-2)] border-t border-[var(--border)] pt-3.5">
+                
+                {property.bedrooms != null && (
+                  <div className="flex items-center gap-1">
+                    <BedDouble size={14} className="text-[var(--text-muted)]" />
+                    <span>{property.bedrooms}</span>
+                  </div>
+                )}
+                
+                {property.bedrooms != null && property.bathrooms != null && (
+                  <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
+                )}
+                
+                {property.bathrooms != null && (
+                  <div className="flex items-center gap-1">
+                    <Bath size={14} className="text-[var(--text-muted)]" />
+                    <span>{property.bathrooms}</span>
+                  </div>
+                )}
+                
+                {property.parking_spaces != null && property.parking_spaces > 0 && (
+                  <>
+                    <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
+                    <div className="flex items-center gap-1">
+                      <Car size={14} className="text-[var(--text-muted)]" />
+                      <span>{property.parking_spaces}</span>
+                    </div>
+                  </>
+                )}
+                
+                {(property.area_total ?? property.area_built) != null && (
+                  <>
+                    <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
+                    <div className="flex items-center gap-1">
+                      <Square size={14} className="text-[var(--text-muted)]" />
+                      <span>{(property.area_total ?? property.area_built)} m²</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
-              <div className="flex items-center gap-1">
-                <Bath size={14} className="text-[var(--text-muted)]" />
-                <span>{property.bathrooms ?? "-"}</span>
-              </div>
-              <span className="text-[var(--text-muted)] text-[10px] select-none">·</span>
-              <div className="flex items-center gap-1">
-                <Square size={14} className="text-[var(--text-muted)]" />
-                <span>{property.area_total ?? property.area_built ?? "-"} m²</span>
-              </div>
+
+              {/* Mini amenidades — solo las más premium, máximo 5 iconos */}
+              {(() => {
+                const amenities = ([
+                  property.has_pool      && { icon: Waves,      label: locale === 'es' ? 'Piscina' : 'Pool' },
+                  property.has_generator && { icon: Zap,        label: locale === 'es' ? 'Planta' : 'Generator' },
+                  property.has_security  && { icon: Shield,     label: locale === 'es' ? 'Seguridad' : 'Security' },
+                  property.has_elevator  && { icon: ArrowUpDown,label: locale === 'es' ? 'Ascensor' : 'Elevator' },
+                  property.has_ac        && { icon: Wind,       label: locale === 'es' ? 'A/C' : 'A/C' },
+                  property.allows_pets   && { icon: PawPrint,   label: locale === 'es' ? 'Mascotas' : 'Pets OK' },
+                  property.furnished     && { icon: Sofa,       label: locale === 'es' ? 'Amueblado' : 'Furnished' },
+                ].filter(Boolean) as { icon: any; label: string }[]).slice(0, 5);
+
+                if (amenities.length === 0) return null;
+
+                return (
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border)]/40">
+                    {amenities.map((a, i) => {
+                      const Icon = a!.icon;
+                      return (
+                        <div
+                          key={i}
+                          title={a!.label}
+                          className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] font-body 
+                            px-1.5 py-0.5 rounded-sm border border-[var(--border)] bg-[var(--surface-1)]"
+                        >
+                          <Icon size={10} className="shrink-0" />
+                          <span>{a!.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
