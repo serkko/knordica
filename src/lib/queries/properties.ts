@@ -395,7 +395,7 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
   const constructionStatusOptions: ('terminado' | 'en_planos' | 'en_construccion' | 'entrega_inmediata')[] = ['terminado', 'en_planos', 'en_construccion', 'entrega_inmediata'];
   const construction_status = constructionStatusOptions[idNum % 4];
 
-  const maintenance_fee = foundMock.property_type === 'terreno' ? null : (50 + (idNum % 5) * 35);
+  const maintenance_fee = foundMock.property_type === 'terreno_lote' ? null : (50 + (idNum % 5) * 35);
   const price_per_m2 = foundMock.area_built ? Math.round(foundMock.price / foundMock.area_built) : null;
 
   const descEs = (foundMock as any).description || `Esta espectacular propiedad de tipo ${foundMock.property_type} se encuentra ubicada en la prestigiosa zona de ${foundMock.zone?.name_es || 'Mérida'}. Con un área de construcción de ${foundMock.area_built || foundMock.area_total || 150}m² y un diseño arquitectónico contemporáneo, ofrece una excelente calidad de vida. Dispone de ${foundMock.bedrooms || 3} amplias habitaciones, ${foundMock.bathrooms || 2} baños de primera, y ${foundMock.parking_spaces || 2} cómodos puestos de estacionamiento. Se caracteriza por sus finos acabados, espectacular vista a la Sierra Nevada, y cercanía a los principales servicios de la zona. Ideal para familias o inversores que buscan valor a largo plazo.`;
@@ -422,18 +422,18 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
     maintenance_fee,
     maintenance_fee_currency: "USD",
 
-    area_built: foundMock.area_built || (foundMock.property_type === 'terreno' ? null : 150),
-    area_total: foundMock.area_total || (foundMock.property_type === 'terreno' ? 800 : 250),
-    area_hectares: foundMock.property_type === 'finca' ? 2.5 : null,
+    area_built: foundMock.area_built || (foundMock.property_type === 'terreno_lote' ? null : 150),
+    area_total: foundMock.area_total || (foundMock.property_type === 'terreno_lote' ? 800 : 250),
+    area_hectares: foundMock.property_type === 'hacienda_finca' ? 2.5 : null,
     floors: foundMock.property_type === 'casa' ? 2 : 1,
     floor_number: foundMock.property_type === 'apartamento' ? (3 + (idNum % 5)) : null,
 
-    bedrooms: foundMock.bedrooms || (foundMock.property_type === 'terreno' ? null : 3),
-    bathrooms: foundMock.bathrooms || (foundMock.property_type === 'terreno' ? null : 2),
-    half_bathrooms: (foundMock.property_type === 'terreno' || foundMock.property_type === 'local') ? null : 1,
-    parking_spaces: foundMock.parking_spaces || (foundMock.property_type === 'terreno' ? null : 2),
+    bedrooms: foundMock.bedrooms || (foundMock.property_type === 'terreno_lote' ? null : 3),
+    bathrooms: foundMock.bathrooms || (foundMock.property_type === 'terreno_lote' ? null : 2),
+    half_bathrooms: (foundMock.property_type === 'terreno_lote' || foundMock.property_type === 'local') ? null : 1,
+    parking_spaces: foundMock.parking_spaces || (foundMock.property_type === 'terreno_lote' ? null : 2),
     service_rooms: (idNum % 3 === 0 && foundMock.property_type === 'casa') ? 1 : null,
-    storage_rooms: (idNum % 2 === 0 && foundMock.property_type !== 'terreno') ? 1 : null,
+    storage_rooms: (idNum % 2 === 0 && foundMock.property_type !== 'terreno_lote') ? 1 : null,
 
     year_built: 2010 + (idNum % 14),
     construction_status,

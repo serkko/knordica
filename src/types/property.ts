@@ -14,11 +14,7 @@ export type PropertyType =
   | "hacienda_finca"
   | "local"
   | "oficina"
-  | "terreno_lote"
-  // Deprecated/compatibility types to avoid breaking existing pages/components
-  | "terreno"
-  | "finca"
-  | "proyecto";
+  | "terreno_lote";
 
 export type PropertyStatus =
   | "activa"
@@ -296,21 +292,22 @@ export interface PropertyFilters {
   precio_max?: number;
   habitaciones?: number;
   banos?: number;
-  area_min?: number;
-  area_max?: number;
-  destacadas?: boolean;
-  nuevas?: boolean;
   sort?: "recientes" | "precio_asc" | "precio_desc" | "area_desc";
   page?: number;
   per_page?: number;
+  destacadas?: boolean;
+  nuevas?: boolean;
 
-  // New schema_v2 optional fields
-  municipio?: Municipio;
-  furnished?: FurnishedStatus;
+  municipio?: string;
+  furnished?: boolean;
   has_ac?: boolean;
   has_generator?: boolean;
   has_pool?: boolean;
   allows_pets?: boolean;
+  area_min?: number;
+  area_max?: number;
   min_area?: number;
   max_area?: number;
+  has_security?: boolean;
+  has_elevator?: boolean;
 }
