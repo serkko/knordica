@@ -80,10 +80,26 @@ export function AuthForm() {
             : "Invalid credentials or account does not exist."
         );
       } else {
+        // Query user info and check if they are an active agent/admin
+        const { data: { user } } = await supabase.auth.getUser();
+        let targetPath = `/${locale}/cliente`;
+
+        if (user) {
+          const { data: agent } = await supabase
+            .from("agents")
+            .select("role, active")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (agent && agent.active) {
+            targetPath = `/${locale}/admin`;
+          }
+        }
+
         setSuccessMsg(locale === "es" ? "¡Sesión iniciada! Redirigiendo..." : "Login successful! Redirecting...");
         resetLogin();
         setTimeout(() => {
-          router.push(`/${locale}/cliente`);
+          router.push(targetPath);
           router.refresh();
         }, 1500);
       }

@@ -30,9 +30,9 @@ const propertySchema = zod.object({
   descriptionEs: zod.string().optional(),
   descriptionEn: zod.string().optional(),
   
-  operation: zod.enum(["venta", "alquiler"]),
-  propertyType: zod.enum(["casa", "apartamento", "local", "terreno", "finca", "oficina", "proyecto"]),
-  status: zod.enum(["activa", "reservada", "vendida", "alquilada", "inactiva"]),
+  operation: zod.enum(["venta", "alquiler", "vacacional"]),
+  propertyType: zod.enum(["casa", "apartamento", "townhouse", "anexo", "edificio", "galpon", "habitacion", "hacienda_finca", "local", "oficina", "terreno_lote", "terreno", "finca", "proyecto"]),
+  status: zod.enum(["activa", "reservada", "vendida", "alquilada", "cerrada", "inactiva"]),
   
   price: zod.coerce.number().min(1, { message: "price_required" }),
   priceCurrency: zod.string().default("USD"),
@@ -612,11 +612,18 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                 >
                   <option value="casa" className="bg-[var(--surface-2)]">{locale === "es" ? "Casa" : "House"}</option>
                   <option value="apartamento" className="bg-[var(--surface-2)]">{locale === "es" ? "Apartamento" : "Apartment"}</option>
-                  <option value="local" className="bg-[var(--surface-2)]">{locale === "es" ? "Local" : "Commercial"}</option>
-                  <option value="terreno" className="bg-[var(--surface-2)]">{locale === "es" ? "Terreno" : "Land"}</option>
-                  <option value="finca" className="bg-[var(--surface-2)]">{locale === "es" ? "Finca" : "Estate"}</option>
+                  <option value="townhouse" className="bg-[var(--surface-2)]">Townhouse</option>
+                  <option value="anexo" className="bg-[var(--surface-2)]">{locale === "es" ? "Anexo" : "Annex"}</option>
+                  <option value="edificio" className="bg-[var(--surface-2)]">{locale === "es" ? "Edificio" : "Building"}</option>
+                  <option value="galpon" className="bg-[var(--surface-2)]">{locale === "es" ? "Galpón" : "Industrial Warehouse"}</option>
+                  <option value="habitacion" className="bg-[var(--surface-2)]">{locale === "es" ? "Habitación" : "Room"}</option>
+                  <option value="hacienda_finca" className="bg-[var(--surface-2)]">{locale === "es" ? "Hacienda / Finca" : "Hacienda / Estate"}</option>
+                  <option value="local" className="bg-[var(--surface-2)]">{locale === "es" ? "Local Comercial" : "Commercial Space"}</option>
                   <option value="oficina" className="bg-[var(--surface-2)]">{locale === "es" ? "Oficina" : "Office"}</option>
-                  <option value="proyecto" className="bg-[var(--surface-2)]">{locale === "es" ? "Proyecto" : "Project"}</option>
+                  <option value="terreno_lote" className="bg-[var(--surface-2)]">{locale === "es" ? "Terreno / Lote" : "Land / Lot"}</option>
+                  <option value="terreno" className="bg-[var(--surface-2)]">{locale === "es" ? "Terreno (Legacy)" : "Land (Legacy)"}</option>
+                  <option value="finca" className="bg-[var(--surface-2)]">{locale === "es" ? "Finca (Legacy)" : "Estate (Legacy)"}</option>
+                  <option value="proyecto" className="bg-[var(--surface-2)]">{locale === "es" ? "Proyecto (Legacy)" : "Project (Legacy)"}</option>
                 </select>
               </div>
 
@@ -630,6 +637,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                 >
                   <option value="venta" className="bg-[var(--surface-2)]">{locale === "es" ? "Venta" : "For Sale"}</option>
                   <option value="alquiler" className="bg-[var(--surface-2)]">{locale === "es" ? "Alquiler" : "For Rent"}</option>
+                  <option value="vacacional" className="bg-[var(--surface-2)]">{locale === "es" ? "Vacacional" : "Vacation Rental"}</option>
                 </select>
               </div>
 
@@ -645,6 +653,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                   <option value="reservada" className="bg-[var(--surface-2)]">{locale === "es" ? "Reservada" : "Reserved"}</option>
                   <option value="vendida" className="bg-[var(--surface-2)]">{locale === "es" ? "Vendida" : "Sold"}</option>
                   <option value="alquilada" className="bg-[var(--surface-2)]">{locale === "es" ? "Alquilada" : "Rented"}</option>
+                  <option value="cerrada" className="bg-[var(--surface-2)]">{locale === "es" ? "Cerrada" : "Closed"}</option>
                   <option value="inactiva" className="bg-[var(--surface-2)]">{locale === "es" ? "Inactiva" : "Inactive"}</option>
                 </select>
               </div>

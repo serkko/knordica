@@ -327,48 +327,170 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
   }
 
   // Fallback
+  // Fallback
   const foundMock = MOCK_PROPERTIES.find((p) => p.slug === slug);
   if (!foundMock) return null;
+
+  const idNum = parseInt(foundMock.id.replace(/\D/g, "")) || 1;
+
+  // High quality images gallery (ensure we have 3-5 images for each category)
+  const categoryImages: Record<string, string[]> = {
+    casa: [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1200&q=80"
+    ],
+    apartamento: [
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1200&q=80"
+    ],
+    local: [
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80"
+    ],
+    default: [
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80"
+    ]
+  };
+
+  const selectedImages = (categoryImages[foundMock.property_type] || categoryImages.default) as string[];
+  
+  let propertyImages = (foundMock as any).images || [];
+  if (propertyImages.length < 4) {
+    const existingUrls = propertyImages.map((img: any) => img.url);
+    const extraImages = selectedImages
+      .filter((url) => !existingUrls.includes(url))
+      .map((url, i) => ({
+        id: `${foundMock.id}-extra-img-${i}`,
+        property_id: foundMock.id,
+        url,
+        alt_es: `Imagen adicional ${i + 1} de ${foundMock.title}`,
+        alt_en: `Additional image ${i + 1} of ${foundMock.title}`,
+        sort_order: propertyImages.length + i,
+        is_cover: propertyImages.length === 0 && i === 0
+      }));
+    propertyImages = [...propertyImages, ...extraImages];
+  }
+
+  const constructionStatusOptions: ('terminado' | 'en_planos' | 'en_construccion' | 'entrega_inmediata')[] = ['terminado', 'en_planos', 'en_construccion', 'entrega_inmediata'];
+  const construction_status = constructionStatusOptions[idNum % 4];
+
+  const maintenance_fee = foundMock.property_type === 'terreno' ? null : (50 + (idNum % 5) * 35);
+  const price_per_m2 = foundMock.area_built ? Math.round(foundMock.price / foundMock.area_built) : null;
+
+  const descEs = (foundMock as any).description || `Esta espectacular propiedad de tipo ${foundMock.property_type} se encuentra ubicada en la prestigiosa zona de ${foundMock.zone?.name_es || 'Mérida'}. Con un área de construcción de ${foundMock.area_built || foundMock.area_total || 150}m² y un diseño arquitectónico contemporáneo, ofrece una excelente calidad de vida. Dispone de ${foundMock.bedrooms || 3} amplias habitaciones, ${foundMock.bathrooms || 2} baños de primera, y ${foundMock.parking_spaces || 2} cómodos puestos de estacionamiento. Se caracteriza por sus finos acabados, espectacular vista a la Sierra Nevada, y cercanía a los principales servicios de la zona. Ideal para familias o inversores que buscan valor a largo plazo.`;
+
+  const descEn = (foundMock as any).description_en || `This spectacular ${foundMock.property_type} type property is located in the prestigious area of ${foundMock.zone?.name_en || 'Mérida'}. With a construction area of ${foundMock.area_built || foundMock.area_total || 150}sqm and a contemporary architectural design, it offers an excellent quality of life. It features ${foundMock.bedrooms || 3} spacious bedrooms, ${foundMock.bathrooms || 2} premium bathrooms, and ${foundMock.parking_spaces || 2} comfortable parking spaces. Characterized by its fine finishes, spectacular views of the Sierra Nevada mountains, and proximity to key local amenities. Ideal for families or investors seeking long-term value.`;
 
   return {
     id: foundMock.id,
     slug: foundMock.slug,
-    operation: foundMock.operation,
-    property_type: foundMock.property_type,
-    status: foundMock.status,
-    featured: foundMock.featured,
-    exclusive: foundMock.exclusive,
-    new_listing: foundMock.new_listing,
-    price_reduced: foundMock.price_reduced,
+    operation: foundMock.operation || "venta",
+    property_type: foundMock.property_type || "casa",
+    status: (idNum % 10 === 0) ? "reservada" : (idNum % 10 === 9) ? "vendida" : "activa",
+    featured: foundMock.featured || (idNum % 3 === 0),
+    exclusive: foundMock.exclusive || (idNum % 4 === 0),
+    new_listing: foundMock.new_listing || (idNum % 5 === 0),
+    price_reduced: foundMock.price_reduced || (idNum % 6 === 0),
+    price_negotiable: idNum % 2 === 0,
+    listing_badge: (idNum % 5 === 0) ? "OPORTUNIDAD" : (idNum % 5 === 1) ? "ÚLTIMA UNIDAD" : (idNum % 5 === 2) ? "EXCLUSIVO" : null,
+    completeness_score: 75 + (idNum % 25),
+    
     price: foundMock.price,
-    price_currency: foundMock.price_currency,
-    price_negotiable: true,
-    price_history: [],
-    area_total: foundMock.area_total,
-    area_built: foundMock.area_built,
-    bedrooms: foundMock.bedrooms,
-    bathrooms: foundMock.bathrooms,
-    half_bathrooms: 0,
-    parking_spaces: foundMock.parking_spaces,
-    zone_id: foundMock.zone?.id || null,
-    address_es: "Mérida, Venezuela",
-    address_en: "Mérida, Venezuela",
+    price_currency: foundMock.price_currency || "USD",
+    price_per_m2,
+    maintenance_fee,
+    maintenance_fee_currency: "USD",
+
+    area_built: foundMock.area_built || (foundMock.property_type === 'terreno' ? null : 150),
+    area_total: foundMock.area_total || (foundMock.property_type === 'terreno' ? 800 : 250),
+    area_hectares: foundMock.property_type === 'finca' ? 2.5 : null,
+    floors: foundMock.property_type === 'casa' ? 2 : 1,
+    floor_number: foundMock.property_type === 'apartamento' ? (3 + (idNum % 5)) : null,
+
+    bedrooms: foundMock.bedrooms || (foundMock.property_type === 'terreno' ? null : 3),
+    bathrooms: foundMock.bathrooms || (foundMock.property_type === 'terreno' ? null : 2),
+    half_bathrooms: (foundMock.property_type === 'terreno' || foundMock.property_type === 'local') ? null : 1,
+    parking_spaces: foundMock.parking_spaces || (foundMock.property_type === 'terreno' ? null : 2),
+    service_rooms: (idNum % 3 === 0 && foundMock.property_type === 'casa') ? 1 : null,
+    storage_rooms: (idNum % 2 === 0 && foundMock.property_type !== 'terreno') ? 1 : null,
+
+    year_built: 2010 + (idNum % 14),
+    construction_status,
+
+    has_pool: idNum % 3 === 0,
+    has_garden: idNum % 2 === 0,
+    has_ac: idNum % 2 === 1,
+    has_generator: idNum % 4 === 0,
+    has_water_tank: true,
+    has_security: idNum % 3 !== 0,
+    has_elevator: foundMock.property_type === 'apartamento' && idNum % 2 === 0,
+    allows_pets: idNum % 3 !== 1,
+    furnished: idNum % 4 === 1,
+    has_gym: idNum % 5 === 0,
+    has_jacuzzi: idNum % 6 === 0,
+    has_bbq: idNum % 4 === 0,
+    has_laundry: idNum % 2 === 0,
+    has_study: idNum % 5 === 1,
+    has_cinema: idNum % 10 === 0,
+    has_wine_cellar: idNum % 12 === 0,
+    has_sauna: idNum % 8 === 0,
+    has_terrace: idNum % 3 === 1,
+    has_balcony: foundMock.property_type === 'apartamento',
+    has_solar_panels: idNum % 9 === 0,
+
+    address_es: (foundMock as any).address_es || `${foundMock.title}, Mérida, Venezuela`,
+    address_en: (foundMock as any).address_en || `${foundMock.title}, Mérida, Venezuela`,
+    municipio: (idNum % 3 === 0) ? "libertador" : (idNum % 3 === 1) ? "campo-elias" : "santos-marquina",
     lat: getMockCoordinates(foundMock.id, foundMock.zone?.lat ?? null, foundMock.zone?.lng ?? null).lat,
     lng: getMockCoordinates(foundMock.id, foundMock.zone?.lat ?? null, foundMock.zone?.lng ?? null).lng,
+    zone: foundMock.zone || null,
+
+    images: propertyImages,
+    videos: [
+      {
+        id: `${foundMock.id}-vid-1`,
+        url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        platform: "youtube",
+        title_es: "Recorrido en Video",
+        title_en: "Video Walkthrough",
+        thumbnail_url: null
+      }
+    ],
+    virtual_tour_url: idNum % 2 === 0 ? "https://my.matterport.com/show/?m=sxK15C9mG2Y" : null,
+    video_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+
     agent_id: "agent-1",
-    meta_title_es: foundMock.title,
-    meta_title_en: foundMock.title,
-    meta_description_es: foundMock.short_description,
-    meta_description_en: foundMock.short_description,
+    agent: {
+      id: "agent-1",
+      full_name: "Carlos Valera",
+      email: "carlos@knordica.com",
+      phone: "+58 412 242 3334",
+      whatsapp: "5804122423334",
+      avatar_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&h=256&q=80",
+      title: "Asesor Senior",
+      bio_es: "Especialista en propiedades residenciales seleccionadas. 10 años en el mercado inmobiliario de los Andes venezolanos.",
+      bio_en: "Specialist in selected residential properties. 10 years in the Venezuelan Andes real estate market.",
+      languages: ["Español", "Inglés"]
+    },
+
+    translations: [
+      { locale: "es", title: foundMock.title, description: descEs, short_description: foundMock.short_description },
+      { locale: "en", title: foundMock.title, description: descEn, short_description: foundMock.short_description }
+    ],
+    features: [
+      { id: `${foundMock.id}-feat-1`, key: "Clima", value_es: "Clima de montaña templado", value_en: "Mild mountain weather", icon: "cloud", group: "extras" },
+      { id: `${foundMock.id}-feat-2`, key: "Vigilancia", value_es: "Vigilancia privada nocturna", value_en: "Private night watch", icon: "shield", group: "legal" },
+      { id: `${foundMock.id}-feat-3`, key: "Agua", value_es: "Acceso a pozo natural", value_en: "Natural well water access", icon: "droplet", group: "servicios" }
+    ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    published_at: new Date().toISOString(),
-    zone: foundMock.zone || null,
-    agent: null,
-    images: foundMock.images || [],
-    features: [
-      { id: "f1", property_id: foundMock.id, category: "general", key: "clima", value_es: "Clima de montaña", value_en: "Mountain weather", icon: "cloud" },
-      { id: "f2", property_id: foundMock.id, category: "seguridad", key: "vigilancia", value_es: "Vigilancia privada", value_en: "Private security", icon: "shield" }
-    ]
+    published_at: new Date().toISOString()
   } as any as Property;
 }

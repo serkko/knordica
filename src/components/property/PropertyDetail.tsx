@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { BedDouble, Bath, Square, Car, MapPin, MessageCircle, Mail, Calendar, Sparkles } from "lucide-react";
+import { 
+  BedDouble, Bath, Square, Car, MapPin, MessageCircle, Mail, Calendar,
+  Sparkles, Phone, Maximize2, Layers, TreePine, ArrowUpDown, Archive,
+  CalendarDays, Coins, Waves, Trees, Wind, Zap, Droplets, Shield,
+  PawPrint, Sofa, Dumbbell, Flame, BookOpen, Tv2, Thermometer,
+  Mountain, Sun, Check, Globe, ExternalLink, Languages,
+  Home, Wine
+} from "lucide-react";
+// Fallback for WashingMachine as it may not be in standard Lucide
+import { Wind as WashingMachine } from "lucide-react";
+
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { formatPrice, formatArea } from "@/lib/utils/format";
 import { LeadForm } from "@/components/forms/LeadForm";
@@ -17,6 +27,7 @@ interface PropertyDetailProps {
 export function PropertyDetail({ property }: PropertyDetailProps) {
   const { locale, dict } = useLocale();
   const [activeTab, setActiveTab] = useState<"contact" | "visit">("contact");
+  const [activeVideoTab, setActiveVideoTab] = useState<number>(0);
 
   const trans = property.translations?.find((t) => t.locale === locale) ||
     property.translations?.[0] || {
@@ -37,6 +48,14 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
       finca: locale === "es" ? "Finca" : "Estate",
       oficina: locale === "es" ? "Oficina" : "Office",
       proyecto: locale === "es" ? "Proyecto" : "Project",
+      townhouse: locale === "es" ? "Townhouse" : "Townhouse",
+      penthouse: locale === "es" ? "Penthouse" : "Penthouse",
+      terreno_lote: locale === "es" ? "Terreno / Lote" : "Land / Lot",
+      edificio: locale === "es" ? "Edificio" : "Building",
+      galpon: locale === "es" ? "Galpón" : "Industrial Warehouse",
+      habitacion: locale === "es" ? "Habitación" : "Room",
+      hacienda_finca: locale === "es" ? "Hacienda / Finca" : "Hacienda / Estate",
+      anexo: locale === "es" ? "Anexo" : "Annex",
     };
     return types[type] || type;
   };
@@ -48,6 +67,48 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
     }
   };
 
+  function getEmbedUrl(url: string): string {
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`;
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?color=C9A84C&title=0`;
+    return url;
+  }
+
+  // Status Banner render
+  const renderStatusBanner = () => {
+    const status = property.status;
+    if (status === "activa" || !status) return null;
+
+    let styles = "";
+    let text = "";
+
+    if (status === "reservada") {
+      styles = "bg-amber-900/40 border-amber-500/30 text-amber-200";
+      text = locale === "es" 
+        ? "RESERVADA — Esta propiedad ya tiene una reserva activa. Contáctanos para alternativas similares."
+        : "RESERVED — This property has an active reservation. Contact us for similar alternatives.";
+    } else if (status === "vendida") {
+      styles = "bg-red-900/30 border-red-800/30 text-red-200";
+      text = locale === "es" 
+        ? "VENDIDA — Esta propiedad ya no está disponible." 
+        : "SOLD — This property is no longer available.";
+    } else if (status === "alquilada") {
+      styles = "bg-blue-900/30 border-blue-800/30 text-blue-200";
+      text = locale === "es" 
+        ? "ALQUILADA — Esta unidad está ocupada actualmente." 
+        : "RENTED — This unit is currently occupied.";
+    } else {
+      return null;
+    }
+
+    return (
+      <div className={`w-full ${styles} border rounded-sm p-3.5 text-center font-mono text-[10px] tracking-wider uppercase mb-6`}>
+        {text}
+      </div>
+    );
+  };
+
   // WhatsApp connection config
   const whatsappNumber = property.agent?.whatsapp || "584122423334";
   const whatsappMessage = encodeURIComponent(
@@ -57,20 +118,142 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
+  // Badges chips configuration
+  const badges = [
+    property.exclusive && { label: locale === 'es' ? 'EXCLUSIVA' : 'EXCLUSIVE', color: 'bg-[#C9A84C] text-black' },
+    property.new_listing && { label: locale === 'es' ? 'NUEVO INGRESO' : 'NEW LISTING', color: 'bg-emerald-500 text-white' },
+    property.price_reduced && { label: locale === 'es' ? 'PRECIO REDUCIDO' : 'PRICE REDUCED', color: 'bg-rose-600 text-white' },
+    property.listing_badge && { label: property.listing_badge, color: 'bg-[var(--accent)] text-black' },
+  ].filter(Boolean) as { label: string; color: string }[];
+
+  // Construction status chip
+  const renderConstructionChip = () => {
+    if (!property.construction_status || property.construction_status === "terminado") return null;
+
+    let color = "";
+    let label = "";
+
+    if (property.construction_status === "en_planos") {
+      color = "bg-sky-500/10 text-sky-400 border-sky-500/20";
+      label = locale === "es" ? "EN PLANOS" : "IN PLANS";
+    } else if (property.construction_status === "en_construccion") {
+      color = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      label = locale === "es" ? "EN CONSTRUCCIÓN" : "UNDER CONSTRUCTION";
+    } else if (property.construction_status === "entrega_inmediata") {
+      color = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      label = locale === "es" ? "ENTREGA INMEDIATA" : "IMMEDIATE DELIVERY";
+    }
+
+    return (
+      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm border ${color}`}>
+        {label}
+      </span>
+    );
+  };
+
+  // Specs grid mapping
+  const specs = [
+    property.bedrooms && { icon: BedDouble, label: locale === "es" ? "Habitaciones" : "Bedrooms", value: String(property.bedrooms) },
+    property.bathrooms && { icon: Bath, label: locale === "es" ? "Baños completos" : "Bathrooms", value: String(property.bathrooms) },
+    property.half_bathrooms && { icon: Droplets, label: locale === "es" ? "Medios baños" : "Half Bathrooms", value: String(property.half_bathrooms) },
+    property.parking_spaces && { icon: Car, label: locale === "es" ? "Estacionamientos" : "Parking", value: String(property.parking_spaces) },
+    property.area_built && { icon: Square, label: locale === "es" ? "Área construida" : "Built Area", value: formatArea(property.area_built, locale) },
+    property.area_total && { icon: Maximize2, label: locale === "es" ? "Área total" : "Total Area", value: formatArea(property.area_total, locale) },
+    property.area_hectares && property.area_hectares > 0 && { icon: TreePine, label: locale === "es" ? "Hectáreas" : "Hectares", value: `${property.area_hectares} ha` },
+    property.floors && { icon: Layers, label: locale === "es" ? "Pisos" : "Floors", value: String(property.floors) },
+    property.floor_number && property.property_type === "apartamento" && { icon: ArrowUpDown, label: locale === "es" ? "Piso" : "Floor", value: locale === "es" ? `Piso ${property.floor_number}` : `Floor ${property.floor_number}` },
+    property.service_rooms && { icon: Home, label: locale === "es" ? "Cuartos de servicio" : "Service Rooms", value: String(property.service_rooms) },
+    property.storage_rooms && { icon: Archive, label: locale === "es" ? "Depósitos" : "Storage", value: String(property.storage_rooms) },
+    property.year_built && { icon: CalendarDays, label: locale === "es" ? "Año de construcción" : "Year Built", value: String(property.year_built) },
+    property.maintenance_fee && { icon: Coins, label: locale === "es" ? "Condominio" : "Maintenance", value: `$${property.maintenance_fee}/${locale === "es" ? "mes" : "mo"}` },
+  ].filter(Boolean) as { icon: any; label: string; value: string }[];
+
+  // Amenities list matching bool columns
+  const amenitiesList = [
+    { icon: Waves, labelEs: "Piscina", labelEn: "Pool", value: property.has_pool },
+    { icon: Trees, labelEs: "Jardín", labelEn: "Garden", value: property.has_garden },
+    { icon: Wind, labelEs: "Aire Acondicionado", labelEn: "Air Conditioning", value: property.has_ac },
+    { icon: Zap, labelEs: "Planta Eléctrica", labelEn: "Generator", value: property.has_generator },
+    { icon: Droplets, labelEs: "Tanque de Agua", labelEn: "Water Tank", value: property.has_water_tank },
+    { icon: Shield, labelEs: "Seguridad / Vigilancia", labelEn: "Security", value: property.has_security },
+    { icon: ArrowUpDown, labelEs: "Ascensor", labelEn: "Elevator", value: property.has_elevator },
+    { icon: PawPrint, labelEs: "Acepta Mascotas", labelEn: "Pet Friendly", value: property.allows_pets },
+    { icon: Sofa, labelEs: "Amueblado", labelEn: "Furnished", value: property.furnished },
+    { icon: Dumbbell, labelEs: "Gimnasio", labelEn: "Gym", value: property.has_gym },
+    { icon: Sparkles, labelEs: "Jacuzzi / Spa", labelEn: "Jacuzzi / Spa", value: property.has_jacuzzi },
+    { icon: Flame, labelEs: "Área BBQ", labelEn: "BBQ Area", value: property.has_bbq },
+    { icon: WashingMachine, labelEs: "Lavandería", labelEn: "Laundry Room", value: property.has_laundry },
+    { icon: BookOpen, labelEs: "Estudio / Biblioteca", labelEn: "Study Room", value: property.has_study },
+    { icon: Tv2, labelEs: "Sala de Cine", labelEn: "Home Theater", value: property.has_cinema },
+    { icon: Wine, labelEs: "Cava de Vinos", labelEn: "Wine Cellar", value: property.has_wine_cellar },
+    { icon: Thermometer, labelEs: "Sauna", labelEn: "Sauna", value: property.has_sauna },
+    { icon: Mountain, labelEs: "Terraza", labelEn: "Terrace", value: property.has_terrace },
+    { icon: Home, labelEs: "Balcón", labelEn: "Balcony", value: property.has_balcony },
+    { icon: Sun, labelEs: "Paneles Solares", labelEn: "Solar Panels", value: property.has_solar_panels },
+  ];
+
+  const activeAmenities = amenitiesList.filter((a) => a.value);
+
+  // Video embeds handling
+  const allVideos: { url: string; title: string }[] = [];
+  if (property.video_url) {
+    allVideos.push({ url: property.video_url, title: locale === "es" ? "Video Principal" : "Main Video" });
+  }
+  if (property.videos && property.videos.length > 0) {
+    property.videos.forEach((vid, i) => {
+      allVideos.push({ 
+        url: vid.url, 
+        title: (locale === "es" ? vid.title_es : vid.title_en) || `${locale === "es" ? "Video" : "Video"} ${i + 1}` 
+      });
+    });
+  }
+
+  // Features grouped mapping
+  const groupedFeatures: Record<string, typeof property.features> = {};
+  if (property.features && property.features.length > 0) {
+    property.features.forEach((feat) => {
+      const g = feat.group || "default";
+      if (!groupedFeatures[g]) groupedFeatures[g] = [];
+      groupedFeatures[g].push(feat);
+    });
+  }
+
+  const getGroupLabel = (group: string) => {
+    if (group === "default") return "";
+    if (group === "legal") return locale === "es" ? "Aspectos Legales" : "Legal Aspects";
+    if (group === "servicios") return locale === "es" ? "Servicios Públicos" : "Public Services";
+    if (group === "extras") return locale === "es" ? "Extras y Detalles" : "Extras & Details";
+    return group;
+  };
+
   return (
     <div className="flex flex-col gap-8">
-      {/* Dynamic Gallery */}
-      <PropertyGallery images={property.images || []} title={trans.title} />
+      {/* SECCIÓN 0 — STATUS BANNER */}
+      {renderStatusBanner()}
+
+      {/* SECCIÓN 1 — GALERÍA */}
+      <div className="relative">
+        {badges.length > 0 && (
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
+            {badges.map((b, idx) => (
+              <span key={idx} className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm shadow-md ${b.color}`}>
+                {b.label}
+              </span>
+            ))}
+          </div>
+        )}
+        <PropertyGallery images={property.images || []} title={trans.title} />
+      </div>
 
       {/* Grid Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Side (65% width equivalent in 12-col grid = col-span-8) */}
+        {/* Left Side (Col span 8) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* Header titles and Share */}
+          
+          {/* SECCIÓN 2 — CABECERA */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[var(--border)]">
             <div className="flex flex-col gap-2">
-              {/* Operation type & Tag */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] uppercase tracking-widest text-[var(--accent)] font-semibold font-display px-2 py-0.5 rounded-sm bg-[var(--accent-dim)] border border-[var(--border-accent)]">
                   {property.operation === "venta"
                     ? dict.property?.operation?.venta || "Venta"
@@ -79,97 +262,80 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                 <span className="text-xs text-[var(--text-muted)] font-mono">
                   {getPropertyTypeLabel(property.property_type)}
                 </span>
+                {renderConstructionChip()}
+                {property.price_negotiable && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {locale === "es" ? "PRECIO NEGOCIABLE" : "NEGOTIABLE PRICE"}
+                  </span>
+                )}
               </div>
 
-              {/* Title (SEO h1) */}
               <h1 className="text-2xl md:text-[2rem] font-light font-display tracking-tight text-[var(--text)] leading-snug" style={{ letterSpacing: "-0.03em" }}>
                 {trans.title}
               </h1>
 
-              {/* Location pin */}
-              <div className="flex items-center gap-1.5 text-xs text-[var(--text-2)] font-light">
-                <MapPin className="h-4 w-4 text-[var(--text-muted)]" />
-                <span>
-                  {locale === "es"
-                    ? property.address_es || property.zone?.name_es
-                    : property.address_en || property.zone?.name_en}
-                </span>
+              <div className="flex flex-col gap-1 text-xs text-[var(--text-2)] font-light">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-[var(--text-muted)]" />
+                  <span>
+                    {locale === "es"
+                      ? property.address_es || property.zone?.name_es
+                      : property.address_en || property.zone?.name_en}
+                  </span>
+                </div>
+                {property.municipio && (
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] pl-5 uppercase tracking-wider">
+                    Mun. {property.municipio.replace("-", " ")}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Share and Action */}
             <div className="shrink-0 flex sm:flex-col items-start sm:items-end gap-2">
-              <span className="text-2xl md:text-[1.8rem] font-semibold font-display text-[var(--accent)] tracking-tight">
-                {formattedPrice}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl md:text-[1.8rem] font-semibold font-display text-[var(--accent)] tracking-tight">
+                  {formattedPrice}
+                </span>
+                {property.price_per_m2 && (
+                  <span className="text-xs text-[var(--text-muted)] font-mono">
+                    (${property.price_per_m2.toLocaleString()}/m²)
+                  </span>
+                )}
+              </div>
+              {property.maintenance_fee && (
+                <p className="text-[10px] text-[var(--text-muted)] font-mono uppercase tracking-wider">
+                  + {property.maintenance_fee} {property.maintenance_fee_currency || "USD"} / {locale === "es" ? "Mes Condominio" : "Mo Maintenance"}
+                </p>
+              )}
               <PropertyShare slug={property.slug} title={trans.title} />
             </div>
           </div>
 
-          {/* Features Row Grid (2x2) */}
-          <div className="grid grid-cols-2 gap-6 p-6 border border-[var(--border)] bg-[var(--surface-1)] rounded-xl">
-            {/* Rooms */}
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
-                <BedDouble className="h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
-                  {locale === "es" ? "Habitaciones" : "Bedrooms"}
-                </span>
-                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
-                  {property.bedrooms ?? "-"}
-                </span>
-              </div>
+          {/* SECCIÓN 3 — SPECS GRID */}
+          {specs.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-6 border border-[var(--border)] bg-[var(--surface-1)] rounded-xl">
+              {specs.map((s, idx) => {
+                const IconComponent = s.icon;
+                return (
+                  <div key={idx} className="flex items-center gap-4">
+                    <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+                      <IconComponent className="h-5 w-5 text-[var(--accent)]" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body leading-none">
+                        {s.label}
+                      </span>
+                      <span className="text-sm font-semibold font-display text-[var(--text)] mt-1 leading-none">
+                        {s.value}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          )}
 
-            {/* Baths */}
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
-                <Bath className="h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
-                  {locale === "es" ? "Baños" : "Bathrooms"}
-                </span>
-                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
-                  {property.bathrooms ?? "-"}
-                </span>
-              </div>
-            </div>
-
-            {/* Area */}
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
-                <Square className="h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
-                  {locale === "es" ? "Área construida" : "Built area"}
-                </span>
-                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
-                  {formattedAreaBuilt}
-                </span>
-              </div>
-            </div>
-
-            {/* Parking */}
-            <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
-                <Car className="h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
-                  {locale === "es" ? "Estacionamientos" : "Parking"}
-                </span>
-                <span className="text-[1.4rem] font-medium font-display text-[var(--text)] mt-0.5 leading-none">
-                  {property.parking_spaces ?? "-"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
+          {/* SECCIÓN 4 — DESCRIPCIÓN */}
           <div className="flex flex-col gap-3 my-2">
             <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
               {dict.property?.detail?.descripcion || "Descripción"}
@@ -179,25 +345,128 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
             </p>
           </div>
 
-          {/* Technical features & details */}
-          {property.features && property.features.length > 0 && (
+          {/* SECCIÓN 5 — AMENIDADES (sección NUEVA) */}
+          {activeAmenities.length > 0 && (
             <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-6">
               <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
-                {dict.property?.detail?.caracteristicas || "Detalles adicionales"}
+                {locale === "es" ? "Amenidades y Equipamiento" : "Amenities & Features"}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {property.features.map((feat) => (
-                  <div key={feat.id} className="flex items-center gap-2 text-sm text-[var(--text-2)] font-light">
-                    {getFeatureIcon(feat.icon)}
-                    <span className="font-semibold">{locale === "es" ? feat.key : feat.key}:</span>
-                    <span>{locale === "es" ? feat.value_es : feat.value_en}</span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {activeAmenities.map((am) => {
+                  const IconComponent = am.icon;
+                  return (
+                    <div key={am.labelEs} className="flex items-center gap-2.5 px-3 py-2 border border-[var(--border-accent)] bg-[var(--accent-dim)] rounded-sm text-xs text-[var(--accent)] font-medium">
+                      <IconComponent className="h-3.5 w-3.5 shrink-0" />
+                      <span className="font-body">{locale === "es" ? am.labelEs : am.labelEn}</span>
+                      <Check className="h-3 w-3 ml-auto shrink-0 opacity-70" />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Map Section */}
+          {/* SECCIÓN 6 — VIDEO (sección NUEVA) */}
+          {allVideos.length > 0 && (
+            <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-6">
+              <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
+                {locale === "es" ? "Video de la Propiedad" : "Property Video"}
+              </h3>
+              
+              {allVideos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {allVideos.map((vid, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveVideoTab(idx)}
+                      className={`px-3 py-1.5 text-xs font-mono rounded-sm border shrink-0 transition-colors cursor-pointer ${
+                        activeVideoTab === idx 
+                          ? "bg-[var(--accent-dim)] border-[var(--accent)] text-[var(--accent)] font-semibold" 
+                          : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]"
+                      }`}
+                    >
+                      {vid.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--surface-2)]">
+                <iframe
+                  src={getEmbedUrl(allVideos[activeVideoTab]?.url || "")}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0"
+                  title={trans.title}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* SECCIÓN 7 — TOUR VIRTUAL (sección NUEVA) */}
+          {property.virtual_tour_url && (
+            <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-6">
+              <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
+                {locale === "es" ? "Tour Virtual 360°" : "360° Virtual Tour"}
+              </h3>
+              <a
+                href={property.virtual_tour_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 p-4 border border-[var(--border)] hover:border-[var(--accent)] bg-[var(--surface-2)] rounded-lg transition-all duration-200 hover:bg-[var(--accent-dim)]"
+              >
+                <div className="h-10 w-10 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--accent)] shrink-0 bg-[var(--surface)]">
+                  <Globe className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--text)] font-display">
+                    {locale === 'es' ? 'Explorar Tour Virtual' : 'Explore Virtual Tour'}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)] font-mono">
+                    {locale === 'es' ? 'Abre en nueva ventana' : 'Opens in new window'}
+                  </p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-[var(--text-muted)] ml-auto group-hover:text-[var(--accent)] transition-colors" />
+              </a>
+            </div>
+          )}
+
+          {/* SECCIÓN 8 — CARACTERÍSTICAS TÉCNICAS (features agrupados) */}
+          {property.features && property.features.length > 0 && (
+            <div className="flex flex-col gap-5 border-t border-[var(--border)] pt-6">
+              <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
+                {dict.property?.detail?.caracteristicas || "Detalles adicionales"}
+              </h3>
+              
+              <div className="flex flex-col gap-5">
+                {Object.keys(groupedFeatures).map((groupKey) => {
+                  const label = getGroupLabel(groupKey);
+                  return (
+                    <div key={groupKey} className="flex flex-col gap-3">
+                      {label && (
+                        <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold font-display border-b border-[var(--border)] pb-1">
+                          {label}
+                        </p>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(groupedFeatures[groupKey] || []).map((feat) => (
+                          <div key={feat.id} className="flex items-start gap-2 text-sm text-[var(--text-2)] font-light">
+                            <Sparkles className="h-3.5 w-3.5 text-[var(--accent)] mt-0.5 shrink-0" />
+                            <span>
+                              <span className="font-semibold text-[var(--text)]">{feat.key}:</span>{" "}
+                              {locale === "es" ? feat.value_es : feat.value_en}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* SECCIÓN 9 — MAPA */}
           <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-6">
             <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
               {dict.property?.detail?.ubicacion || "Ubicación"}
@@ -213,39 +482,98 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
                   [ LAT: {property.lat || "8.59"} | LNG: {property.lng || "-71.14"} ]
                 </p>
               </div>
+
+              {property.lat && property.lng && (
+                <a
+                  href={`https://www.google.com/maps?q=${property.lat},${property.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 text-[10px] font-mono text-[var(--accent)] hover:underline bg-[var(--surface)] px-2 py-1 rounded-sm border border-[var(--border)]"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  {locale === 'es' ? 'Ver en Google Maps' : 'Open in Google Maps'}
+                </a>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right Side (Sticky Agent panel, 35% width equivalent = col-span-4) */}
+        {/* SIDEBAR DERECHO — AGENTE (col-span-4, sticky) */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-6">
-          {/* Agent info summary card */}
           <div className="p-6 border border-[var(--border)] bg-[var(--surface-2)] rounded-xl flex flex-col gap-6 shadow-xl">
             <div className="flex items-center gap-4">
-              {/* Avatar placeholder */}
-              <div className="h-12 w-12 rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] flex items-center justify-center text-[var(--accent)] font-display font-semibold shrink-0">
-                {property.agent?.full_name ? property.agent.full_name[0] : "A"}
-              </div>
+              {property.agent?.avatar_url ? (
+                <img
+                  src={property.agent.avatar_url}
+                  alt={property.agent.full_name}
+                  className="h-14 w-14 rounded-sm object-cover border border-[var(--border)] shrink-0"
+                />
+              ) : (
+                <div className="h-14 w-14 rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] flex items-center justify-center text-[var(--accent)] font-display font-semibold text-xl shrink-0">
+                  {property.agent?.full_name ? property.agent.full_name[0] : "A"}
+                </div>
+              )}
               <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-medium font-body">
+                <p className="text-[0.65rem] uppercase tracking-wider text-[var(--text-muted)] font-body">
                   {locale === "es" ? "Asesor asignado" : "Assigned Advisor"}
                 </p>
-                <h4 className="text-base font-semibold font-display tracking-tight text-[var(--text)] mt-0.5 leading-tight">
+                <h4 className="text-base font-semibold font-display text-[var(--text)] leading-tight mt-0.5">
                   {property.agent?.full_name || "Asesor Inmobiliario Knordica"}
                 </h4>
+                {property.agent?.title && (
+                  <p className="text-xs text-[var(--text-muted)] font-light mt-0.5">
+                    {property.agent.title}
+                  </p>
+                )}
+                {property.agent?.languages && property.agent.languages.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Languages className="h-3 w-3 text-[var(--text-muted)]" />
+                    <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                      {property.agent.languages.join(" · ")}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Quick Whatsapp direct connect CTA */}
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full">
-              <button className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] transition-all text-white text-xs font-bold uppercase tracking-wider h-11 rounded-lg cursor-pointer shadow-md hover:shadow-[#25D366]/10">
-                <MessageCircle className="h-4 w-4 fill-current stroke-none animate-pulse" />
-                <span>{dict.property?.detail?.whatsapp || "Escribir por WhatsApp"}</span>
-              </button>
-            </a>
+            {(property.agent?.bio_es || property.agent?.bio_en) && (
+              <p className="text-xs text-[var(--text-2)] font-light leading-relaxed border-t border-[var(--border)] pt-4">
+                {locale === "es" ? property.agent.bio_es : property.agent.bio_en}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2.5">
+              {/* WhatsApp direct connect CTA */}
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full">
+                <button className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] transition-all text-white text-xs font-bold uppercase tracking-wider h-11 rounded-lg cursor-pointer shadow-md hover:shadow-[#25D366]/10">
+                  <MessageCircle className="h-4 w-4 fill-current stroke-none animate-pulse" />
+                  <span>{dict.property?.detail?.whatsapp || "Escribir por WhatsApp"}</span>
+                </button>
+              </a>
+
+              {/* Call CTA */}
+              {property.agent?.phone && (
+                <a href={`tel:${property.agent.phone}`} className="w-full">
+                  <button className="w-full flex items-center justify-center gap-2 border border-[var(--border)] hover:border-[var(--accent)] text-[var(--text)] text-xs font-bold uppercase tracking-wider h-10 rounded-lg cursor-pointer transition-all">
+                    <Phone className="h-4 w-4 text-[var(--text-muted)]" />
+                    <span>{locale === "es" ? "Llamar" : "Call"}</span>
+                  </button>
+                </a>
+              )}
+
+              {/* Email CTA */}
+              {property.agent?.email && (
+                <a href={`mailto:${property.agent.email}?subject=${encodeURIComponent(trans.title)}`} className="w-full">
+                  <button className="w-full flex items-center justify-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent)] text-xs uppercase tracking-wider h-9 cursor-pointer transition-colors">
+                    <Mail className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                    <span className="truncate max-w-[200px]">{property.agent.email}</span>
+                  </button>
+                </a>
+              )}
+            </div>
           </div>
 
-          {/* Form switch tabs */}
+          {/* Switchable Contact Form Tabs */}
           <div className="flex flex-col gap-4">
             <div className="flex border-b border-[var(--border)]">
               <button
@@ -284,6 +612,14 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* INDICADOR DE COMPLETENESS (solo en desarrollo) */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed bottom-4 left-4 z-50 bg-black/85 text-white text-xs font-mono px-3 py-2 rounded-sm border border-white/20 shadow-lg pointer-events-none">
+          <span className="text-[var(--accent)] font-semibold">COMPLETENESS:</span>{" "}
+          {property.completeness_score ?? "?"}%
+        </div>
+      )}
     </div>
   );
 }

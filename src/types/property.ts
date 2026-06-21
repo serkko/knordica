@@ -89,41 +89,47 @@ export interface Agent {
 
 export interface PropertyImage {
   id: string;
-  property_id: string;
+  property_id?: string;
   url: string;
   alt_es: string | null;
   alt_en: string | null;
-  sort_order: number;
+  sort_order?: number;
+  order_index?: number;
   is_cover: boolean;
 }
 
 export interface PropertyFeature {
   id: string;
-  property_id: string;
-  category: FeatureCategory;
+  property_id?: string;
+  category?: FeatureCategory;
   key: string;
-  value_es: string | null;
-  value_en: string | null;
+  value_es: string;
+  value_en: string;
   icon: string | null;
+  group?: string | null;            // "legal", "servicios", "extras"
 }
 
 export interface PropertyVideo {
   id: string;
-  property_id: string;
+  property_id?: string;
   url: string;
-  title_es?: string | null;
-  title_en?: string | null;
-  sort_order: number;
-  created_at: string;
+  platform: 'youtube' | 'vimeo' | 'direct';
+  title_es: string | null;
+  title_en: string | null;
+  thumbnail_url?: string | null;
+  sort_order?: number;
+  created_at?: string;
 }
 
 export interface PropertyTranslation {
-  id: string;
-  property_id: string;
-  locale: "es" | "en";
+  id?: string;
+  property_id?: string;
+  locale: string;
   title: string;
   description: string | null;
   short_description: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
 export interface PriceHistoryEntry {
@@ -133,132 +139,107 @@ export interface PriceHistoryEntry {
 }
 
 export interface Property {
-  // --- Identidad ---
+  // Identidad
   id: string;
   slug: string;
-  operation: PropertyOperation;
-  property_type: PropertyType;
-  status: PropertyStatus;
+  status: 'activa' | 'reservada' | 'vendida' | 'alquilada' | 'inactiva' | 'cerrada';
+  operation: 'venta' | 'alquiler' | 'vacacional';
+  property_type: 'casa' | 'apartamento' | 'local' | 'terreno' | 'finca' | 'oficina' | 'proyecto' | 'townhouse' | 'penthouse' | 'terreno_lote' | 'edificio' | 'galpon' | 'habitacion' | 'hacienda_finca' | 'anexo';
+  
+  // Badges de identidad
   featured: boolean;
   exclusive: boolean;
   new_listing: boolean;
   price_reduced: boolean;
-
-  // --- Precio ---
+  price_negotiable: boolean;
+  listing_badge: string | null;   // texto libre premium: "OPORTUNIDAD", "ÚLTIMA UNIDAD", etc.
+  completeness_score: number;     // 0–100
+  
+  // Precio
   price: number;
   price_currency: string;
-  price_usd?: number | null;
-  price_negotiable: boolean;
-  price_history: PriceHistoryEntry[];
-
-  // --- Dimensiones ---
-  area_total?: number | null;
-  area_built?: number | null;
-  area_hectares?: number | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  half_bathrooms?: number | null;
-  parking_spaces?: number | null;
-  parking_covered: boolean;
-
-  // --- Ubicación ---
-  zone_id?: string | null;
-  municipio?: Municipio | null;
-  address_es?: string | null;
-  address_en?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  show_exact_location: boolean;
-
-  // --- Relaciones ---
-  agent_id?: string | null;
-  zone?: Zone | null;
-  agent?: Agent | null;
-  images?: PropertyImage[];
-  features?: PropertyFeature[];
-  translations?: PropertyTranslation[];
-  videos?: PropertyVideo[];
-
-  // --- Media ---
-  video_url?: string | null;
-
-  // --- Estructura y confort ---
-  floor_number?: number | null;
-  total_floors?: number | null;
-  has_elevator: boolean;
-  property_age?: number | null;
-  condition?: PropertyCondition | null;
-  furnished: FurnishedStatus;
-  kitchen_type?: KitchenType | null;
-
-  // --- Servicios básicos ---
-  has_water_tank: boolean;
-  has_hot_water: boolean;
-  has_generator: boolean;
-  gas_type?: GasType | null;
-  has_internet: boolean;
-
-  // --- Seguridad ---
-  has_security_24h: boolean;
-  has_electric_gate: boolean;
-  has_cctv: boolean;
-  has_electric_fence: boolean;
-  has_intercom: boolean;
-  has_armored_door: boolean;
-
-  // --- Climatización ---
+  price_per_m2?: number | null;
+  maintenance_fee?: number | null;
+  maintenance_fee_currency?: string | null;
+  
+  // Dimensiones
+  area_built: number | null;       // m²
+  area_total: number | null;       // m² terreno total
+  area_hectares: number | null;    // para fincas
+  floors: number | null;           // pisos totales del inmueble
+  floor_number: number | null;     // piso en que está (apartamentos)
+  
+  // Habitáculos
+  bedrooms: number | null;
+  bathrooms: number | null;
+  half_bathrooms: number | null;
+  parking_spaces: number | null;
+  service_rooms?: number | null;
+  storage_rooms?: number | null;
+  
+  // Año y estado de construcción
+  year_built: number | null;
+  construction_status?: 'terminado' | 'en_planos' | 'en_construccion' | 'entrega_inmediata' | null;
+  
+  // Amenidades booleanas (las 20)
+  has_pool: boolean;
+  has_garden: boolean;
   has_ac: boolean;
-  has_heating: boolean;
-
-  // --- Inventario y amenidades ---
-  furniture_inventory: string[];
-  amenities: string[];
-
-  // --- Específico: Habitación y Anexo ---
-  bathroom_type?: "privado" | "compartido" | null;
-  host_housing_type?: "casa" | "apartamento" | "anexo_independiente" | null;
-  cohabitation?: "solo" | "con_personas" | null;
-  occupants_count?: number | null;
-  gender_policy?: "cualquiera" | "mujeres" | "hombres" | null;
-  deposit_required: boolean;
-  deposit_amount?: number | null;
-  services_included: string[];
+  has_generator: boolean;
+  has_water_tank: boolean;
+  has_security: boolean;
+  has_elevator: boolean;
   allows_pets: boolean;
-  allows_cooking: boolean;
-  has_independent_entrance: boolean;
-
-  // --- Específico: Terreno y Finca ---
-  topography?: "plano" | "inclinado" | "mixto" | null;
-  land_use?: "residencial" | "comercial" | "agricola" | "mixto" | null;
-  zone_services: string[];
-  has_own_water: boolean;
-  access_type?: "pavimentado" | "camino_tierra" | "mixto" | null;
-  current_use?: string | null;
-
-  // --- Específico: Vacacional ---
-  price_per_night?: number | null;
-  price_weekend?: number | null;
-  min_nights: number;
-  max_guests?: number | null;
-  checkin_time: string;
-  checkout_time: string;
-  house_rules?: string | null;
-  includes_breakfast: boolean;
-
-  // --- SEO ---
-  meta_title_es?: string | null;
-  meta_title_en?: string | null;
-  meta_description_es?: string | null;
-  meta_description_en?: string | null;
-
-  // --- Gamificación ---
-  completeness_score: number;
-  listing_badge: ListingBadge;
-
-  // --- Timestamps ---
+  furnished: boolean;
+  has_gym?: boolean;
+  has_jacuzzi?: boolean;
+  has_bbq?: boolean;
+  has_laundry?: boolean;
+  has_study?: boolean;
+  has_cinema?: boolean;
+  has_wine_cellar?: boolean;
+  has_sauna?: boolean;
+  has_terrace?: boolean;
+  has_balcony?: boolean;
+  has_solar_panels?: boolean;
+  
+  // Ubicación
+  address_es: string | null;
+  address_en: string | null;
+  municipio: string | null;
+  lat: number | null;
+  lng: number | null;
+  zone?: Zone | null;
+  
+  // Media
+  images: PropertyImage[];
+  videos: PropertyVideo[];
+  virtual_tour_url?: string | null;
+  video_url?: string | null;        // YouTube/Vimeo embed
+  
+  // Agente
+  agent_id: string | null;
+  agent: {
+    id: string;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    avatar_url: string | null;
+    title?: string | null;           // "Asesor Senior", "Directora Comercial", etc.
+    bio_es: string | null;
+    bio_en: string | null;
+    languages?: string[] | null;     // ["Español", "Inglés"]
+  } | null;
+  
+  // Contenido
+  translations: PropertyTranslation[];
+  features: PropertyFeature[];     // pares key/value adicionales
+  
+  // SEO / metadata
   created_at: string;
   updated_at: string;
-  published_at?: string | null;
+  published_at: string | null;
 }
 
 export interface PropertyCard {
