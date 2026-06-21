@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { HeroSearch } from "./HeroSearch";
 import { GeometricBackground } from "@/components/ui/GeometricBackground";
@@ -21,6 +21,13 @@ interface HeroProps {
 export function Hero({ zones, stats }: HeroProps) {
   const { locale, dict } = useLocale();
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.6; // Slower playback for smooth feeling
+    }
+  }, [videoLoaded]);
 
   const titleText = dict.hero?.title || "Propiedades seleccionadas en Mérida, Venezuela.";
 
@@ -32,6 +39,7 @@ export function Hero({ zones, stats }: HeroProps) {
       }}
     >
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
@@ -47,7 +55,7 @@ export function Hero({ zones, stats }: HeroProps) {
       <div
         className="absolute inset-0"
         style={{
-          background: "linear-gradient(to bottom, oklch(0.08 0.01 60 / 0.65) 0%, oklch(0.08 0.01 60 / 0.45) 50%, oklch(0.08 0.01 60 / 0.75) 100%)"
+          background: "linear-gradient(to bottom, rgba(10, 8, 7, 0.85) 0%, rgba(10, 8, 7, 0.72) 50%, rgba(10, 8, 7, 0.9) 100%)"
         }}
         aria-hidden="true"
       />
