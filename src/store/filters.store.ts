@@ -13,7 +13,7 @@ interface FiltersState {
 }
 
 const initialFilters: PropertyFilters = {
-  operacion: undefined,
+  operacion: undefined, // "venta" | "alquiler" | "vacacional"
   tipo: undefined,
   zona: undefined,
   precio_min: undefined,

@@ -12,7 +12,7 @@ export function useFilters() {
   const filters: PropertyFilters = {};
 
   const op = searchParams.get("operacion");
-  if (op === "venta" || op === "alquiler") {
+  if (op === "venta" || op === "alquiler" || op === "vacacional") {
     filters.operacion = op as PropertyOperation;
   }
 

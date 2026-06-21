@@ -88,6 +88,7 @@ const es = {
     operation: {
       venta: "En venta",
       alquiler: "En alquiler",
+      vacacional: "Vacacional",
     },
     status: {
       activa: "Disponible",

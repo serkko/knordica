@@ -102,7 +102,7 @@ export function PropertyFilters({ zones }: PropertyFiltersProps) {
         <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
           {dict.catalog?.filters?.operacion || "Operación"}
         </label>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5">
           <button
             type="button"
             onClick={() => updateFilter("operacion", undefined)}
@@ -135,6 +135,17 @@ export function PropertyFilters({ zones }: PropertyFiltersProps) {
             }`}
           >
             {dict.property?.operation?.alquiler || "Alquiler"}
+          </button>
+          <button
+            type="button"
+            onClick={() => updateFilter("operacion", "vacacional")}
+            className={`h-10 text-[10px] font-semibold uppercase tracking-wider font-display border rounded-sm transition-all cursor-pointer ${
+              filters.operacion === "vacacional"
+                ? "bg-[var(--accent)] text-[var(--bg)] border-[var(--accent)]"
+                : "bg-transparent text-[var(--text-2)] border-[var(--border)] hover:border-[var(--border-strong)]"
+            }`}
+          >
+            {dict.property?.operation?.vacacional || "Vacacional"}
           </button>
         </div>
       </div>
