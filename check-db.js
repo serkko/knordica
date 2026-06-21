@@ -59,10 +59,10 @@ async function testConnection() {
     console.log('\nSUCCESS! Successfully queried "zones" table.');
     console.log('Found zones in DB:', zones);
 
-    console.log('\nAttempting to query table "properties"...');
+    console.log('\nAttempting to query table "properties" (including new columns)...');
     const { data: properties, error: propError } = await supabase
       .from('properties')
-      .select('id, slug, price')
+      .select('id, slug, price, municipio, completeness_score, listing_badge, video_url')
       .limit(2);
 
     if (propError) {
@@ -70,6 +70,19 @@ async function testConnection() {
     } else {
       console.log('SUCCESS! Successfully queried "properties" table.');
       console.log('Properties in DB:', properties);
+    }
+
+    console.log('\nAttempting to query new table "property_videos"...');
+    const { data: videos, error: vidError } = await supabase
+      .from('property_videos')
+      .select('id, property_id, url, title_es')
+      .limit(2);
+
+    if (vidError) {
+      console.error('Error querying property_videos:', vidError.message);
+    } else {
+      console.log('SUCCESS! Successfully queried "property_videos" table.');
+      console.log('Videos in DB:', videos);
     }
   } catch (err) {
     console.error('Unexpected connection exception:', err.message);
