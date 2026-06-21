@@ -56,6 +56,31 @@ const propertySchema = zod.object({
   exclusive: zod.boolean().default(false),
   newListing: zod.boolean().default(false),
   priceReduced: zod.boolean().default(false),
+
+  // Ubicación extendida
+  municipio: zod.string().optional(),
+  latitud: zod.coerce.number().optional(),
+  longitud: zod.coerce.number().optional(),
+
+  // Características booleanas (amenidades schema_v2)
+  hasPool: zod.boolean().default(false),
+  hasGarden: zod.boolean().default(false),
+  hasAc: zod.boolean().default(false),
+  hasHeating: zod.boolean().default(false),
+  hasGenerator: zod.boolean().default(false),
+  hasWaterTank: zod.boolean().default(false),
+  hasSecurity: zod.boolean().default(false),
+  hasElevator: zod.boolean().default(false),
+  allowsPets: zod.boolean().default(false),
+  furnished: zod.boolean().default(false),
+
+  // Características adicionales (schema_v2)
+  floors: zod.coerce.number().optional(),
+  yearBuilt: zod.coerce.number().optional(),
+  maintenanceFee: zod.coerce.number().optional(),
+
+  // Video embed
+  videoUrl: zod.string().optional(),
 });
 
 type PropertyFormData = zod.infer<typeof propertySchema>;
@@ -97,7 +122,51 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(propertySchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      titleEs: initialData.titleEs || "",
+      titleEn: initialData.titleEn || "",
+      shortDescriptionEs: initialData.shortDescriptionEs || "",
+      shortDescriptionEn: initialData.shortDescriptionEn || "",
+      descriptionEs: initialData.descriptionEs || "",
+      descriptionEn: initialData.descriptionEn || "",
+      operation: initialData.operation || "venta",
+      propertyType: initialData.propertyType || "casa",
+      status: initialData.status || "activa",
+      price: initialData.price || 0,
+      priceCurrency: initialData.priceCurrency || "USD",
+      priceNegotiable: initialData.priceNegotiable || false,
+      areaTotal: initialData.areaTotal || 0,
+      areaBuilt: initialData.areaBuilt || 0,
+      bedrooms: initialData.bedrooms || 0,
+      bathrooms: initialData.bathrooms || 0,
+      parkingSpaces: initialData.parkingSpaces || 0,
+      zoneId: initialData.zoneId || "",
+      addressEs: initialData.addressEs || "",
+      addressEn: initialData.addressEn || "",
+      coverImageUrl: initialData.coverImageUrl || "",
+      galleryImages: initialData.galleryImages || "",
+      featured: initialData.featured || false,
+      exclusive: initialData.exclusive || false,
+      newListing: initialData.newListing || false,
+      priceReduced: initialData.priceReduced || false,
+      municipio: initialData.municipio || "",
+      latitud: initialData.latitud || undefined,
+      longitud: initialData.longitud || undefined,
+      hasPool: initialData.hasPool || false,
+      hasGarden: initialData.hasGarden || false,
+      hasAc: initialData.hasAc || false,
+      hasHeating: initialData.hasHeating || false,
+      hasGenerator: initialData.hasGenerator || false,
+      hasWaterTank: initialData.hasWaterTank || false,
+      hasSecurity: initialData.hasSecurity || false,
+      hasElevator: initialData.hasElevator || false,
+      allowsPets: initialData.allowsPets || false,
+      furnished: initialData.furnished || false,
+      floors: initialData.floors || undefined,
+      yearBuilt: initialData.yearBuilt || undefined,
+      maintenanceFee: initialData.maintenanceFee || undefined,
+      videoUrl: initialData.videoUrl || "",
+    } : {
       titleEs: "",
       titleEn: "",
       shortDescriptionEs: "",
@@ -124,8 +193,95 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
       exclusive: false,
       newListing: false,
       priceReduced: false,
+      municipio: "",
+      latitud: undefined,
+      longitud: undefined,
+      hasPool: false,
+      hasGarden: false,
+      hasAc: false,
+      hasHeating: false,
+      hasGenerator: false,
+      hasWaterTank: false,
+      hasSecurity: false,
+      hasElevator: false,
+      allowsPets: false,
+      furnished: false,
+      floors: undefined,
+      yearBuilt: undefined,
+      maintenanceFee: undefined,
+      videoUrl: "",
     },
   });
+
+  // Load extended fields when editing (since parent component doesn't map them in initialData)
+  useEffect(() => {
+    async function loadExtendedFields() {
+      if (propertyId && hasSupabaseKeys) {
+        try {
+          const { data: p } = await supabase
+            .from("properties")
+            .select("*, property_videos(*)")
+            .eq("id", propertyId)
+            .single();
+
+          if (p) {
+            if (p.municipio) setValue("municipio", p.municipio);
+            if (p.lat !== null && p.lat !== undefined) setValue("latitud", p.lat);
+            if (p.lng !== null && p.lng !== undefined) setValue("longitud", p.lng);
+            setValue("hasPool", p.has_pool || false);
+            setValue("hasGarden", p.has_garden || false);
+            setValue("hasAc", p.has_ac || false);
+            setValue("hasHeating", p.has_heating || false);
+            setValue("hasGenerator", p.has_generator || false);
+            setValue("hasWaterTank", p.has_water_tank || false);
+            setValue("hasSecurity", p.has_security || false);
+            setValue("hasElevator", p.has_elevator || false);
+            setValue("allowsPets", p.allows_pets || false);
+            setValue("furnished", p.furnished === "completo" || p.furnished === "parcial" || p.furnished === "totalmente" || p.furnished === true || false);
+            if (p.floors !== null && p.floors !== undefined) setValue("floors", p.floors);
+            if (p.year_built !== null && p.year_built !== undefined) setValue("yearBuilt", p.year_built);
+            if (p.maintenance_fee !== null && p.maintenance_fee !== undefined) setValue("maintenanceFee", p.maintenance_fee);
+
+            if (p.property_videos && p.property_videos.length > 0) {
+              setValue("videoUrl", p.property_videos[0].url || "");
+            }
+          }
+        } catch (e) {
+          console.error("Error loading extended property fields", e);
+        }
+      } else if (propertyId) {
+        // Mock fallback
+        try {
+          const currentLocal = JSON.parse(localStorage.getItem("knordica-dev-properties") || "null") || [...MOCK_PROPERTIES];
+          const p = currentLocal.find((item: any) => item.id === propertyId);
+          if (p) {
+            if (p.municipio) setValue("municipio", p.municipio);
+            if (p.lat !== undefined) setValue("latitud", p.lat);
+            else if (p.latitude !== undefined) setValue("latitud", p.latitude);
+            if (p.lng !== undefined) setValue("longitud", p.lng);
+            else if (p.longitude !== undefined) setValue("longitud", p.longitude);
+            setValue("hasPool", p.has_pool || false);
+            setValue("hasGarden", p.has_garden || false);
+            setValue("hasAc", p.has_ac || false);
+            setValue("hasHeating", p.has_heating || false);
+            setValue("hasGenerator", p.has_generator || false);
+            setValue("hasWaterTank", p.has_water_tank || false);
+            setValue("hasSecurity", p.has_security || false);
+            setValue("hasElevator", p.has_elevator || false);
+            setValue("allowsPets", p.allows_pets || false);
+            setValue("furnished", p.furnished === "completo" || p.furnished === "parcial" || p.furnished === "totalmente" || p.furnished === true || false);
+            if (p.floors !== null && p.floors !== undefined) setValue("floors", p.floors);
+            if (p.year_built !== null && p.year_built !== undefined) setValue("yearBuilt", p.year_built);
+            if (p.maintenance_fee !== null && p.maintenance_fee !== undefined) setValue("maintenanceFee", p.maintenance_fee);
+            if (p.videoUrl) setValue("videoUrl", p.videoUrl);
+          }
+        } catch (e) {
+          console.error("Error loading mock extended property fields", e);
+        }
+      }
+    }
+    loadExtendedFields();
+  }, [propertyId, hasSupabaseKeys]);
 
   const onSubmit = async (data: any) => {
     setSubmitting(true);
@@ -136,7 +292,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
         .replace(/(^-|-$)+/g, "");
 
       if (hasSupabaseKeys) {
-        const payload = {
+        const payload: any = {
           slug,
           operation: data.operation,
           property_type: data.propertyType,
@@ -156,13 +312,40 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
           exclusive: data.exclusive,
           new_listing: data.newListing,
           price_reduced: data.priceReduced,
+          municipio: data.municipio || null,
+          latitude: data.latitud || null,
+          longitude: data.longitud || null,
+          has_pool: data.hasPool,
+          has_garden: data.hasGarden,
+          has_ac: data.hasAc,
+          has_heating: data.hasHeating,
+          has_generator: data.hasGenerator,
+          has_water_tank: data.hasWaterTank,
+          has_security: data.hasSecurity,
+          has_elevator: data.hasElevator,
+          allows_pets: data.allowsPets,
+          furnished: data.furnished,
+          floors: data.floors || null,
+          year_built: data.yearBuilt || null,
+          maintenance_fee: data.maintenanceFee || null,
         };
+
+        // Create standard DB copy payload with lat/lng keys since Supabase lacks latitude/longitude columns
+        const dbPayload = {
+          ...payload,
+          lat: data.latitud || null,
+          lng: data.longitud || null
+        };
+        delete dbPayload.latitude;
+        delete dbPayload.longitude;
+
+        let newProp: any = null;
 
         if (propertyId) {
           // UPDATE
           const { error } = await supabase
             .from("properties")
-            .update(payload)
+            .update(dbPayload)
             .eq("id", propertyId);
 
           if (error) throw error;
@@ -183,15 +366,38 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
               { property_id: propertyId, url: data.coverImageUrl, is_cover: true, sort_order: 0 }
             ]);
           }
+
+          // Video update
+          if (data.videoUrl) {
+            // Delete first to simulate upsert and avoid unique index collision issues
+            await supabase.from("property_videos").delete().eq("property_id", propertyId).eq("sort_order", 0);
+            
+            const videoPayload = { property_id: propertyId, url: data.videoUrl, platform: data.videoUrl.includes("youtube") ? "youtube" : "vimeo", sort_order: 0 };
+            const cleanVideoPayload = { ...videoPayload };
+            delete (cleanVideoPayload as any).platform;
+            
+            try {
+              const { error: insertError } = await supabase.from("property_videos").insert([cleanVideoPayload]);
+              if (insertError) {
+                // Fallback literal code matching string
+                await supabase.from("property_videos")
+                  .upsert([videoPayload],
+                  { onConflict: "property_id,sort_order" });
+              }
+            } catch (err) {
+              console.warn("Silent catch on video update upsert", err);
+            }
+          }
         } else {
           // INSERT NEW
-          const { data: newProp, error } = await supabase
+          const { data: inserted, error } = await supabase
             .from("properties")
-            .insert([payload])
+            .insert([dbPayload])
             .select()
             .single();
 
           if (error) throw error;
+          newProp = inserted;
 
           if (newProp) {
             // Insert translations
@@ -207,6 +413,23 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
               await supabase.from("property_images").insert([
                 { property_id: newProp.id, url: data.coverImageUrl, is_cover: true, sort_order: 0 }
               ]);
+            }
+
+            // Video insert
+            if (data.videoUrl && newProp) {
+              const videoPayload = { property_id: newProp.id, url: data.videoUrl, platform: data.videoUrl.includes("youtube") ? "youtube" : "vimeo", sort_order: 0 };
+              const cleanVideoPayload = { ...videoPayload };
+              delete (cleanVideoPayload as any).platform;
+              
+              try {
+                const { error: insertError } = await supabase.from("property_videos").insert([cleanVideoPayload]);
+                if (insertError) {
+                  // Fallback literal code matching string
+                  await supabase.from("property_videos").insert([videoPayload]);
+                }
+              } catch (err) {
+                console.warn("Silent catch on video insert", err);
+              }
             }
           }
         }
@@ -247,7 +470,26 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
           exclusive: data.exclusive,
           new_listing: data.newListing,
           featured: data.featured,
-          price_reduced: data.priceReduced
+          price_reduced: data.priceReduced,
+          municipio: data.municipio || null,
+          latitude: data.latitud || null,
+          longitude: data.longitud || null,
+          lat: data.latitud || null,
+          lng: data.longitud || null,
+          has_pool: data.hasPool,
+          has_garden: data.hasGarden,
+          has_ac: data.hasAc,
+          has_heating: data.hasHeating,
+          has_generator: data.hasGenerator,
+          has_water_tank: data.hasWaterTank,
+          has_security: data.hasSecurity,
+          has_elevator: data.hasElevator,
+          allows_pets: data.allowsPets,
+          furnished: data.furnished,
+          floors: data.floors || null,
+          year_built: data.yearBuilt || null,
+          maintenance_fee: data.maintenanceFee || null,
+          videoUrl: data.videoUrl || "",
         };
 
         if (propertyId) {
@@ -271,7 +513,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
 
   const nextStep = (e: React.MouseEvent) => {
     e.preventDefault();
-    setStep((prev) => Math.min(prev + 1, 4));
+    setStep((prev) => Math.min(prev + 1, 5));
   };
 
   const prevStep = (e: React.MouseEvent) => {
@@ -283,13 +525,14 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
     { num: 1, label: locale === "es" ? "Información" : "Information", icon: <Building2 className="h-4 w-4" /> },
     { num: 2, label: locale === "es" ? "Finanzas" : "Finance", icon: <DollarSign className="h-4 w-4" /> },
     { num: 3, label: locale === "es" ? "Ubicación" : "Location", icon: <MapPin className="h-4 w-4" /> },
-    { num: 4, label: locale === "es" ? "Imágenes/SEO" : "Images/SEO", icon: <ImageIcon className="h-4 w-4" /> },
+    { num: 4, label: locale === "es" ? "Amenidades" : "Amenities", icon: <Sparkles className="h-4 w-4" /> },
+    { num: 5, label: locale === "es" ? "Multimedia" : "Media", icon: <ImageIcon className="h-4 w-4" /> },
   ];
 
   return (
     <div className="flex flex-col gap-8 w-full max-w-4xl mx-auto">
       {/* Step Indicators */}
-      <div className="grid grid-cols-4 gap-2 border-b border-[var(--border)] pb-5">
+      <div className="grid grid-cols-5 gap-2 border-b border-[var(--border)] pb-5">
         {stepsHeader.map((s) => {
           const isCompleted = step > s.num;
           const isActive = step === s.num;
@@ -566,6 +809,41 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                 />
               </div>
             </div>
+
+            {/* Extra dimensions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                  {locale === "es" ? "Número de Pisos" : "Number of Floors"}
+                </label>
+                <input
+                  type="number"
+                  {...register("floors")}
+                  className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                  {locale === "es" ? "Año de Construcción" : "Year Built"}
+                </label>
+                <input
+                  type="number"
+                  {...register("yearBuilt")}
+                  placeholder="2020"
+                  className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                  {locale === "es" ? "Cuota de Mantenimiento (USD/mes)" : "Maintenance Fee (USD/mo)"}
+                </label>
+                <input
+                  type="number"
+                  {...register("maintenanceFee")}
+                  className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -593,6 +871,54 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                 ))}
               </select>
               {errors.zoneId && <span className="text-[10px] text-[var(--danger)]">{locale === "es" ? "Debes elegir una zona" : "Selecting a zone is required"}</span>}
+            </div>
+
+            {/* Municipio */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                {locale === "es" ? "Municipio" : "Municipality"}
+              </label>
+              <select
+                {...register("municipio")}
+                className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] text-[var(--text)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden cursor-pointer"
+              >
+                <option value="" className="bg-[var(--surface-2)]">-- {locale === "es" ? "Seleccionar municipio" : "Select municipality"} --</option>
+                <option value="libertador" className="bg-[var(--surface-2)]">Libertador (Mérida Capital)</option>
+                <option value="santos-marquina" className="bg-[var(--surface-2)]">Santos Marquina (Tabay)</option>
+                <option value="campo-elias" className="bg-[var(--surface-2)]">Campo Elías (Ejido)</option>
+                <option value="sucre" className="bg-[var(--surface-2)]">Sucre (Lagunillas)</option>
+                <option value="alberto-adriani" className="bg-[var(--surface-2)]">Alberto Adriani (El Vigía)</option>
+                <option value="rangel" className="bg-[var(--surface-2)]">Rangel (Mucuchíes)</option>
+                <option value="otro" className="bg-[var(--surface-2)]">{locale === "es" ? "Otro" : "Other"}</option>
+              </select>
+            </div>
+
+            {/* Coordenadas */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                  {locale === "es" ? "Latitud (opcional)" : "Latitude (optional)"}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  {...register("latitud")}
+                  placeholder="8.5897"
+                  className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                  {locale === "es" ? "Longitud (opcional)" : "Longitude (optional)"}
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  {...register("longitud")}
+                  placeholder="-71.1442"
+                  className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+                />
+              </div>
             </div>
 
             {/* Address ES & EN */}
@@ -672,8 +998,50 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
           </div>
         )}
 
-        {/* STEP 4: IMÁGENES Y SEO */}
+        {/* STEP 4: AMENIDADES */}
         {step === 4 && (
+          <div className="p-6 border border-[var(--border)] bg-[var(--surface)] rounded-sm glass flex flex-col gap-5 animate-in fade-in duration-300">
+            <h3 className="font-display font-bold text-base text-[var(--text)] pb-2 border-b border-[var(--border)]">
+              {locale === "es" ? "Amenidades y Características" : "Amenities & Features"}
+            </h3>
+
+            {/* Confort y servicios */}
+            <div className="flex flex-col gap-3">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                {locale === "es" ? "Confort y Servicios" : "Comfort & Services"}
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  { field: "hasPool", labelEs: "Piscina", labelEn: "Pool" },
+                  { field: "hasGarden", labelEs: "Jardín", labelEn: "Garden" },
+                  { field: "hasAc", labelEs: "Aire Acondicionado", labelEn: "Air Conditioning" },
+                  { field: "hasHeating", labelEs: "Calefacción", labelEn: "Heating" },
+                  { field: "hasGenerator", labelEs: "Planta Eléctrica", labelEn: "Generator" },
+                  { field: "hasWaterTank", labelEs: "Tanque / Pozo de Agua", labelEn: "Water Tank / Well" },
+                  { field: "hasSecurity", labelEs: "Vigilancia / Seguridad", labelEn: "Security" },
+                  { field: "hasElevator", labelEs: "Ascensor", labelEn: "Elevator" },
+                  { field: "allowsPets", labelEs: "Permite Mascotas", labelEn: "Pets Allowed" },
+                  { field: "furnished", labelEs: "Amueblado", labelEn: "Furnished" },
+                ].map(({ field, labelEs, labelEn }) => (
+                  <div key={field} className="flex items-center gap-2.5 p-3 border border-[var(--border)] rounded-sm hover:border-[var(--accent)]/40 transition-colors">
+                    <input
+                      type="checkbox"
+                      id={field}
+                      {...register(field as any)}
+                      className="h-4 w-4 rounded-xs border-[var(--border)] bg-transparent text-[var(--accent)] focus:ring-0 cursor-pointer shrink-0"
+                    />
+                    <label htmlFor={field} className="text-xs text-[var(--text-2)] font-light cursor-pointer select-none leading-tight">
+                      {locale === "es" ? labelEs : labelEn}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: MULTIMEDIA */}
+        {step === 5 && (
           <div className="p-6 border border-[var(--border)] bg-[var(--surface)] rounded-sm glass flex flex-col gap-5 animate-in fade-in duration-300">
             <h3 className="font-display font-bold text-base text-[var(--text)] pb-2 border-b border-[var(--border)]">
               {locale === "es" ? "Contenido Multimedia" : "Media Assets & Links"}
@@ -706,6 +1074,19 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
               />
             </div>
 
+            {/* Video embed URL */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-muted)] font-display">
+                {locale === "es" ? "URL de Video (YouTube / Vimeo)" : "Video URL (YouTube / Vimeo)"}
+              </label>
+              <input
+                type="text"
+                {...register("videoUrl")}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="h-10 px-3 text-xs bg-transparent border border-[var(--border)] rounded-sm focus:border-[var(--accent)] focus:ring-0 focus:outline-hidden"
+              />
+            </div>
+
             {/* Quick Helper */}
             <div className="p-4 border border-[var(--border)] bg-[var(--surface-2)]/30 rounded-xs flex gap-3 text-xs font-light text-[var(--text-2)] leading-relaxed">
               <Sparkles className="h-4.5 w-4.5 text-[var(--accent)] shrink-0 mt-0.5" />
@@ -730,7 +1111,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
             <span>{locale === "es" ? "Anterior" : "Back"}</span>
           </Button>
 
-          {step < 4 ? (
+          {step < 5 ? (
             <Button
               variant="outline"
               onClick={nextStep}
@@ -747,7 +1128,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
               className="h-10 px-6 rounded-sm text-xs font-display uppercase tracking-wider"
             >
               <Save className="h-3.5 w-3.5 mr-1.5" />
-              <span>{locale === "es" ? "Guardar Propiedad" : "Save Listing"}</span>
+              <span>{locale === "es" ? "Guardar" : "Save"}</span>
             </Button>
           )}
         </div>
