@@ -59,13 +59,13 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
             variants={containerVariants}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
           >
-            {properties.map((property, index) => (
+            {properties.map((property) => (
               <motion.div
                 key={property.id}
                 variants={itemVariants}
-                className={cn("h-full", index === 0 && "lg:col-span-2")}
+                className="h-full"
               >
-                <PropertyCard property={property} isFeatured={index === 0} />
+                <PropertyCard property={property} isFeatured={false} />
               </motion.div>
             ))}
           </motion.div>

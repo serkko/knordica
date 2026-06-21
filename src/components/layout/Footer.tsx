@@ -66,7 +66,7 @@ export function Footer() {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Instagram size={14} />
               </a>
@@ -74,7 +74,7 @@ export function Footer() {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Linkedin size={14} />
               </a>
@@ -82,7 +82,7 @@ export function Footer() {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
+                className="w-8 h-8 rounded-sm border border-[var(--color-border)] bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-gold)] hover:text-[var(--color-text-inverse)] hover:border-[var(--color-gold)] transition-all cursor-pointer"
               >
                 <Facebook size={14} />
               </a>

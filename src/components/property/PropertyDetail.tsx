@@ -67,7 +67,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
         {/* Left Side (65% width equivalent in 12-col grid = col-span-8) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Header titles and Share */}
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[rgba(255,255,255,0.08)]">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b border-[var(--border)]">
             <div className="flex flex-col gap-2">
               {/* Operation type & Tag */}
               <div className="flex items-center gap-2">
@@ -107,10 +107,10 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           </div>
 
           {/* Features Row Grid (2x2) */}
-          <div className="grid grid-cols-2 gap-6 p-6 border border-[rgba(255,255,255,0.08)] bg-[var(--surface-1)] rounded-xl">
+          <div className="grid grid-cols-2 gap-6 p-6 border border-[var(--border)] bg-[var(--surface-1)] rounded-xl">
             {/* Rooms */}
             <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
                 <BedDouble className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -125,7 +125,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Baths */}
             <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
                 <Bath className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -140,7 +140,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Area */}
             <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
                 <Square className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -155,7 +155,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
             {/* Parking */}
             <div className="flex items-center gap-4">
-              <div className="h-11 w-11 border border-[rgba(255,255,255,0.08)] rounded-full flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
+              <div className="h-11 w-11 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text-2)] shrink-0 bg-[var(--surface-2)]">
                 <Car className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -181,7 +181,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
           {/* Technical features & details */}
           {property.features && property.features.length > 0 && (
-            <div className="flex flex-col gap-4 border-t border-[rgba(255,255,255,0.08)] pt-6">
+            <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-6">
               <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
                 {dict.property?.detail?.caracteristicas || "Detalles adicionales"}
               </h3>
@@ -198,11 +198,11 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
           )}
 
           {/* Map Section */}
-          <div className="flex flex-col gap-4 border-t border-[rgba(255,255,255,0.08)] pt-6">
+          <div className="flex flex-col gap-4 border-t border-[var(--border)] pt-6">
             <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text)]">
               {dict.property?.detail?.ubicacion || "Ubicación"}
             </h3>
-            <div className="h-[280px] w-full border border-[rgba(255,255,255,0.08)] rounded-lg overflow-hidden bg-[var(--surface-2)] relative">
+            <div className="h-[280px] w-full border border-[var(--border)] rounded-lg overflow-hidden bg-[var(--surface-2)] relative">
               <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,var(--border-strong)_1px,transparent_1px),linear-gradient(to_bottom,var(--border-strong)_1px,transparent_1px)] bg-[size:16px_16px]" />
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                 <MapPin className="h-8 w-8 text-[var(--accent)] mb-2" />
@@ -220,10 +220,10 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
         {/* Right Side (Sticky Agent panel, 35% width equivalent = col-span-4) */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-6">
           {/* Agent info summary card */}
-          <div className="p-6 border border-[rgba(255,255,255,0.08)] bg-[var(--surface-2)] rounded-xl flex flex-col gap-6 shadow-xl">
+          <div className="p-6 border border-[var(--border)] bg-[var(--surface-2)] rounded-xl flex flex-col gap-6 shadow-xl">
             <div className="flex items-center gap-4">
               {/* Avatar placeholder */}
-              <div className="h-12 w-12 rounded-full border border-[rgba(255,255,255,0.08)] bg-[var(--surface-elevated)] flex items-center justify-center text-[var(--accent)] font-display font-semibold shrink-0">
+              <div className="h-12 w-12 rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] flex items-center justify-center text-[var(--accent)] font-display font-semibold shrink-0">
                 {property.agent?.full_name ? property.agent.full_name[0] : "A"}
               </div>
               <div>
@@ -247,7 +247,7 @@ export function PropertyDetail({ property }: PropertyDetailProps) {
 
           {/* Form switch tabs */}
           <div className="flex flex-col gap-4">
-            <div className="flex border-b border-[rgba(255,255,255,0.08)]">
+            <div className="flex border-b border-[var(--border)]">
               <button
                 onClick={() => setActiveTab("contact")}
                 className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider font-display border-b-2 transition-all cursor-pointer ${

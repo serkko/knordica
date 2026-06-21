@@ -189,7 +189,7 @@ export function PropertyGallery({ images = [], title }: PropertyGalleryProps) {
             {/* Close Button */}
             <button
               onClick={() => setIndex(null)}
-              className="absolute top-6 right-6 h-10 w-10 border border-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
+              className="absolute top-6 right-6 h-10 w-10 border border-white/20 rounded-sm flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
             >
               <X className="h-5 w-5" />
             </button>
@@ -197,7 +197,7 @@ export function PropertyGallery({ images = [], title }: PropertyGalleryProps) {
             {/* Left Nav */}
             <button
               onClick={handlePrev}
-              className="absolute left-6 top-1/2 -translate-y-1/2 h-12 w-12 border border-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
+              className="absolute left-6 top-1/2 -translate-y-1/2 h-12 w-12 border border-white/20 rounded-sm flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -223,7 +223,7 @@ export function PropertyGallery({ images = [], title }: PropertyGalleryProps) {
             {/* Right Nav */}
             <button
               onClick={handleNext}
-              className="absolute right-6 top-1/2 -translate-y-1/2 h-12 w-12 border border-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
+              className="absolute right-6 top-1/2 -translate-y-1/2 h-12 w-12 border border-white/20 rounded-sm flex items-center justify-center text-white/70 hover:text-white hover:border-white transition-colors cursor-pointer z-50 bg-black/50"
             >
               <ChevronRight className="h-6 w-6" />
             </button>

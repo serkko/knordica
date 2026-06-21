@@ -35,7 +35,7 @@ function useNavLinks() {
 }
 
 // ─── Language Switcher ─────────────────────────────────────
-function LanguageSwitcher() {
+function LanguageSwitcher({ isOverHero }: { isOverHero?: boolean }) {
   const { locale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -52,17 +52,25 @@ function LanguageSwitcher() {
         onClick={() => switchLocale("es")}
         className={cn(
           "transition-all duration-150 uppercase cursor-pointer tracking-wider",
-          locale === "es" ? "text-[var(--accent)] font-semibold" : "text-[var(--text-muted)] hover:text-[var(--text-2)]"
+          locale === "es"
+            ? "text-[var(--accent)] font-semibold"
+            : (isOverHero
+                ? "text-[rgba(255,255,255,0.6)] hover:text-white"
+                : "text-[var(--text-muted)] hover:text-[var(--text-2)]")
         )}
       >
         ES
       </button>
-      <span className="text-[rgba(255,255,255,0.15)] text-[10px]">|</span>
+      <span className={cn("text-[10px]", isOverHero ? "text-white/20" : "text-[var(--border)]")}>|</span>
       <button
         onClick={() => switchLocale("en")}
         className={cn(
           "transition-all duration-150 uppercase cursor-pointer tracking-wider",
-          locale === "en" ? "text-[var(--accent)] font-semibold" : "text-[var(--text-muted)] hover:text-[var(--text-2)]"
+          locale === "en"
+            ? "text-[var(--accent)] font-semibold"
+            : (isOverHero
+                ? "text-[rgba(255,255,255,0.6)] hover:text-white"
+                : "text-[var(--text-muted)] hover:text-[var(--text-2)]")
         )}
       >
         EN
@@ -72,16 +80,17 @@ function LanguageSwitcher() {
 }
 
 // ─── Theme Toggle ──────────────────────────────────────────
-function ThemeToggle() {
+function ThemeToggle({ isOverHero }: { isOverHero?: boolean }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
       className={cn(
-        "w-8 h-8 flex items-center justify-center rounded-sm",
-        "text-[var(--text-2)] hover:text-[var(--text)]",
-        "hover:bg-[var(--surface-2)] transition-all duration-150 cursor-pointer"
+        "w-8 h-8 flex items-center justify-center rounded-sm transition-all duration-150 cursor-pointer",
+        isOverHero
+          ? "text-white hover:text-white hover:bg-white/10"
+          : "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
       )}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
@@ -192,7 +201,7 @@ function MobileDrawer({
               ))}
 
               {/* Private portals links in mobile menu */}
-              <div className="border-t border-[var(--color-divider)] my-3 pt-3 opacity-60" />
+              <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
 
               <motion.div
                 initial={{ opacity: 0, x: 16 }}
@@ -230,13 +239,13 @@ function MobileDrawer({
             </nav>
 
             {/* Footer */}
-            <div className="px-6 py-5 border-t border-[var(--color-divider)] space-y-4">
+            <div className="px-6 py-5 border-t border-[var(--border)] space-y-4">
               <a
                 href={`https://wa.me/5804122423334`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 cursor-pointer border-0"
+                  "flex items-center justify-center gap-2 w-full py-3 rounded-sm font-semibold text-sm transition-all duration-300 cursor-pointer border-0"
                 )}
                 style={{
                   backgroundColor: "var(--color-gold)",
@@ -265,7 +274,7 @@ function MobileDrawer({
 }
 
 // ─── Private Access Dropdown Component ─────────────────────
-function PrivateAccessDropdown() {
+function PrivateAccessDropdown({ isOverHero }: { isOverHero?: boolean }) {
   const { locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -278,10 +287,10 @@ function PrivateAccessDropdown() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[0.7rem] font-medium uppercase tracking-wider",
-          "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)]",
-          "hover:text-[var(--text)] hover:border-[var(--border-strong)]",
-          "transition-all duration-150 cursor-pointer"
+          "flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-[0.7rem] font-medium uppercase tracking-wider transition-all duration-150 cursor-pointer",
+          isOverHero
+            ? "border border-white/20 text-white hover:bg-white/10 hover:border-white/40"
+            : "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)]"
         )}
       >
         <User size={12} className="text-[var(--accent)] shrink-0" />
@@ -296,7 +305,7 @@ function PrivateAccessDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[rgba(255,255,255,0.08)] rounded-lg shadow-lg py-1.5 z-50 glass"
+            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-sm shadow-lg py-1.5 z-50 glass"
           >
             <Link
               href={`/${locale}/cliente`}
@@ -308,7 +317,7 @@ function PrivateAccessDropdown() {
             <Link
               href={`/${locale}/admin`}
               onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[rgba(255,255,255,0.08)]"
+              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border)]"
             >
               {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
             </Link>
@@ -385,7 +394,7 @@ export function Navbar() {
         style={scrolled ? {
           backgroundColor: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--color-divider)"
+          borderBottom: "1px solid var(--border)"
         } : {
           backgroundColor: "transparent",
           borderBottom: "1px solid transparent"
@@ -402,7 +411,10 @@ export function Navbar() {
                 width={140}
                 height={48}
                 priority
-                className="h-10 w-auto object-contain"
+                className={cn(
+                  "h-10 w-auto object-contain transition-all duration-300",
+                  isOverHero && "brightness-0 invert"
+                )}
               />
             </motion.div>
           </Link>
@@ -436,9 +448,9 @@ export function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-4">
-            <LanguageSwitcher />
-            <ThemeToggle />
-            <PrivateAccessDropdown />
+            <LanguageSwitcher isOverHero={isOverHero} />
+            <ThemeToggle isOverHero={isOverHero} />
+            <PrivateAccessDropdown isOverHero={isOverHero} />
             <motion.a
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
@@ -447,7 +459,7 @@ export function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-all duration-180 border-0 cursor-pointer shadow-sm text-sm"
+                "flex items-center gap-2 px-6 py-2 rounded-sm font-semibold transition-all duration-180 border-0 cursor-pointer shadow-sm text-sm"
               )}
               style={{
                 backgroundColor: "var(--color-gold)",
@@ -468,7 +480,12 @@ export function Navbar() {
 
           {/* Mobile trigger */}
           <button
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-sm text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-all cursor-pointer"
+            className={cn(
+              "lg:hidden flex items-center justify-center w-9 h-9 rounded-sm transition-all cursor-pointer",
+              isOverHero
+                ? "text-white hover:text-white hover:bg-white/10"
+                : "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+            )}
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
             aria-expanded={mobileOpen}

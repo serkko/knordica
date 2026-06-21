@@ -13,7 +13,7 @@ export default function ScrollToTop() {
     const { locale } = useLocale();
 
     useEffect(() => {
-        return scrollY.onChange((latest) => {
+        return scrollY.on("change", (latest) => {
             setIsVisible(latest > 500);
         });
     }, [scrollY]);
@@ -32,7 +32,7 @@ export default function ScrollToTop() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.5 }}
                             onClick={scrollToTop}
-                            className="flex items-center justify-center bg-[var(--color-gold)] border border-[var(--color-gold-highlight)]/30 rounded-full text-[var(--color-text-inverse)] hover:bg-[var(--color-gold-hover)] hover:scale-105 transition-all duration-300 shadow-xl w-12 h-12 cursor-pointer"
+                            className="flex items-center justify-center bg-[var(--color-gold)] border border-[var(--color-gold-highlight)]/30 rounded-sm text-[var(--color-text-inverse)] hover:bg-[var(--color-gold-hover)] hover:scale-105 transition-all duration-300 shadow-xl w-12 h-12 cursor-pointer"
                             aria-label={locale === "es" ? "Subir al inicio" : "Scroll to top"}
                         >
                             <ArrowUp size={20} />

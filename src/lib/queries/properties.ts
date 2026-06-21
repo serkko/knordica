@@ -43,32 +43,39 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
 
   if (supabase && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD") {
     try {
-      let query = supabase
+      // Check total active properties in DB first. If less than 30, fallback to MOCK.
+      const { count: totalDbCount } = await supabase
         .from("properties")
-        .select(`
-          id,
-          slug,
-          operation,
-          property_type,
-          status,
-          featured,
-          exclusive,
-          new_listing,
-          price_reduced,
-          price,
-          price_currency,
-          area_total,
-          area_built,
-          bedrooms,
-          bathrooms,
-          parking_spaces,
-          lat,
-          lng,
-          zone:zones(*),
-          translations:property_translations(locale, title, short_description),
-          images:property_images(id, url, alt_es, alt_en, is_cover, sort_order)
-        `, { count: "exact" })
+        .select("id", { count: "exact", head: true })
         .eq("status", "activa");
+
+      if (totalDbCount && totalDbCount >= 30) {
+        let query = supabase
+          .from("properties")
+          .select(`
+            id,
+            slug,
+            operation,
+            property_type,
+            status,
+            featured,
+            exclusive,
+            new_listing,
+            price_reduced,
+            price,
+            price_currency,
+            area_total,
+            area_built,
+            bedrooms,
+            bathrooms,
+            parking_spaces,
+            lat,
+            lng,
+            zone:zones(*),
+            translations:property_translations(locale, title, short_description),
+            images:property_images(id, url, alt_es, alt_en, is_cover, sort_order)
+          `, { count: "exact" })
+          .eq("status", "activa");
 
       if (filters.operacion) {
         query = query.eq("operation", filters.operacion);
@@ -122,7 +129,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
 
       const { data, error, count } = await query;
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         const locale = typeof window !== "undefined" && window.location.pathname.startsWith("/en") ? "en" : "es";
         
         const mappedData: PropertyCard[] = data.map((item: any) => {
@@ -160,8 +167,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
 
         return { data: mappedData, count: count ?? mappedData.length };
       }
-      
-      console.warn("Supabase query error, falling back to mock:", error);
+    }
     } catch (e) {
       console.warn("Supabase exception, falling back to mock:", e);
     }
@@ -197,6 +203,12 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
   if (filters.nuevas) {
     filtered = filtered.filter((p) => p.new_listing);
   }
+  if (filters.area_min) {
+    filtered = filtered.filter((p) => (p.area_total ?? p.area_built ?? 0) >= filters.area_min!);
+  }
+  if (filters.area_max) {
+    filtered = filtered.filter((p) => (p.area_total ?? p.area_built ?? 999999) <= filters.area_max!);
+  }
 
   // Sorting
   if (filters.sort) {
@@ -231,21 +243,29 @@ export async function getPropertyBySlug(slug: string): Promise<Property | null> 
 
   if (supabase && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD") {
     try {
-      const { data, error } = await supabase
+      // Check total active properties in DB first. If less than 30, fallback to MOCK.
+      const { count: totalDbCount } = await supabase
         .from("properties")
-        .select(`
-          *,
-          zone:zones(*),
-          agent:agents(*),
-          images:property_images(*),
-          features:property_features(*),
-          translations:property_translations(*)
-        `)
-        .eq("slug", slug)
-        .single();
+        .select("id", { count: "exact", head: true })
+        .eq("status", "activa");
 
-      if (!error && data) {
-        return data as Property;
+      if (totalDbCount && totalDbCount >= 30) {
+        const { data, error } = await supabase
+          .from("properties")
+          .select(`
+            *,
+            zone:zones(*),
+            agent:agents(*),
+            images:property_images(*),
+            features:property_features(*),
+            translations:property_translations(*)
+          `)
+          .eq("slug", slug)
+          .single();
+
+        if (!error && data) {
+          return data as Property;
+        }
       }
     } catch (e) {
       console.warn("Supabase exception, falling back to mock:", e);

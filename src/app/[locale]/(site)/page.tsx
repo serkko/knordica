@@ -27,10 +27,10 @@ export default async function Page({ params }: PageProps) {
     getBlogPosts(locale as Locale),
   ]);
 
-  // Filter featured properties for the featured grid section (max 3)
+  // Filter featured properties for the featured grid section (max 6)
   const featuredProperties = propertiesResult.data
     .filter((p) => p.featured)
-    .slice(0, 3);
+    .slice(0, 6);
 
   return (
     <>

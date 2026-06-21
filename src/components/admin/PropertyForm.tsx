@@ -304,7 +304,7 @@ export function PropertyForm({ initialData, propertyId }: PropertyFormProps) {
                   : "border-transparent text-[var(--text-muted)]"
               }`}
             >
-              <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+              <div className={`h-6 w-6 rounded-sm flex items-center justify-center text-[10px] font-bold border ${
                 isActive 
                   ? "border-[var(--accent)] bg-[var(--accent)]/10" 
                   : isCompleted 

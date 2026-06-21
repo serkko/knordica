@@ -91,7 +91,7 @@ export function WhyKnordica() {
   ];
 
   return (
-    <section ref={sectionRef} className="section-y border-t border-[var(--color-divider)] bg-[var(--color-bg)] overflow-hidden">
+    <section ref={sectionRef} className="section-y border-t border-[var(--border)] bg-[var(--color-bg)] overflow-hidden">
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-16 md:mb-24">

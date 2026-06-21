@@ -104,7 +104,7 @@ export function MapPreview() {
             {/* Dashboard Overlay Mock (gives feeling of a refined dashboard interface) */}
             <div className="absolute bottom-4 left-4 right-4 glass p-4 rounded-sm flex items-center justify-between shadow-[var(--shadow-md)]">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-[var(--accent-dim)] text-[var(--accent)] rounded-full flex items-center justify-center shrink-0">
+                <div className="h-8 w-8 bg-[var(--accent-dim)] text-[var(--accent)] rounded-sm flex items-center justify-center shrink-0">
                   <Navigation2 className="h-4 w-4 rotate-45" />
                 </div>
                 <div className="text-left">

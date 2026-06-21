@@ -115,7 +115,7 @@ export function AdminSidebar({ userName, userRole, isDemo = false }: AdminSideba
             {/* Profile widget */}
             <div className="p-6 border-b border-[var(--border)] bg-[var(--surface)]/20">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/30 flex items-center justify-center font-display font-bold text-xs text-[var(--accent)]">
+                <div className="h-9 w-9 rounded-sm bg-[var(--accent)]/10 border border-[var(--accent)]/30 flex items-center justify-center font-display font-bold text-xs text-[var(--accent)]">
                   {userName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">

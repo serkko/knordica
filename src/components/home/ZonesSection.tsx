@@ -37,7 +37,7 @@ export function ZonesSection({ zones, properties }: ZonesSectionProps) {
   };
 
   return (
-    <section className="section-y border-t border-[var(--color-divider)] bg-[var(--color-bg)]">
+    <section className="section-y border-t border-[var(--border)] bg-[var(--color-bg)]">
       <div className="container-knordica">
         {/* Section Header */}
         <div className="max-w-2xl mb-12 md:mb-16">
@@ -86,7 +86,7 @@ export function ZonesSection({ zones, properties }: ZonesSectionProps) {
                     <div className="absolute inset-0 p-6 z-20 flex flex-col justify-between">
                       {/* Top section: pin and properties count */}
                       <div className="flex justify-between items-start">
-                        <div className="h-8 w-8 border border-[var(--color-border)] rounded-full flex items-center justify-center text-white/70 group-hover:text-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
+                        <div className="h-8 w-8 border border-[var(--color-border)] rounded-sm flex items-center justify-center text-white/70 group-hover:text-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
                           <MapPin className="h-4 w-4" />
                         </div>
                         <span className="text-[11px] font-mono text-white/50 bg-[#0a0908]/50 backdrop-blur-xs px-2 py-0.5 rounded-sm">

@@ -14,6 +14,8 @@ export async function GET(request: Request) {
       precio_max: searchParams.get("precio_max") ? parseInt(searchParams.get("precio_max")!, 10) : undefined,
       habitaciones: searchParams.get("habitaciones") ? parseInt(searchParams.get("habitaciones")!, 10) : undefined,
       banos: searchParams.get("banos") ? parseInt(searchParams.get("banos")!, 10) : undefined,
+      area_min: searchParams.get("area_min") ? parseInt(searchParams.get("area_min")!, 10) : undefined,
+      area_max: searchParams.get("area_max") ? parseInt(searchParams.get("area_max")!, 10) : undefined,
       sort: (searchParams.get("sort") as any) || undefined,
       page: searchParams.get("page") ? parseInt(searchParams.get("page")!, 10) : 1,
       per_page: searchParams.get("per_page") ? parseInt(searchParams.get("per_page")!, 10) : 12,

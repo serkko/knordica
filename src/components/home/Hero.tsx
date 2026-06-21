@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { HeroSearch } from "./HeroSearch";
 import { GeometricBackground } from "@/components/ui/GeometricBackground";
@@ -19,6 +20,7 @@ interface HeroProps {
 
 export function Hero({ zones, stats }: HeroProps) {
   const { locale, dict } = useLocale();
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   const titleText = dict.hero?.title || "Propiedades seleccionadas en Mérida, Venezuela.";
 
@@ -29,12 +31,12 @@ export function Hero({ zones, stats }: HeroProps) {
         backgroundColor: "oklch(0.08 0.01 60)"
       }}
     >
-      {/* Capa 1: Video de fondo */}
       <video
         autoPlay
         muted
         loop
         playsInline
+        onPlay={() => setVideoLoaded(true)}
         className="absolute inset-0 w-full h-full object-cover"
         src="/hero.mp4"
         poster="/hero-fallback.jpg"
@@ -50,19 +52,21 @@ export function Hero({ zones, stats }: HeroProps) {
         aria-hidden="true"
       />
 
-      {/* Fallback Grid Layer (Opacity reduced to 50% of the original 0.04) */}
-      <div
-        className="absolute inset-0 pointer-events-none select-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-          opacity: 0.02,
-        }}
-        aria-hidden="true"
-      />
+      {/* Fallback Grid Layer (Visible only if video hasn't loaded/played) */}
+      {!videoLoaded && (
+        <div
+          className="absolute inset-0 pointer-events-none select-none"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+              linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)
+            `,
+            backgroundSize: "80px 80px",
+            opacity: 0.02,
+          }}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Capa 4: Líneas geométricas animadas */}
       <GeometricBackground variant="lines" />
@@ -84,7 +88,7 @@ export function Hero({ zones, stats }: HeroProps) {
                 backgroundColor: "transparent",
                 border: "1px solid rgba(168, 134, 74, 0.6)",
                 color: "#EDE9E3",
-                borderRadius: "9999px",
+                borderRadius: "6px",
               }}
             >
               MÉRIDA · VENEZUELA

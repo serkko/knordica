@@ -26,6 +26,28 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
 
   const isComparedActive = isMounted ? compared : false;
 
+  // 3D Tilt interactive animation state
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left - width / 2;
+    const mouseY = e.clientY - rect.top - height / 2;
+    const rX = -(mouseY / height) * 12; // 12 degrees max tilt
+    const rY = (mouseX / width) * 12;
+    setRotateX(rX);
+    setRotateY(rY);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+  };
+
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -61,11 +83,21 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
   if (isFeatured) {
     return (
       <motion.div
-        whileHover={{ 
-          y: -6,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.4)"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          transformStyle: "preserve-3d",
+          perspective: 1000
         }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        animate={{
+          rotateX,
+          rotateY,
+          scale: rotateX !== 0 || rotateY !== 0 ? 1.025 : 1,
+          boxShadow: rotateX !== 0 || rotateY !== 0
+            ? "0 30px 70px rgba(0,0,0,0.55), 0 0 35px var(--accent-glow)"
+            : "0 4px 12px rgba(0,0,0,0.15)"
+        }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
         className="h-full rounded-lg overflow-hidden"
       >
         <Link href={`/${locale}/propiedades/${property.slug}`} className="block h-full group">
@@ -94,7 +126,7 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
             <button
               onClick={handleCompareClick}
               className={cn(
-                "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
+                "absolute top-4 right-4 z-20 h-8 w-8 rounded-sm flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
                 isComparedActive
                   ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
                   : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
@@ -211,11 +243,21 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
   // --- STANDARD CARD DESIGN ---
   return (
     <motion.div
-      whileHover={{ 
-        y: -6,
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4)"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transformStyle: "preserve-3d",
+        perspective: 1000
       }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      animate={{
+        rotateX,
+        rotateY,
+        scale: rotateX !== 0 || rotateY !== 0 ? 1.025 : 1,
+        boxShadow: rotateX !== 0 || rotateY !== 0
+          ? "0 30px 70px rgba(0,0,0,0.55), 0 0 35px var(--accent-glow)"
+          : "0 4px 12px rgba(0,0,0,0.15)"
+      }}
+      transition={{ type: "spring", stiffness: 350, damping: 25 }}
       className="h-full rounded-lg overflow-hidden"
     >
       <Link href={`/${locale}/propiedades/${property.slug}`} className="block h-full group">
@@ -226,7 +268,7 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
             <button
               onClick={handleCompareClick}
               className={cn(
-                "absolute top-4 right-4 z-20 h-8 w-8 rounded-full flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
+                "absolute top-4 right-4 z-20 h-8 w-8 rounded-sm flex items-center justify-center border transition-all cursor-pointer backdrop-blur-xs",
                 isComparedActive
                   ? "bg-[var(--accent)] text-black border-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
                   : "bg-black/50 text-white/70 border-white/20 hover:text-white hover:border-white hover:bg-black/75"
@@ -291,6 +333,14 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
             <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 rounded-sm bg-[#0a0908]/85 backdrop-blur-[8px] font-display font-semibold text-[1.1rem] text-[#f0ede8] shadow-md">
               {formattedPrice}
             </div>
+
+            {/* 3D Glass shimmer overlay */}
+            <div 
+              className="absolute inset-0 pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.08) 100%)"
+              }}
+            />
 
             {/* Cover Image */}
             {property.cover_image?.url ? (

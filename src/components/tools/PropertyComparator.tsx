@@ -82,7 +82,7 @@ export default function PropertyComparator() {
                   {/* Remove Button */}
                   <button
                     onClick={() => removeProperty(p.id)}
-                    className="absolute top-2 right-2 h-6 w-6 rounded-full border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--danger)] flex items-center justify-center cursor-pointer transition-colors"
+                    className="absolute top-2 right-2 h-6 w-6 rounded-sm border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-2)] hover:text-[var(--danger)] flex items-center justify-center cursor-pointer transition-colors"
                     title={locale === "es" ? "Quitar" : "Remove"}
                   >
                     <X className="h-3.5 w-3.5" />

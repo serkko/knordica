@@ -24,44 +24,34 @@ export function useFilters() {
     }
 
     const tipo = searchParams.get("tipo");
-    if (tipo) {
-      params.tipo = tipo as PropertyType;
-    }
+    if (tipo) params.tipo = tipo as PropertyType;
 
     const zona = searchParams.get("zona");
-    if (zona) {
-      params.zona = zona;
-    }
+    if (zona) params.zona = zona;
 
     const pMin = searchParams.get("precio_min");
-    if (pMin) {
-      params.precio_min = parseInt(pMin, 10);
-    }
+    if (pMin) params.precio_min = parseInt(pMin, 10);
 
     const pMax = searchParams.get("precio_max");
-    if (pMax) {
-      params.precio_max = parseInt(pMax, 10);
-    }
+    if (pMax) params.precio_max = parseInt(pMax, 10);
 
     const hab = searchParams.get("habitaciones");
-    if (hab) {
-      params.habitaciones = parseInt(hab, 10);
-    }
+    if (hab) params.habitaciones = parseInt(hab, 10);
 
     const ban = searchParams.get("banos");
-    if (ban) {
-      params.banos = parseInt(ban, 10);
-    }
+    if (ban) params.banos = parseInt(ban, 10);
+
+    const aMin = searchParams.get("area_min");
+    if (aMin) params.area_min = parseInt(aMin, 10);
+
+    const aMax = searchParams.get("area_max");
+    if (aMax) params.area_max = parseInt(aMax, 10);
 
     const sort = searchParams.get("sort");
-    if (sort) {
-      params.sort = sort as any;
-    }
+    if (sort) params.sort = sort as any;
 
     const page = searchParams.get("page");
-    if (page) {
-      params.page = parseInt(page, 10);
-    }
+    if (page) params.page = parseInt(page, 10);
 
     if (Object.keys(params).length > 0) {
       setFilters(params);
@@ -82,6 +72,8 @@ export function useFilters() {
     if (filters.precio_max) params.set("precio_max", filters.precio_max.toString());
     if (filters.habitaciones) params.set("habitaciones", filters.habitaciones.toString());
     if (filters.banos) params.set("banos", filters.banos.toString());
+    if (filters.area_min) params.set("area_min", filters.area_min.toString());
+    if (filters.area_max) params.set("area_max", filters.area_max.toString());
     if (filters.sort && filters.sort !== "recientes") params.set("sort", filters.sort);
     if (filters.page && filters.page > 1) params.set("page", filters.page.toString());
 

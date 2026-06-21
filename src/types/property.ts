@@ -6,6 +6,7 @@ export type PropertyOperation = "venta" | "alquiler";
 export type PropertyType =
   | "casa"
   | "apartamento"
+  | "townhouse"
   | "local"
   | "terreno"
   | "finca"

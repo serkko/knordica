@@ -114,7 +114,7 @@ export function LeadPipeline({ leads, onStatusChange }: LeadPipelineProps) {
               <span className={`text-xs font-bold font-display uppercase tracking-widest ${col.color.split(" ")[1]}`}>
                 {col.title}
               </span>
-              <span className="px-2 py-0.5 rounded-full border border-[var(--border)] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--surface-2)]">
+              <span className="px-2 py-0.5 rounded-sm border border-[var(--border)] text-[10px] font-mono text-[var(--text-muted)] bg-[var(--surface-2)]">
                 {colLeads.length}
               </span>
             </div>
