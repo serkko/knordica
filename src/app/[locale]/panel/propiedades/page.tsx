@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Plus, Search, SlidersHorizontal, Eye, Pencil, Trash2,
+  Plus, Search, Eye, Pencil, Trash2,
   Copy, MoreHorizontal, ArrowUpDown, CheckSquare, Square,
   Home, X, Save, Check, ChevronDown,
 } from "lucide-react";
@@ -27,7 +27,6 @@ interface Property {
   municipio: string | null;
   featured: boolean;
   exclusive: boolean;
-  price_negotiable: boolean;
   created_at: string;
   cover_url?: string | null;
   title: string;
@@ -65,8 +64,15 @@ const PROP_TYPE_LABEL: Record<string, string> = {
   terreno_lote: "Terreno / Lote",
 };
 
+// Property types that have bedrooms / bathrooms
+const RESIDENTIAL_TYPES = new Set(["casa","apartamento","townhouse","anexo","habitacion","hacienda_finca","edificio"]);
+// Property types that have area_built
+const HAS_AREA_BUILT = new Set(["casa","apartamento","townhouse","anexo","habitacion","hacienda_finca","edificio","local","oficina","galpon"]);
+// Property types with parking
+const HAS_PARKING = new Set(["casa","apartamento","townhouse","edificio","local","oficina","galpon"]);
+
 const MUNICIPIOS = [
-  "libertador", "campo_elias", "santos_marquina", "sucre", "rangel",
+  "libertador","campo_elias","santos_marquina","sucre","rangel",
 ];
 const MUNICIPIO_LABEL: Record<string, string> = {
   libertador: "Libertador",
@@ -80,10 +86,252 @@ function fmtUSD(price: number) {
   return "$" + Math.round(price).toLocaleString("en-US");
 }
 
+// ─── Animated StyledSelect ────────────────────────────────────────────────────
+interface SelectOption { value: string; label: string }
+
+function StyledSelect({
+  value, onChange, options, placeholder, active,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  active?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const isActive = active !== undefined ? active : !!value;
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          height: 34,
+          padding: "0 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: "13px",
+          background: isActive ? "var(--p-accent-soft)" : "var(--p-surface-2)",
+          border: `1px solid ${isActive ? "var(--p-accent)" : "var(--p-border)"}`,
+          borderRadius: "var(--p-radius)",
+          color: isActive ? "var(--p-accent)" : "var(--p-text-2)",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          transition: "all 0.15s",
+          fontWeight: isActive ? 500 : 400,
+          minWidth: 110,
+        }}
+      >
+        <span style={{ flex: 1, textAlign: "left" }}>
+          {selected ? selected.label : (placeholder ?? "Seleccionar")}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+          style={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: 0.6 }}
+        >
+          <ChevronDown size={12} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              zIndex: 100,
+              minWidth: "100%",
+              background: "var(--p-surface-2)",
+              border: "1px solid var(--p-border)",
+              borderRadius: "var(--p-radius)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
+              padding: "4px 0",
+              transformOrigin: "top center",
+            }}
+          >
+            {placeholder && (
+              <button
+                type="button"
+                onClick={() => { onChange(""); setOpen(false); }}
+                style={{
+                  width: "100%", textAlign: "left", padding: "7px 12px",
+                  fontSize: "13px", color: "var(--p-text-3)",
+                  background: "none", border: "none", cursor: "pointer",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "var(--p-surface-3)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "none")}
+              >
+                {placeholder}
+              </button>
+            )}
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                style={{
+                  width: "100%", textAlign: "left", padding: "7px 12px",
+                  fontSize: "13px",
+                  color: opt.value === value ? "var(--p-accent)" : "var(--p-text)",
+                  background: opt.value === value ? "var(--p-accent-soft)" : "none",
+                  border: "none", cursor: "pointer",
+                  fontWeight: opt.value === value ? 500 : 400,
+                  display: "flex", alignItems: "center", gap: 8,
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = "var(--p-surface-3)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = opt.value === value ? "var(--p-accent-soft)" : "none"; }}
+              >
+                {opt.value === value && <Check size={11} />}
+                {opt.value !== value && <span style={{ width: 11 }} />}
+                {opt.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── StyledSelect inline (for quick-edit rows) ───────────────────────────────
+function StyledSelectFull({
+  value, onChange, options, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: "100%", height: 34, padding: "0 10px",
+          display: "flex", alignItems: "center", gap: 6,
+          fontSize: "13px",
+          background: "var(--p-surface-3)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "var(--p-radius)",
+          color: "var(--p-text)",
+          cursor: "pointer",
+          transition: "border-color 0.15s",
+        }}
+      >
+        <span style={{ flex: 1, textAlign: "left" }}>
+          {selected ? selected.label : (placeholder ?? "—")}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+          style={{ display: "flex", alignItems: "center", opacity: 0.5 }}
+        >
+          <ChevronDown size={12} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0, right: 0,
+              zIndex: 200,
+              background: "var(--p-surface-2)",
+              border: "1px solid var(--p-border)",
+              borderRadius: "var(--p-radius)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
+              padding: "4px 0",
+              transformOrigin: "top center",
+              maxHeight: 220,
+              overflowY: "auto",
+            }}
+          >
+            {placeholder && (
+              <button
+                type="button"
+                onClick={() => { onChange(""); setOpen(false); }}
+                style={{
+                  width: "100%", textAlign: "left", padding: "7px 12px",
+                  fontSize: "13px", color: "var(--p-text-3)",
+                  background: "none", border: "none", cursor: "pointer",
+                }}
+              >
+                {placeholder}
+              </button>
+            )}
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                style={{
+                  width: "100%", textAlign: "left", padding: "7px 12px",
+                  fontSize: "13px",
+                  color: opt.value === value ? "var(--p-accent)" : "var(--p-text)",
+                  background: opt.value === value ? "var(--p-accent-soft)" : "none",
+                  border: "none", cursor: "pointer",
+                  fontWeight: opt.value === value ? 500 : 400,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                {opt.value === value && <Check size={11} />}
+                {opt.value !== value && <span style={{ width: 11 }} />}
+                {opt.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_CFG[status] ?? STATUS_CFG.cerrada;
   return (
     <span style={{
+      display: "inline-block",
       borderRadius: "4px",
       color: s.color,
       background: s.bg,
@@ -92,12 +340,33 @@ function StatusBadge({ status }: { status: string }) {
       fontWeight: 600,
       padding: "3px 8px",
       whiteSpace: "nowrap",
-      display: "inline-flex",
-      alignItems: "center",
-      lineHeight: 1,
+      lineHeight: 1.4,
     }}>
       {s.label}
     </span>
+  );
+}
+
+// ─── Chip toggle (quick edit) ─────────────────────────────────────────────────
+function ChipToggle({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 5,
+        padding: "5px 12px", borderRadius: "var(--p-radius-full, 9999px)",
+        border: `1px solid ${active ? "var(--p-accent)" : "var(--p-border)"}`,
+        background: active ? "var(--p-accent-soft)" : "var(--p-surface-3)",
+        color: active ? "var(--p-accent)" : "var(--p-text-3)",
+        fontSize: "12px", fontWeight: active ? 600 : 400,
+        cursor: "pointer",
+        transition: "all 0.18s ease",
+      }}
+    >
+      {active && <Check size={11} />}
+      {label}
+    </button>
   );
 }
 
@@ -107,23 +376,27 @@ function QuickEditRow({ property, onClose, onSaved }: {
   onClose: () => void;
   onSaved: (next: Partial<Property> & { id: string }) => void;
 }) {
-  const [title, setTitle]           = useState(property.title);
-  const [price, setPrice]           = useState(String(Math.round(property.price ?? 0)));
-  const [status, setStatus]         = useState(property.status);
-  const [operation, setOperation]   = useState(property.operation);
-  const [propType, setPropType]     = useState(property.property_type);
-  const [municipio, setMunicipio]   = useState(property.municipio ?? "");
-  const [bedrooms, setBedrooms]     = useState(String(property.bedrooms ?? ""));
-  const [bathrooms, setBathrooms]   = useState(String(property.bathrooms ?? ""));
-  const [halfBath, setHalfBath]     = useState(String(property.half_bathrooms ?? ""));
-  const [parking, setParking]       = useState(String(property.parking_spaces ?? ""));
-  const [areaBuilt, setAreaBuilt]   = useState(String(property.area_built ?? ""));
-  const [areaTotal, setAreaTotal]   = useState(String(property.area_total ?? ""));
-  const [featured, setFeatured]     = useState(property.featured);
-  const [exclusive, setExclusive]   = useState(property.exclusive);
-  const [negotiable, setNegotiable] = useState(property.price_negotiable);
-  const [saving, setSaving]         = useState(false);
-  const [saved, setSaved]           = useState(false);
+  const [title, setTitle]         = useState(property.title);
+  const [price, setPrice]         = useState(String(Math.round(property.price ?? 0)));
+  const [status, setStatus]       = useState(property.status);
+  const [operation, setOperation] = useState(property.operation);
+  const [propType, setPropType]   = useState(property.property_type);
+  const [municipio, setMunicipio] = useState(property.municipio ?? "");
+  const [bedrooms, setBedrooms]   = useState(String(property.bedrooms ?? ""));
+  const [bathrooms, setBathrooms] = useState(String(property.bathrooms ?? ""));
+  const [halfBath, setHalfBath]   = useState(String(property.half_bathrooms ?? ""));
+  const [parking, setParking]     = useState(String(property.parking_spaces ?? ""));
+  const [areaBuilt, setAreaBuilt] = useState(String(property.area_built ?? ""));
+  const [areaTotal, setAreaTotal] = useState(String(property.area_total ?? ""));
+  const [featured, setFeatured]   = useState(property.featured);
+  const [exclusive, setExclusive] = useState(property.exclusive);
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
+
+  const isResidential = RESIDENTIAL_TYPES.has(propType);
+  const hasAreaBuilt  = HAS_AREA_BUILT.has(propType);
+  const hasParking    = HAS_PARKING.has(propType);
+  const isTerrain     = propType === "terreno_lote";
 
   const inputS: React.CSSProperties = {
     background: "var(--p-surface-3)",
@@ -136,32 +409,13 @@ function QuickEditRow({ property, onClose, onSaved }: {
     width: "100%",
     outline: "none",
     WebkitAppearance: "none",
+    transition: "border-color 0.15s",
   };
 
-  const numS: React.CSSProperties = { ...inputS, width: "100%", textAlign: "center" };
+  const numS: React.CSSProperties = { ...inputS, textAlign: "center" };
 
   const label = (text: string) => (
     <p style={{ fontSize: "11px", color: "var(--p-text-3)", marginBottom: 5, fontWeight: 500 }}>{text}</p>
-  );
-
-  const toggle = (active: boolean, onClick: () => void, labelText: string) => (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        gap: 6, height: 34, padding: "0 12px", borderRadius: "var(--p-radius)",
-        border: `1px solid ${active ? "var(--p-accent)" : "var(--p-border)"}`,
-        background: active ? "var(--p-accent-soft)" : "var(--p-surface-3)",
-        color: active ? "var(--p-accent)" : "var(--p-text-3)",
-        fontSize: "12px", fontWeight: active ? 600 : 400,
-        cursor: "pointer", width: "100%",
-        transition: "all 0.15s",
-      }}
-    >
-      {active && <Check size={11} />}
-      {labelText}
-    </button>
   );
 
   const handleSave = async () => {
@@ -169,21 +423,20 @@ function QuickEditRow({ property, onClose, onSaved }: {
     const supabase = createClient();
 
     const updates: Record<string, unknown> = {
-      price:           Number(price) || 0,
-      price_currency:  "USD",
+      price:          Number(price) || 0,
+      price_currency: "USD",
       status,
       operation,
-      property_type:   propType,
-      municipio:       municipio || null,
-      bedrooms:        bedrooms  !== "" ? Number(bedrooms)  : null,
-      bathrooms:       bathrooms !== "" ? Number(bathrooms) : null,
-      half_bathrooms:  halfBath  !== "" ? Number(halfBath)  : null,
-      parking_spaces:  parking   !== "" ? Number(parking)   : null,
-      area_built:      areaBuilt !== "" ? Number(areaBuilt) : null,
-      area_total:      areaTotal !== "" ? Number(areaTotal) : null,
+      property_type:  propType,
+      municipio:      municipio || null,
+      bedrooms:       bedrooms  !== "" ? Number(bedrooms)  : null,
+      bathrooms:      bathrooms !== "" ? Number(bathrooms) : null,
+      half_bathrooms: halfBath  !== "" ? Number(halfBath)  : null,
+      parking_spaces: parking   !== "" ? Number(parking)   : null,
+      area_built:     areaBuilt !== "" ? Number(areaBuilt) : null,
+      area_total:     areaTotal !== "" ? Number(areaTotal) : null,
       featured,
       exclusive,
-      price_negotiable: negotiable,
     };
 
     const [{ error: propErr }, { error: transErr }] = await Promise.all([
@@ -198,15 +451,15 @@ function QuickEditRow({ property, onClose, onSaved }: {
         price: Number(price) || 0,
         price_currency: "USD",
         status, operation,
-        property_type: propType,
-        municipio:     municipio || null,
-        bedrooms:      bedrooms  !== "" ? Number(bedrooms)  : null,
-        bathrooms:     bathrooms !== "" ? Number(bathrooms) : null,
-        half_bathrooms:halfBath  !== "" ? Number(halfBath)  : null,
-        parking_spaces:parking   !== "" ? Number(parking)   : null,
-        area_built:    areaBuilt !== "" ? Number(areaBuilt) : null,
-        area_total:    areaTotal !== "" ? Number(areaTotal) : null,
-        featured, exclusive, price_negotiable: negotiable,
+        property_type:  propType,
+        municipio:      municipio || null,
+        bedrooms:       bedrooms  !== "" ? Number(bedrooms)  : null,
+        bathrooms:      bathrooms !== "" ? Number(bathrooms) : null,
+        half_bathrooms: halfBath  !== "" ? Number(halfBath)  : null,
+        parking_spaces: parking   !== "" ? Number(parking)   : null,
+        area_built:     areaBuilt !== "" ? Number(areaBuilt) : null,
+        area_total:     areaTotal !== "" ? Number(areaTotal) : null,
+        featured, exclusive,
         savedFlash: true,
       });
       setTimeout(() => { onClose(); }, 900);
@@ -222,23 +475,23 @@ function QuickEditRow({ property, onClose, onSaved }: {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       style={{ overflow: "hidden", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}
     >
       <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
 
-        {/* Fila 1: Título */}
+        {/* Título */}
         <div>
           {label("Título de la publicación")}
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
-            style={{ ...inputS, width: "100%" }}
+            style={inputS}
             placeholder="Sin título"
           />
         </div>
 
-        {/* Fila 2: Precio + Operación + Estado */}
+        {/* Precio + Operación + Estado */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 160px", gap: 12 }}>
           <div>
             {label("Precio (USD)")}
@@ -256,74 +509,117 @@ function QuickEditRow({ property, onClose, onSaved }: {
           </div>
           <div>
             {label("Operación")}
-            <select value={operation} onChange={e => setOperation(e.target.value)} style={inputS}>
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="vacacional">Vacacional</option>
-            </select>
+            <StyledSelectFull
+              value={operation}
+              onChange={setOperation}
+              options={[
+                { value: "venta", label: "Venta" },
+                { value: "alquiler", label: "Alquiler" },
+                { value: "vacacional", label: "Vacacional" },
+              ]}
+            />
           </div>
           <div>
             {label("Estado")}
-            <select value={status} onChange={e => setStatus(e.target.value)} style={inputS}>
-              <option value="activa">Activa</option>
-              <option value="reservada">Reservada</option>
-              <option value="vendida">Vendida</option>
-              <option value="alquilada">Alquilada</option>
-              <option value="cerrada">Cerrada</option>
-            </select>
+            <StyledSelectFull
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "activa",    label: "Activa" },
+                { value: "reservada", label: "Reservada" },
+                { value: "vendida",   label: "Vendida" },
+                { value: "alquilada", label: "Alquilada" },
+                { value: "cerrada",   label: "Cerrada" },
+              ]}
+            />
           </div>
         </div>
 
-        {/* Fila 3: Tipo + Municipio */}
+        {/* Tipo + Municipio */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             {label("Tipo de propiedad")}
-            <select value={propType} onChange={e => setPropType(e.target.value)} style={inputS}>
-              {Object.entries(PROP_TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            <StyledSelectFull
+              value={propType}
+              onChange={setPropType}
+              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
+            />
           </div>
           <div>
             {label("Municipio")}
-            <select value={municipio} onChange={e => setMunicipio(e.target.value)} style={inputS}>
-              <option value="">Sin especificar</option>
-              {MUNICIPIOS.map(m => <option key={m} value={m}>{MUNICIPIO_LABEL[m]}</option>)}
-            </select>
+            <StyledSelectFull
+              value={municipio}
+              onChange={setMunicipio}
+              placeholder="Sin especificar"
+              options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] }))}
+            />
           </div>
         </div>
 
-        {/* Fila 4: Habitaciones, Baños, Medio baño, Estacionamiento */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          <div>{label("Habitaciones")}<input value={bedrooms} onChange={e => setBedrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-          <div>{label("Baños")}<input value={bathrooms} onChange={e => setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-          <div>{label("Medio baño")}<input value={halfBath} onChange={e => setHalfBath(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-          <div>{label("Estacionamiento")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-        </div>
+        {/* Campos dinámicos según tipo */}
+        <AnimatePresence mode="wait">
+          {isResidential && (
+            <motion.div
+              key="residential-fields"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                <div>{label("Habitaciones")}<input value={bedrooms} onChange={e => setBedrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Baños")}<input value={bathrooms} onChange={e => setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Medio baño")}<input value={halfBath} onChange={e => setHalfBath(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Estacion.")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Fila 5: Área construida + Área total */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <AnimatePresence mode="wait">
+          {!isResidential && hasParking && (
+            <motion.div
+              key="parking-only"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                <div>{label("Estacionamiento")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Área */}
+        <div style={{ display: "grid", gridTemplateColumns: hasAreaBuilt && !isTerrain ? "1fr 1fr" : "1fr", gap: 12 }}>
+          {hasAreaBuilt && !isTerrain && (
+            <div>
+              {label("Área construida (m²)")}
+              <input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
+            </div>
+          )}
           <div>
-            {label("Área construida (m²)")}
-            <input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
-          </div>
-          <div>
-            {label("Área total (m²)")}
+            {label(isTerrain ? "Área total (m²)" : "Área total (m²)")}
             <input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
           </div>
         </div>
 
-        {/* Fila 6: Toggles */}
+        {/* Chips: Destacada / Exclusiva */}
         <div>
-          {label("Destacados")}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-            {toggle(featured,    () => setFeatured(v => !v),    "Destacada")}
-            {toggle(exclusive,   () => setExclusive(v => !v),  "Exclusiva")}
-            {toggle(negotiable,  () => setNegotiable(v => !v), "Precio negociable")}
+          {label("Etiquetas")}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <ChipToggle active={featured}  onClick={() => setFeatured(v => !v)}  label="Destacada" />
+            <ChipToggle active={exclusive} onClick={() => setExclusive(v => !v)} label="Exclusiva" />
           </div>
         </div>
 
       </div>
 
-      {/* Footer botones */}
+      {/* Footer */}
       <div style={{ padding: "0 20px 18px", display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <button
           onClick={onClose}
@@ -363,10 +659,10 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
 }) {
   const router = useRouter();
   const items: { icon: React.ElementType; label: string; action: () => void; danger?: boolean }[] = [
-    { icon: Eye,    label: "Ver en sitio", action: () => window.open(`/${locale}/${slug}`, "_blank") },
+    { icon: Eye,    label: "Ver en sitio",   action: () => window.open(`/${locale}/${slug}`, "_blank") },
     { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/${id}/editar`) },
-    { icon: Copy,   label: "Duplicar",     action: () => onDuplicate(id) },
-    { icon: Trash2, label: "Eliminar",     action: () => onDelete(id), danger: true },
+    { icon: Copy,   label: "Duplicar",        action: () => onDuplicate(id) },
+    { icon: Trash2, label: "Eliminar",        action: () => onDelete(id), danger: true },
   ];
   return (
     <div style={{ position: "relative" }}>
@@ -403,17 +699,20 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   );
 }
 
-// ─── Chip de filtro activo ────────────────────────────────────────────────────
+// ─── Filter chip (blue) ───────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 8px 3px 10px", borderRadius: "var(--p-radius-full, 9999px)",
-      background: "var(--p-accent-soft)", border: "1px solid var(--p-accent)",
-      color: "var(--p-accent)", fontSize: "12px", fontWeight: 500,
+      padding: "3px 8px 3px 10px",
+      borderRadius: "3px",
+      background: "rgba(96,165,250,0.10)",
+      border: "1px solid rgba(96,165,250,0.28)",
+      color: "#60A5FA",
+      fontSize: "12px", fontWeight: 500,
     }}>
       {label}
-      <button onClick={onRemove} style={{ display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "var(--p-accent)", padding: 0, opacity: 0.7 }}>
+      <button onClick={onRemove} style={{ display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "#60A5FA", padding: 0, opacity: 0.7 }}>
         <X size={10} />
       </button>
     </span>
@@ -430,20 +729,19 @@ export default function PropiedadesPage() {
   const [loading, setLoading]   = useState(true);
   const [dbError, setDbError]   = useState<string | null>(null);
 
-  const [search, setSearch]           = useState("");
-  const [filterOp, setFilterOp]       = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterType, setFilterType]   = useState("");
+  const [search, setSearch]               = useState("");
+  const [filterOp, setFilterOp]           = useState("");
+  const [filterStatus, setFilterStatus]   = useState("");
+  const [filterType, setFilterType]       = useState("");
   const [filterMunicipio, setFilterMunicipio] = useState("");
 
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDir, setSortDir]     = useState<SortDir>("desc");
   const [selected, setSelected]   = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId]   = useState<string | null>(null);
-  const [quickEditId, setQuickEditId] = useState<string | null>(null);
-  const [flashIds, setFlashIds]       = useState<Set<string>>(new Set());
+  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
+  const [quickEditId, setQuickEditId]     = useState<string | null>(null);
+  const [flashIds, setFlashIds]           = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -457,7 +755,7 @@ export default function PropiedadesPage() {
         price, price_currency,
         area_built, area_total,
         bedrooms, bathrooms, half_bathrooms, parking_spaces,
-        municipio, featured, exclusive, price_negotiable, created_at
+        municipio, featured, exclusive, created_at
       `)
       .order("created_at", { ascending: false });
 
@@ -487,7 +785,6 @@ export default function PropiedadesPage() {
 
     setAllProps(propsData.map(p => ({
       ...p,
-      price_negotiable: p.price_negotiable ?? false,
       half_bathrooms: p.half_bathrooms ?? null,
       title: titleMap[p.id] ?? p.slug ?? "Sin título",
       cover_url: imageMap[p.id] ?? null,
@@ -554,7 +851,6 @@ export default function PropiedadesPage() {
         municipio: prop.municipio,
         featured: false,
         exclusive: false,
-        price_negotiable: false,
       })
       .select()
       .single();
@@ -591,7 +887,6 @@ export default function PropiedadesPage() {
 
   const handleSaved = (next: Partial<Property> & { id: string }) => {
     setAllProps(prev => prev.map(p => p.id === next.id ? { ...p, ...next } : p));
-    // Flash verde en la fila
     setFlashIds(prev => new Set(prev).add(next.id));
     setTimeout(() => setFlashIds(prev => { const n = new Set(prev); n.delete(next.id); return n; }), 2200);
   };
@@ -602,14 +897,16 @@ export default function PropiedadesPage() {
   };
 
   const activeFilters = [filterOp, filterStatus, filterType, filterMunicipio].filter(Boolean);
-  const COLS = "28px 52px 1.6fr 100px 110px 130px 110px 40px";
+
+  // Tighter columns: checkbox | thumb | title | operation | status | price | data | menu
+  const COLS = "28px 46px 1.5fr 88px 100px 120px 100px 36px";
 
   const renderDatos = (p: Property) => {
     const parts: string[] = [];
-    if (p.bedrooms   != null) parts.push(`${p.bedrooms} hab`);
-    if (p.bathrooms  != null) parts.push(`${p.bathrooms} baños`);
-    if (p.area_built != null) parts.push(`${p.area_built} m²`);
-    else if (p.area_total != null) parts.push(`${p.area_total} m²`);
+    if (p.bedrooms   != null) parts.push(`${p.bedrooms}h`);
+    if (p.bathrooms  != null) parts.push(`${p.bathrooms}b`);
+    if (p.area_built != null) parts.push(`${p.area_built}m²`);
+    else if (p.area_total != null) parts.push(`${p.area_total}m²`);
     return <span style={{ fontSize: "12px", color: "var(--p-text-3)" }}>{parts.join(" · ") || "—"}</span>;
   };
 
@@ -623,31 +920,15 @@ export default function PropiedadesPage() {
     borderRadius: "var(--p-radius)",
     border: "1px solid var(--p-border)",
     color: "var(--p-text-2)",
-    padding: "6px 14px",
-    fontSize: "13px",
+    padding: "5px 12px",
+    fontSize: "12px",
     display: "flex",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
     background: "none",
     cursor: "pointer",
+    whiteSpace: "nowrap" as const,
   };
-
-  const selectStyle = (active: boolean): React.CSSProperties => ({
-    height: 34,
-    padding: "0 28px 0 10px",
-    fontSize: "13px",
-    background: active ? "var(--p-accent-soft)" : "var(--p-surface-2)",
-    border: `1px solid ${active ? "var(--p-accent)" : "var(--p-border)"}`,
-    borderRadius: "var(--p-radius)",
-    color: active ? "var(--p-accent)" : "var(--p-text-2)",
-    outline: "none",
-    cursor: "pointer",
-    appearance: "none" as const,
-    WebkitAppearance: "none" as const,
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-    backgroundRepeat: "no-repeat",
-    backgroundPosition: "calc(100% - 8px) center",
-  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -670,10 +951,10 @@ export default function PropiedadesPage() {
         </button>
       </div>
 
-      {/* Barra busqueda + filtros */}
+      {/* Toolbar: search + filters + bulk actions same line */}
       <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: 8 }}>
-        {/* Buscador */}
-        <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 360 }}>
+        {/* Search */}
+        <div style={{ position: "relative", flex: 1, minWidth: 180, maxWidth: 320 }}>
           <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--p-text-3)", pointerEvents: "none" }} />
           {search && (
             <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -683,86 +964,106 @@ export default function PropiedadesPage() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por título, municipio..."
+            placeholder="Buscar propiedad..."
             style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 28, fontSize: "13px", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", borderRadius: "var(--p-radius)", color: "var(--p-text)", outline: "none" }}
           />
         </div>
 
-        {/* Filtros inline */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <select value={filterOp} onChange={e => setFilterOp(e.target.value)} style={selectStyle(!!filterOp)}>
-            <option value="">Operación</option>
-            <option value="venta">Venta</option>
-            <option value="alquiler">Alquiler</option>
-            <option value="vacacional">Vacacional</option>
-          </select>
+        {/* Filter dropdowns — always visible */}
+        <StyledSelect
+          value={filterOp}
+          onChange={setFilterOp}
+          placeholder="Operación"
+          options={[
+            { value: "venta",      label: "Venta" },
+            { value: "alquiler",   label: "Alquiler" },
+            { value: "vacacional", label: "Vacacional" },
+          ]}
+        />
+        <StyledSelect
+          value={filterStatus}
+          onChange={setFilterStatus}
+          placeholder="Estado"
+          options={[
+            { value: "activa",    label: "Activa" },
+            { value: "reservada", label: "Reservada" },
+            { value: "vendida",   label: "Vendida" },
+            { value: "alquilada", label: "Alquilada" },
+            { value: "cerrada",   label: "Cerrada" },
+          ]}
+        />
+        <StyledSelect
+          value={filterType}
+          onChange={setFilterType}
+          placeholder="Tipo"
+          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
+        />
+        <StyledSelect
+          value={filterMunicipio}
+          onChange={setFilterMunicipio}
+          placeholder="Municipio"
+          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] }))}
+        />
 
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selectStyle(!!filterStatus)}>
-            <option value="">Estado</option>
-            <option value="activa">Activa</option>
-            <option value="reservada">Reservada</option>
-            <option value="vendida">Vendida</option>
-            <option value="alquilada">Alquilada</option>
-            <option value="cerrada">Cerrada</option>
-          </select>
+        {activeFilters.length > 0 && (
+          <button
+            onClick={() => { setFilterOp(""); setFilterStatus(""); setFilterType(""); setFilterMunicipio(""); }}
+            style={{ height: 34, padding: "0 10px", borderRadius: "var(--p-radius)", border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)", color: "var(--p-red)", fontSize: "12px", display: "flex", alignItems: "center", gap: 4, cursor: "pointer", whiteSpace: "nowrap" }}
+          >
+            <X size={10} /> Limpiar
+          </button>
+        )}
 
-          <select value={filterType} onChange={e => setFilterType(e.target.value)} style={selectStyle(!!filterType)}>
-            <option value="">Tipo</option>
-            {Object.entries(PROP_TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
 
-          <select value={filterMunicipio} onChange={e => setFilterMunicipio(e.target.value)} style={selectStyle(!!filterMunicipio)}>
-            <option value="">Municipio</option>
-            {MUNICIPIOS.map(m => <option key={m} value={m}>{MUNICIPIO_LABEL[m]}</option>)}
-          </select>
-
-          {activeFilters.length > 0 && (
-            <button
-              onClick={() => { setFilterOp(""); setFilterStatus(""); setFilterType(""); setFilterMunicipio(""); }}
-              style={{ height: 34, padding: "0 12px", borderRadius: "var(--p-radius)", border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)", color: "var(--p-red)", fontSize: "12px", display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}
+        {/* Bulk actions — right side, same line */}
+        <AnimatePresence>
+          {selected.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
-              <X size={10} /> Limpiar filtros
-            </button>
+              <span style={{ fontSize: "12px", color: "var(--p-text-3)", paddingRight: 2 }}>{selected.size} sel.</span>
+              <button style={btnGhost} onClick={() => { Array.from(selected).forEach(handleDuplicate); setSelected(new Set()); }}>
+                <Copy size={11} />Duplicar
+              </button>
+              <button style={btnGhost} onClick={() => handleBulkStatus("activa")}>Activar</button>
+              <button style={btnGhost} onClick={() => handleBulkStatus("reservada")}>Reservar</button>
+              <button
+                onClick={handleBulkDelete}
+                style={{ ...btnGhost, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "var(--p-red)" }}
+              >
+                <Trash2 size={11} />Eliminar
+              </button>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
 
-      {/* Chips de filtros activos */}
+      {/* Active filter chips (blue) */}
       <AnimatePresence>
         {activeFilters.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             style={{ display: "flex", flexWrap: "wrap", gap: 6, overflow: "hidden" }}
           >
-            {filterOp        && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`}             onRemove={() => setFilterOp("")} />}
+            {filterOp        && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`}              onRemove={() => setFilterOp("")} />}
             {filterStatus    && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
-            {filterType      && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`}        onRemove={() => setFilterType("")} />}
+            {filterType      && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`}         onRemove={() => setFilterType("")} />}
             {filterMunicipio && <FilterChip label={`Municipio: ${MUNICIPIO_LABEL[filterMunicipio] ?? filterMunicipio}`} onRemove={() => setFilterMunicipio("")} />}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Bulk actions */}
-      <AnimatePresence>
-        {selected.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-            style={{ ...cardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "10px 14px" }}
-          >
-            <span style={{ fontSize: "13px", color: "var(--p-text-2)", marginRight: 6 }}>{selected.size} seleccionadas</span>
-            <button style={btnGhost} onClick={() => { Array.from(selected).forEach(handleDuplicate); setSelected(new Set()); }}><Copy size={12} />Duplicar</button>
-            <button style={btnGhost} onClick={() => handleBulkStatus("activa")}>Marcar activa</button>
-            <button style={btnGhost} onClick={() => handleBulkStatus("reservada")}>Marcar reservada</button>
-            <button onClick={handleBulkDelete} style={{ ...btnGhost, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "var(--p-red)" }}><Trash2 size={12} />Eliminar</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Tabla */}
+      {/* Table */}
       <div style={{ ...cardStyle, overflow: "hidden" }}>
 
-        {/* Encabezado columnas */}
-        <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "10px 16px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}>
+        {/* Column headers */}
+        <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "9px 14px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}>
           <button onClick={toggleAll} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
             {allSelected
               ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} />
@@ -770,36 +1071,40 @@ export default function PropiedadesPage() {
           </button>
           <span />
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("created_at")}>Propiedad <ArrowUpDown size={9} /></button>
-          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("operation")}>Operación <ArrowUpDown size={9} /></button>
+          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("operation")}>Op. <ArrowUpDown size={9} /></button>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9} /></button>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("price")}>Precio <ArrowUpDown size={9} /></button>
           <span style={{ fontSize: "11px", color: "var(--p-text-3)", fontWeight: 500 }}>Datos</span>
           <span />
         </div>
 
-        {/* Skeleton loading */}
+        {/* Skeleton */}
         {loading && (
-          <div style={{ padding: "8px 16px", display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 1 }}>
             {[...Array(10)].map((_, i) => (
-              <div key={i} style={{ height: 52, display: "flex", alignItems: "center", gap: 12, opacity: 1 - i * 0.08 }}>
+              <div key={i} style={{ height: 50, display: "flex", alignItems: "center", gap: 10, opacity: 1 - i * 0.08 }}>
                 <div style={{ width: 14, height: 14, borderRadius: 3, background: "var(--p-surface-3)" }} />
-                <div style={{ width: 42, height: 30, borderRadius: 3, background: "var(--p-surface-3)" }} />
-                <div style={{ flex: 1, height: 14, borderRadius: 3, background: "var(--p-surface-3)", maxWidth: 280 }} />
-                <div style={{ width: 70, height: 14, borderRadius: 3, background: "var(--p-surface-3)" }} />
-                <div style={{ width: 70, height: 20, borderRadius: 3, background: "var(--p-surface-3)" }} />
-                <div style={{ width: 90, height: 14, borderRadius: 3, background: "var(--p-surface-3)" }} />
+                <div style={{ width: 40, height: 28, borderRadius: 3, background: "var(--p-surface-3)" }} />
+                <div style={{ flex: 1, height: 13, borderRadius: 3, background: "var(--p-surface-3)", maxWidth: 260 }} />
+                <div style={{ width: 60, height: 13, borderRadius: 3, background: "var(--p-surface-3)" }} />
+                <div style={{ width: 66, height: 20, borderRadius: 3, background: "var(--p-surface-3)" }} />
+                <div style={{ width: 80, height: 13, borderRadius: 3, background: "var(--p-surface-3)" }} />
               </div>
             ))}
           </div>
         )}
 
-        {/* Filas */}
+        {/* Rows */}
         {!loading && visible.length > 0 && (
           <LayoutGroup>
             <motion.div layout>
               <AnimatePresence mode="popLayout" initial={false}>
                 {visible.map(p => {
-                  const isFlash = flashIds.has(p.id);
+                  const isExpanded = quickEditId === p.id;
+                  const isFlash    = flashIds.has(p.id);
+                  const isSelected = selected.has(p.id);
+                  const dimmed     = quickEditId !== null && !isExpanded;
+
                   return (
                     <div key={p.id}>
                       <motion.div
@@ -807,72 +1112,76 @@ export default function PropiedadesPage() {
                         layoutId={p.id}
                         initial={{ opacity: 0, y: -4 }}
                         animate={{
-                          opacity: 1,
+                          opacity: dimmed ? 0.38 : 1,
                           y: 0,
                           backgroundColor: isFlash
                             ? "rgba(74,222,128,0.07)"
-                            : selected.has(p.id)
+                            : isSelected
                               ? "var(--p-accent-soft)"
                               : "rgba(0,0,0,0)",
                         }}
                         exit={{ opacity: 0, scaleY: 0.95 }}
-                        transition={{ layout: { duration: 0.22, ease: [0.16,1,0.3,1] }, opacity: { duration: 0.12 }, backgroundColor: { duration: 0.6 } }}
+                        transition={{
+                          layout: { duration: 0.22, ease: [0.16,1,0.3,1] },
+                          opacity: { duration: dimmed ? 0.18 : 0.12 },
+                          backgroundColor: { duration: 0.6 },
+                        }}
                         style={{
                           display: "grid",
                           gridTemplateColumns: COLS,
                           alignItems: "center",
-                          padding: "11px 16px",
+                          padding: "10px 14px",
                           borderBottom: "1px solid var(--p-border)",
                           cursor: "pointer",
                           outline: isFlash ? "1px solid rgba(74,222,128,0.2)" : "none",
                           outlineOffset: "-1px",
                           transition: "outline 0.6s",
+                          borderLeft: isExpanded ? "2px solid var(--p-accent)" : "2px solid transparent",
                         }}
                         onClick={() => setQuickEditId(v => v === p.id ? null : p.id)}
                       >
                         {/* Checkbox */}
                         <button onClick={e => { e.stopPropagation(); toggleSelect(p.id); }} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          {selected.has(p.id) || selected.size > 0
-                            ? <CheckSquare size={14} style={{ color: selected.has(p.id) ? "var(--p-accent)" : "var(--p-text-3)" }} />
+                          {isSelected || selected.size > 0
+                            ? <CheckSquare size={14} style={{ color: isSelected ? "var(--p-accent)" : "var(--p-text-3)" }} />
                             : <Square size={14} style={{ color: "var(--p-text-3)" }} />}
                         </button>
 
-                        {/* Miniatura */}
-                        <div style={{ width: 42, height: 30, borderRadius: "3px", overflow: "hidden", background: "var(--p-surface-3)", flexShrink: 0 }}>
+                        {/* Thumbnail */}
+                        <div style={{ width: 40, height: 28, borderRadius: "3px", overflow: "hidden", background: "var(--p-surface-3)", flexShrink: 0 }}>
                           {p.cover_url
                             ? <img src={p.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
-                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Home size={13} style={{ color: "var(--p-text-3)" }} /></div>}
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Home size={12} style={{ color: "var(--p-text-3)" }} /></div>}
                         </div>
 
-                        {/* Nombre + badges */}
-                        <div style={{ minWidth: 0, paddingRight: 12 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        {/* Title + badges */}
+                        <div style={{ minWidth: 0, paddingRight: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                             <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--p-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
-                            {p.featured  && <span style={{ borderRadius: "3px", background: "rgba(251,176,64,0.12)", color: "#FBB040", border: "1px solid rgba(251,176,64,0.2)", fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Destacada</span>}
-                            {p.exclusive && <span style={{ borderRadius: "3px", background: "rgba(74,222,128,0.1)",   color: "#4ADE80",  border: "1px solid rgba(74,222,128,0.2)",  fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Exclusiva</span>}
+                            {p.featured  && <span style={{ borderRadius: "3px", background: "rgba(251,176,64,0.12)", color: "#FBB040", border: "1px solid rgba(251,176,64,0.2)", fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Dest</span>}
+                            {p.exclusive && <span style={{ borderRadius: "3px", background: "rgba(74,222,128,0.1)",  color: "#4ADE80", border: "1px solid rgba(74,222,128,0.2)",  fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Excl</span>}
                           </div>
-                          <p style={{ fontSize: "12px", color: "var(--p-text-3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <p style={{ fontSize: "11px", color: "var(--p-text-3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {p.municipio ? MUNICIPIO_LABEL[p.municipio] ?? p.municipio : "Sin ubicación"} · {PROP_TYPE_LABEL[p.property_type] ?? p.property_type}
                           </p>
                         </div>
 
-                        {/* Operación */}
-                        <span style={{ fontSize: "13px", color: "var(--p-text-2)" }}>{OP_LABEL[p.operation] ?? p.operation}</span>
+                        {/* Operation */}
+                        <span style={{ fontSize: "12px", color: "var(--p-text-2)" }}>{OP_LABEL[p.operation] ?? p.operation}</span>
 
-                        {/* Estado */}
+                        {/* Status */}
                         <StatusBadge status={p.status} />
 
-                        {/* Precio */}
+                        {/* Price */}
                         <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--p-text)", fontVariantNumeric: "tabular-nums" }}>
                           {fmtUSD(p.price)}
-                          {p.operation === "alquiler" ? "/mes" : p.operation === "vacacional" ? "/noche" : ""}
-                          {p.price_negotiable && <span style={{ fontSize: "10px", color: "var(--p-text-3)", marginLeft: 4 }}>neg.</span>}
+                          {p.operation === "alquiler" ? <span style={{ fontSize: "10px", color: "var(--p-text-3)", marginLeft: 2 }}>/mes</span> : p.operation === "vacacional" ? <span style={{ fontSize: "10px", color: "var(--p-text-3)", marginLeft: 2 }}>/noche</span> : ""}
                         </span>
 
-                        {/* Datos */}
+                        {/* Data */}
                         {renderDatos(p)}
 
-                        {/* Menú */}
+                        {/* Menu */}
                         <div style={{ display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
                           <RowMenu
                             id={p.id} slug={p.slug} locale={locale}
@@ -885,9 +1194,9 @@ export default function PropiedadesPage() {
                         </div>
                       </motion.div>
 
-                      {/* Quick edit expandible */}
+                      {/* Quick edit */}
                       <AnimatePresence>
-                        {quickEditId === p.id && (
+                        {isExpanded && (
                           <QuickEditRow
                             property={p}
                             onClose={() => setQuickEditId(null)}
@@ -918,7 +1227,7 @@ export default function PropiedadesPage() {
         )}
       </div>
 
-      {/* Modal confirmación eliminar */}
+      {/* Delete confirm modal */}
       <AnimatePresence>
         {deleteConfirm && (
           <>
@@ -935,7 +1244,7 @@ export default function PropiedadesPage() {
               <p style={{ fontSize: "15px", fontWeight: 600, color: "var(--p-text)", marginBottom: 8 }}>¿Eliminar propiedad?</p>
               <p style={{ fontSize: "13px", color: "var(--p-text-2)", marginBottom: 20 }}>Esta acción no se puede deshacer y eliminará la propiedad permanentemente.</p>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button onClick={() => setDeleteConfirm(null)} style={btnGhost}>Cancelar</button>
+                <button onClick={() => setDeleteConfirm(null)} style={{ borderRadius: "var(--p-radius)", border: "1px solid var(--p-border)", color: "var(--p-text-2)", padding: "7px 16px", fontSize: "13px", background: "none", cursor: "pointer" }}>Cancelar</button>
                 <button onClick={() => handleDelete(deleteConfirm)} style={{ borderRadius: "var(--p-radius)", background: "var(--p-red)", color: "#fff", padding: "7px 16px", fontSize: "13px", fontWeight: 500, border: "none", cursor: "pointer" }}>Eliminar</button>
               </div>
             </motion.div>
