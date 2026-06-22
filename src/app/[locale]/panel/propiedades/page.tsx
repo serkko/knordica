@@ -1,366 +1,244 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { usePanelRole } from "@/hooks/usePanelRole";
 import {
   Plus,
-  LayoutGrid,
-  List,
   Search,
-  Building2,
-  MapPin,
+  SlidersHorizontal,
+  ChevronDown,
   Eye,
   Pencil,
   Trash2,
-  ChevronDown,
+  Copy,
+  MoreHorizontal,
+  ArrowUpDown,
+  CheckSquare,
+  Square,
+  Home,
+  TrendingUp,
+  Clock,
+  X,
+  ExternalLink,
 } from "lucide-react";
 
 // ── Tipos ──
-interface PropRow {
+interface Property {
   id: string;
   slug: string;
-  title: string;
-  status: string;
   operation: string;
   property_type: string;
+  status: string;
   price: number;
   price_currency: string;
-  zone_name: string | null;
+  area_built: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
-  area_built: number | null;
-  cover_url: string | null;
+  municipio: string | null;
+  featured: boolean;
+  exclusive: boolean;
   created_at: string;
-  agent_name: string | null;
+  cover_url?: string | null;
+  title?: string;
 }
 
-const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  activa:    { label: "Activa",    color: "var(--p-green)", bg: "rgba(76,175,125,0.12)" },
-  vendida:   { label: "Vendida",   color: "var(--p-blue)",  bg: "rgba(91,143,212,0.12)" },
-  alquilada: { label: "Alquilada", color: "var(--p-blue)",  bg: "rgba(91,143,212,0.12)" },
-  reservada: { label: "Reservada", color: "var(--p-amber)", bg: "rgba(212,146,74,0.12)" },
-  cerrada:   { label: "Cerrada",   color: "var(--p-text-3)",bg: "var(--p-surface-3)" },
+type SortField = "created_at" | "price" | "status" | "operation";
+type SortDir = "asc" | "desc";
+
+const STATUS_LABEL: Record<string, { label: string; color: string; bg: string }> = {
+  activa:    { label: "Activa",    color: "#5A9E6F", bg: "rgba(90,158,111,0.12)" },
+  reservada: { label: "Reservada", color: "#D4924A", bg: "rgba(212,146,74,0.12)" },
+  vendida:   { label: "Vendida",   color: "#7A6EAA", bg: "rgba(122,110,170,0.12)" },
+  alquilada: { label: "Alquilada", color: "#4A8FC4", bg: "rgba(74,143,196,0.12)" },
+  cerrada:   { label: "Cerrada",   color: "#888",    bg: "rgba(136,136,136,0.1)" },
 };
 
-const OP_MAP: Record<string, string> = {
+const OP_LABEL: Record<string, string> = {
   venta: "Venta",
   alquiler: "Alquiler",
   vacacional: "Vacacional",
 };
 
-const FILTERS = [
-  { key: "",          label: "Todas" },
-  { key: "activa",    label: "Activas" },
-  { key: "reservada", label: "Reservadas" },
-  { key: "vendida",   label: "Vendidas" },
-  { key: "cerrada",   label: "Cerradas" },
-];
+function fmt(price: number, currency: string) {
+  return new Intl.NumberFormat("es-VE", {
+    style: "currency",
+    currency: currency === "VES" ? "USD" : currency, // fallback
+    maximumFractionDigits: 0,
+  }).format(price).replace("US$", "$");
+}
 
-// ── Badge ──
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_MAP[status] ?? STATUS_MAP.cerrada;
+  const s = STATUS_LABEL[status] ?? STATUS_LABEL.cerrada;
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"
-      style={{ borderRadius: "4px", background: s.bg, color: s.color }}
+      className="inline-flex items-center px-2 py-0.5 text-[11px] font-medium"
+      style={{
+        borderRadius: "var(--p-radius)",
+        color: s.color,
+        background: s.bg,
+      }}
     >
       {s.label}
     </span>
   );
 }
 
-// ── Card vista grid ──
-function PropCard({ prop, locale, onDelete }: { prop: PropRow; locale: string; onDelete: (id: string) => void }) {
+// ── Menú contextual de fila ──
+function RowMenu({ id, slug, locale, onDelete }: { id: string; slug: string; locale: string; onDelete: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        background: "var(--p-surface)",
-        border: "1px solid var(--p-border)",
-        borderRadius: "var(--p-radius)",
-        overflow: "hidden",
-      }}
-    >
-      {/* Foto */}
-      <div
-        className="relative w-full aspect-[16/9] overflow-hidden"
-        style={{ background: "var(--p-surface-3)" }}
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className="w-7 h-7 flex items-center justify-center"
+        style={{
+          borderRadius: "var(--p-radius)",
+          color: "var(--p-text-2)",
+          background: open ? "var(--p-surface-3)" : "transparent",
+        }}
       >
-        {prop.cover_url ? (
-          <img
-            src={prop.cover_url}
-            alt={prop.title}
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Building2 size={24} style={{ color: "var(--p-text-3)" }} />
-          </div>
-        )}
-        <div className="absolute top-2 left-2">
-          <StatusBadge status={prop.status} />
-        </div>
-        <div
-          className="absolute top-2 right-2 text-[10px] px-2 py-0.5 font-medium"
-          style={{
-            borderRadius: "4px",
-            background: "rgba(14,13,12,0.7)",
-            color: "var(--p-text-2)",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          {OP_MAP[prop.operation] ?? prop.operation}
-        </div>
-      </div>
+        <MoreHorizontal size={14} />
+      </button>
 
-      {/* Info */}
-      <div className="p-3">
-        <p
-          className="text-[13px] font-medium truncate mb-1"
-          style={{ color: "var(--p-text)" }}
-        >
-          {prop.title}
-        </p>
-        {prop.zone_name && (
-          <p className="flex items-center gap-1 text-[11px] mb-2" style={{ color: "var(--p-text-2)" }}>
-            <MapPin size={10} />
-            {prop.zone_name}
-          </p>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="absolute right-0 top-8 z-50 py-1 min-w-[160px]"
+              style={{
+                background: "var(--p-surface-2)",
+                border: "1px solid var(--p-border)",
+                borderRadius: "var(--p-radius)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              {[
+                { icon: Eye, label: "Ver en sitio", action: () => window.open(`/${locale}/${slug}`, "_blank") },
+                { icon: Pencil, label: "Editar", action: () => router.push(`/${locale}/panel/propiedades/${id}/editar`) },
+                { icon: Copy, label: "Duplicar", action: () => {} },
+                { icon: Trash2, label: "Eliminar", action: () => { onDelete(id); setOpen(false); }, danger: true },
+              ].map(({ icon: Icon, label, action, danger }) => (
+                <button
+                  key={label}
+                  onClick={(e) => { e.stopPropagation(); action(); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px]"
+                  style={{ color: danger ? "var(--p-red)" : "var(--p-text-2)" }}
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              ))}
+            </motion.div>
+          </>
         )}
-        <p className="text-[15px] font-semibold" style={{ color: "var(--p-accent)" }}>
-          {prop.price_currency} {prop.price.toLocaleString("es-VE")}
-        </p>
-
-        {/* Acciones */}
-        <div className="flex items-center gap-1 mt-3 pt-3" style={{ borderTop: "1px solid var(--p-border)" }}>
-          <Link
-            href={`/${locale}/propiedades/${prop.slug}`}
-            target="_blank"
-            className="flex items-center gap-1 text-[11px] px-2 py-1 flex-1 justify-center"
-            style={{
-              borderRadius: "var(--p-radius)",
-              color: "var(--p-text-2)",
-              background: "var(--p-surface-2)",
-            }}
-          >
-            <Eye size={11} /> Ver
-          </Link>
-          <Link
-            href={`/${locale}/panel/propiedades/${prop.id}/editar`}
-            className="flex items-center gap-1 text-[11px] px-2 py-1 flex-1 justify-center"
-            style={{
-              borderRadius: "var(--p-radius)",
-              color: "var(--p-text-2)",
-              background: "var(--p-surface-2)",
-            }}
-          >
-            <Pencil size={11} /> Editar
-          </Link>
-          <button
-            onClick={() => onDelete(prop.id)}
-            className="flex items-center gap-1 text-[11px] px-2 py-1 flex-1 justify-center"
-            style={{
-              borderRadius: "var(--p-radius)",
-              color: "var(--p-red)",
-              background: "rgba(192,96,90,0.08)",
-            }}
-          >
-            <Trash2 size={11} /> Eliminar
-          </button>
-        </div>
-      </div>
-    </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
 
-// ── Fila vista lista ──
-function PropRow({ prop, locale, onDelete }: { prop: PropRow; locale: string; onDelete: (id: string) => void }) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -8 }}
-      className="flex items-center gap-4 px-4 py-3"
-      style={{
-        background: "var(--p-surface)",
-        border: "1px solid var(--p-border)",
-        borderRadius: "var(--p-radius)",
-      }}
-    >
-      {/* Thumb */}
-      <div
-        className="w-14 h-10 flex-shrink-0 overflow-hidden"
-        style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-3)" }}
-      >
-        {prop.cover_url ? (
-          <img src={prop.cover_url} alt={prop.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Building2 size={14} style={{ color: "var(--p-text-3)" }} />
-          </div>
-        )}
-      </div>
-
-      {/* Título + zona */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium truncate" style={{ color: "var(--p-text)" }}>
-          {prop.title}
-        </p>
-        <p className="text-[11px]" style={{ color: "var(--p-text-2)" }}>
-          {prop.zone_name ?? "Sin zona"} · {OP_MAP[prop.operation] ?? prop.operation}
-        </p>
-      </div>
-
-      {/* Precio */}
-      <p className="text-[13px] font-semibold w-32 text-right flex-shrink-0" style={{ color: "var(--p-accent)" }}>
-        {prop.price_currency} {prop.price.toLocaleString("es-VE")}
-      </p>
-
-      {/* Status */}
-      <div className="w-24 flex-shrink-0 flex justify-center">
-        <StatusBadge status={prop.status} />
-      </div>
-
-      {/* Acciones */}
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <Link
-          href={`/${locale}/propiedades/${prop.slug}`}
-          target="_blank"
-          className="w-7 h-7 flex items-center justify-center"
-          style={{ borderRadius: "var(--p-radius)", color: "var(--p-text-2)", background: "var(--p-surface-2)" }}
-        >
-          <Eye size={13} />
-        </Link>
-        <Link
-          href={`/${locale}/panel/propiedades/${prop.id}/editar`}
-          className="w-7 h-7 flex items-center justify-center"
-          style={{ borderRadius: "var(--p-radius)", color: "var(--p-text-2)", background: "var(--p-surface-2)" }}
-        >
-          <Pencil size={13} />
-        </Link>
-        <button
-          onClick={() => onDelete(prop.id)}
-          className="w-7 h-7 flex items-center justify-center"
-          style={{ borderRadius: "var(--p-radius)", color: "var(--p-red)", background: "rgba(192,96,90,0.08)" }}
-        >
-          <Trash2 size={13} />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// ── Página ──
+// ── Página principal ──
 export default function PropiedadesPage() {
+  const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) ?? "es";
-  const { role } = usePanelRole();
 
-  const [props, setProps] = useState<PropRow[]>([]);
+  const [props, setProps] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"grid" | "list">("list");
-  const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [filterOp, setFilterOp] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // ── Fetch ──
+  const fetchProps = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     let query = supabase
       .from("properties")
       .select(`
-        id, slug, status, operation, property_type, price, price_currency,
-        bedrooms, bathrooms, area_built, created_at,
-        translations:property_translations(locale, title),
-        images:property_images(url, is_cover, sort_order),
-        zone:zones(name_es),
-        agent:profiles!agent_id(full_name)
+        id, slug, operation, property_type, status,
+        price, price_currency, area_built, bedrooms, bathrooms,
+        municipio, featured, exclusive, created_at,
+        property_translations!inner(title),
+        property_images(url, is_cover)
       `)
-      .order("created_at", { ascending: false });
+      .order(sortField, { ascending: sortDir === "asc" });
 
-    if (role !== "admin" && user?.id) {
-      query = query.eq("agent_id", user.id);
-    }
-    if (statusFilter) {
-      query = query.eq("status", statusFilter);
-    }
+    if (filterOp) query = query.eq("operation", filterOp);
+    if (filterStatus) query = query.eq("status", filterStatus);
+    if (filterType) query = query.eq("property_type", filterType);
 
     const { data } = await query;
 
-    const rows: PropRow[] = (data ?? []).map((p: {
-      id: string; slug: string; status: string; operation: string;
-      property_type: string; price: number; price_currency: string;
-      bedrooms: number | null; bathrooms: number | null; area_built: number | null;
-      created_at: string;
-      translations: Array<{ locale: string; title: string }>;
-      images: Array<{ url: string; is_cover: boolean; sort_order: number }>;
-      zone: { name_es: string } | null;
-      agent: { full_name: string } | null;
-    }) => ({
-      id: p.id,
-      slug: p.slug,
-      title: p.translations?.find((t) => t.locale === "es")?.title ?? p.slug,
-      status: p.status,
-      operation: p.operation,
-      property_type: p.property_type,
-      price: p.price,
-      price_currency: p.price_currency,
-      zone_name: p.zone?.name_es ?? null,
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      area_built: p.area_built,
-      cover_url:
-        p.images?.find((i) => i.is_cover)?.url ??
-        p.images?.sort((a, b) => a.sort_order - b.sort_order)[0]?.url ??
-        null,
-      created_at: p.created_at,
-      agent_name: p.agent?.full_name ?? null,
-    }));
-
-    setProps(rows);
+    if (data) {
+      const mapped: Property[] = data.map((p: any) => ({
+        ...p,
+        title: p.property_translations?.[0]?.title ?? "Sin título",
+        cover_url: p.property_images?.find((i: any) => i.is_cover)?.url ?? p.property_images?.[0]?.url ?? null,
+      }));
+      // Filtro de búsqueda local
+      const q = search.toLowerCase();
+      setProps(q ? mapped.filter((p) => p.title?.toLowerCase().includes(q) || p.municipio?.toLowerCase().includes(q) || p.slug.includes(q)) : mapped);
+    }
     setLoading(false);
-  }, [role, statusFilter]);
+  }, [sortField, sortDir, filterOp, filterStatus, filterType, search]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { fetchProps(); }, [fetchProps]);
 
-  const filtered = props.filter((p) =>
-    search === "" ||
-    p.title.toLowerCase().includes(search.toLowerCase()) ||
-    (p.zone_name ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  // ── Selección ──
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const allSelected = props.length > 0 && selected.size === props.length;
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(props.map((p) => p.id)));
 
+  // ── Eliminar ──
   const handleDelete = async (id: string) => {
-    if (!confirm("\u00bfEliminar esta propiedad? Esta acción no se puede deshacer.")) return;
     const supabase = createClient();
     await supabase.from("properties").delete().eq("id", id);
     setProps((prev) => prev.filter((p) => p.id !== id));
+    setDeleteConfirm(null);
   };
 
+  // ── Sort toggle ──
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("desc"); }
+  };
+
+  const activeFilters = [filterOp, filterStatus, filterType].filter(Boolean).length;
+
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-            Propiedades
-          </h2>
+          <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>Propiedades</h2>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--p-text-2)" }}>
-            {filtered.length} propiedad{filtered.length !== 1 ? "es" : ""}
+            {loading ? "Cargando..." : `${props.length} propiedades`}
           </p>
         </div>
-        <Link
-          href={`/${locale}/panel/propiedades/nueva`}
+        <button
+          onClick={() => router.push(`/${locale}/panel/propiedades/nueva`)}
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
           style={{
             borderRadius: "var(--p-radius)",
@@ -368,130 +246,393 @@ export default function PropiedadesPage() {
             color: "#0E0D0C",
           }}
         >
-          <Plus size={15} />
+          <Plus size={14} />
           Nueva propiedad
-        </Link>
+        </button>
       </div>
 
-      {/* Barra de herramientas */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Buscador */}
-        <div
-          className="flex items-center gap-2 flex-1 min-w-[200px] px-3 h-9"
-          style={{
-            background: "var(--p-surface)",
-            border: "1px solid var(--p-border)",
-            borderRadius: "var(--p-radius)",
-          }}
-        >
-          <Search size={14} style={{ color: "var(--p-text-3)" }} />
+      {/* Toolbar */}
+      <div
+        className="flex items-center gap-2 p-2"
+        style={{
+          background: "var(--p-surface)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "var(--p-radius)",
+        }}
+      >
+        {/* Búsqueda */}
+        <div className="relative flex-1 max-w-xs">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--p-text-3)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o zona..."
-            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[var(--p-text-3)]"
-            style={{ color: "var(--p-text)" }}
+            placeholder="Buscar por título, municipio..."
+            className="w-full h-8 pl-8 pr-3 text-[12px] outline-none"
+            style={{
+              background: "var(--p-surface-2)",
+              border: "1px solid var(--p-border)",
+              borderRadius: "var(--p-radius)",
+              color: "var(--p-text)",
+            }}
           />
         </div>
 
-        {/* Filtros rápidos por status */}
-        <div className="flex items-center gap-1">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setStatusFilter(f.key)}
-              className="px-3 h-9 text-[12px] font-medium transition-colors"
-              style={{
-                borderRadius: "var(--p-radius)",
-                background: statusFilter === f.key ? "var(--p-surface-3)" : "transparent",
-                color: statusFilter === f.key ? "var(--p-text)" : "var(--p-text-2)",
-                border: "1px solid",
-                borderColor: statusFilter === f.key ? "var(--p-border)" : "transparent",
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Toggle vista */}
-        <div
-          className="flex items-center p-0.5 gap-0.5"
+        {/* Filtros rápidos */}
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className="flex items-center gap-1.5 px-3 h-8 text-[12px]"
           style={{
-            background: "var(--p-surface)",
-            border: "1px solid var(--p-border)",
             borderRadius: "var(--p-radius)",
+            background: showFilters || activeFilters > 0 ? "var(--p-accent-soft)" : "var(--p-surface-2)",
+            border: `1px solid ${activeFilters > 0 ? "var(--p-accent)" : "var(--p-border)"}`,
+            color: activeFilters > 0 ? "var(--p-accent)" : "var(--p-text-2)",
           }}
         >
-          {(["list", "grid"] as const).map((v) => (
-            <motion.button
-              key={v}
-              onClick={() => setView(v)}
-              className="w-8 h-8 flex items-center justify-center"
-              style={{
-                borderRadius: "5px",
-                background: view === v ? "var(--p-surface-3)" : "transparent",
-                color: view === v ? "var(--p-text)" : "var(--p-text-3)",
-              }}
-              whileTap={{ scale: 0.9 }}
+          <SlidersHorizontal size={13} />
+          Filtros
+          {activeFilters > 0 && (
+            <span
+              className="w-4 h-4 flex items-center justify-center text-[10px] font-bold"
+              style={{ borderRadius: "50%", background: "var(--p-accent)", color: "#0E0D0C" }}
             >
-              {v === "list" ? <List size={14} /> : <LayoutGrid size={14} />}
-            </motion.button>
-          ))}
-        </div>
+              {activeFilters}
+            </span>
+          )}
+        </button>
+
+        {/* Selección bulk */}
+        {selected.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 ml-auto"
+          >
+            <span className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+              {selected.size} seleccionadas
+            </span>
+            <button
+              className="px-3 h-8 text-[12px] flex items-center gap-1.5"
+              style={{
+                borderRadius: "var(--p-radius)",
+                background: "rgba(192,96,90,0.1)",
+                border: "1px solid rgba(192,96,90,0.2)",
+                color: "var(--p-red)",
+              }}
+            >
+              <Trash2 size={12} />
+              Eliminar selección
+            </button>
+          </motion.div>
+        )}
       </div>
 
-      {/* Contenido */}
-      {loading ? (
-        <div className={view === "grid" ? "grid grid-cols-2 lg:grid-cols-3 gap-3" : "space-y-2"}>
-          {[0,1,2,3,4,5].map((i) => (
+      {/* Panel de filtros expandible */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            style={{ overflow: "hidden" }}
+          >
             <div
-              key={i}
-              className="animate-pulse"
+              className="flex items-center gap-3 p-3"
               style={{
-                height: view === "grid" ? 240 : 64,
-                borderRadius: "var(--p-radius)",
                 background: "var(--p-surface)",
-                animationDelay: `${i * 60}ms`,
+                border: "1px solid var(--p-border)",
+                borderRadius: "var(--p-radius)",
               }}
-            />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center py-20 text-center"
-        >
-          <Building2 size={28} style={{ color: "var(--p-text-3)", marginBottom: 12 }} />
-          <p className="text-[14px] font-medium" style={{ color: "var(--p-text)" }}>
-            No hay propiedades
-          </p>
-          <p className="text-[12px] mt-1 max-w-[240px]" style={{ color: "var(--p-text-2)" }}>
-            {search ? "Ningún resultado para \u201c" + search + "\u201d" : "Crea tu primera propiedad para comenzar"}
-          </p>
-        </motion.div>
-      ) : (
-        <AnimatePresence mode="popLayout">
-          {view === "grid" ? (
-            <motion.div
-              key="grid"
-              layout
-              className="grid grid-cols-2 lg:grid-cols-3 gap-3"
             >
-              {filtered.map((p) => (
-                <PropCard key={p.id} prop={p} locale={locale} onDelete={handleDelete} />
+              {[
+                {
+                  label: "Operación",
+                  value: filterOp,
+                  onChange: setFilterOp,
+                  options: [["venta","Venta"],["alquiler","Alquiler"],["vacacional","Vacacional"]],
+                },
+                {
+                  label: "Estado",
+                  value: filterStatus,
+                  onChange: setFilterStatus,
+                  options: [["activa","Activa"],["reservada","Reservada"],["vendida","Vendida"],["alquilada","Alquilada"],["cerrada","Cerrada"]],
+                },
+                {
+                  label: "Tipo",
+                  value: filterType,
+                  onChange: setFilterType,
+                  options: [["apartamento","Apartamento"],["casa","Casa"],["townhouse","Townhouse"],["terreno_lote","Terreno"],["local","Local"],["oficina","Oficina"]],
+                },
+              ].map(({ label, value, onChange, options }) => (
+                <div key={label}>
+                  <p className="text-[10px] mb-1" style={{ color: "var(--p-text-3)" }}>{label}</p>
+                  <select
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="h-7 px-2 text-[12px] outline-none"
+                    style={{
+                      background: "var(--p-surface-2)",
+                      border: "1px solid var(--p-border)",
+                      borderRadius: "var(--p-radius)",
+                      color: "var(--p-text)",
+                    }}
+                  >
+                    <option value="">Todos</option>
+                    {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
               ))}
+
+              {activeFilters > 0 && (
+                <button
+                  onClick={() => { setFilterOp(""); setFilterStatus(""); setFilterType(""); }}
+                  className="ml-auto flex items-center gap-1 text-[11px] px-2 h-7"
+                  style={{
+                    borderRadius: "var(--p-radius)",
+                    color: "var(--p-text-2)",
+                    border: "1px solid var(--p-border)",
+                  }}
+                >
+                  <X size={11} /> Limpiar
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tabla */}
+      <div
+        style={{
+          background: "var(--p-surface)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "var(--p-radius)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Head */}
+        <div
+          className="grid items-center px-4 py-2.5 text-[11px] font-medium"
+          style={{
+            gridTemplateColumns: "28px 48px 1fr 100px 90px 100px 80px 80px 40px",
+            borderBottom: "1px solid var(--p-border)",
+            color: "var(--p-text-3)",
+            background: "var(--p-surface-2)",
+          }}
+        >
+          <button onClick={toggleAll}>
+            {allSelected
+              ? <CheckSquare size={13} style={{ color: "var(--p-accent)" }} />
+              : <Square size={13} />}
+          </button>
+          <span />
+          <button className="flex items-center gap-1 text-left" onClick={() => toggleSort("created_at")}>
+            Propiedad <ArrowUpDown size={10} />
+          </button>
+          <button className="flex items-center gap-1" onClick={() => toggleSort("operation")}>
+            Operación <ArrowUpDown size={10} />
+          </button>
+          <button className="flex items-center gap-1" onClick={() => toggleSort("status")}>
+            Estado <ArrowUpDown size={10} />
+          </button>
+          <button className="flex items-center gap-1" onClick={() => toggleSort("price")}>
+            Precio <ArrowUpDown size={10} />
+          </button>
+          <span>Área</span>
+          <span>Hab.</span>
+          <span />
+        </div>
+
+        {/* Filas */}
+        {loading ? (
+          <div className="space-y-0">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="grid items-center px-4 py-3"
+                style={{ gridTemplateColumns: "28px 48px 1fr 100px 90px 100px 80px 80px 40px", borderBottom: "1px solid var(--p-border)" }}
+              >
+                <div />
+                <div className="w-10 h-7 rounded" style={{ background: "var(--p-surface-3)" }} />
+                <div>
+                  <div className="h-3 w-48 rounded mb-1.5" style={{ background: "var(--p-surface-3)" }} />
+                  <div className="h-2.5 w-24 rounded" style={{ background: "var(--p-surface-3)" }} />
+                </div>
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="h-3 w-16 rounded" style={{ background: "var(--p-surface-3)" }} />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : props.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div
+              className="w-10 h-10 flex items-center justify-center"
+              style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", color: "var(--p-text-3)" }}
+            >
+              <Home size={18} />
+            </div>
+            <div className="text-center">
+              <p className="text-[13px] font-medium" style={{ color: "var(--p-text)" }}>Sin propiedades</p>
+              <p className="text-[11px] mt-1" style={{ color: "var(--p-text-3)" }}>Agrega tu primera propiedad para comenzar</p>
+            </div>
+            <button
+              onClick={() => router.push(`/${locale}/panel/propiedades/nueva`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px]"
+              style={{ borderRadius: "var(--p-radius)", background: "var(--p-accent)", color: "#0E0D0C" }}
+            >
+              <Plus size={13} /> Nueva propiedad
+            </button>
+          </div>
+        ) : (
+          <div>
+            {props.map((p, idx) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: idx * 0.03 }}
+                className="grid items-center px-4 py-3 cursor-pointer group"
+                style={{
+                  gridTemplateColumns: "28px 48px 1fr 100px 90px 100px 80px 80px 40px",
+                  borderBottom: idx < props.length - 1 ? "1px solid var(--p-border)" : "none",
+                  background: selected.has(p.id) ? "var(--p-accent-soft)" : "transparent",
+                }}
+                whileHover={{ background: selected.has(p.id) ? "var(--p-accent-soft)" : "var(--p-surface-2)" }}
+                onClick={() => router.push(`/${locale}/panel/propiedades/${p.id}/editar`)}
+              >
+                {/* Checkbox */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(p.id); }}
+                  className="flex items-center"
+                >
+                  {selected.has(p.id)
+                    ? <CheckSquare size={13} style={{ color: "var(--p-accent)" }} />
+                    : <Square size={13} style={{ color: "var(--p-text-3)", opacity: 0 }} className="group-hover:opacity-100" />}
+                </button>
+
+                {/* Thumb */}
+                <div
+                  className="w-10 h-7 flex-shrink-0 overflow-hidden"
+                  style={{ borderRadius: "4px", background: "var(--p-surface-3)" }}
+                >
+                  {p.cover_url ? (
+                    <img src={p.cover_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Home size={12} style={{ color: "var(--p-text-3)" }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Título */}
+                <div className="min-w-0 pr-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium truncate" style={{ color: "var(--p-text)" }}>
+                      {p.title}
+                    </span>
+                    {p.featured && (
+                      <span className="text-[9px] px-1 py-0.5 font-semibold uppercase tracking-wide"
+                        style={{ borderRadius: "3px", background: "rgba(212,146,74,0.15)", color: "#D4924A" }}>dest</span>
+                    )}
+                    {p.exclusive && (
+                      <span className="text-[9px] px-1 py-0.5 font-semibold uppercase tracking-wide"
+                        style={{ borderRadius: "3px", background: "rgba(90,158,111,0.15)", color: "#5A9E6F" }}>excl</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] truncate" style={{ color: "var(--p-text-3)" }}>
+                    {p.municipio ?? "Sin ubicación"} · {p.property_type}
+                  </p>
+                </div>
+
+                {/* Operación */}
+                <span className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                  {OP_LABEL[p.operation] ?? p.operation}
+                </span>
+
+                {/* Estado */}
+                <StatusBadge status={p.status} />
+
+                {/* Precio */}
+                <span className="text-[13px] font-medium tabular-nums" style={{ color: "var(--p-text)" }}>
+                  {fmt(p.price, p.price_currency)}
+                </span>
+
+                {/* Área */}
+                <span className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                  {p.area_built ? `${p.area_built} m²` : "—"}
+                </span>
+
+                {/* Hab */}
+                <span className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                  {p.bedrooms ?? "—"}
+                </span>
+
+                {/* Acciones */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <RowMenu id={p.id} slug={p.slug} locale={locale} onDelete={(id) => setDeleteConfirm(id)} />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal confirmación eliminar */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50"
+              style={{ background: "rgba(0,0,0,0.6)" }}
+              onClick={() => setDeleteConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 w-80"
+              style={{
+                background: "var(--p-surface)",
+                border: "1px solid var(--p-border)",
+                borderRadius: "var(--p-radius)",
+              }}
+            >
+              <p className="text-[14px] font-semibold mb-2" style={{ color: "var(--p-text)" }}>¿Eliminar propiedad?</p>
+              <p className="text-[12px] mb-5" style={{ color: "var(--p-text-2)" }}>
+                Esta acción no se puede deshacer. Se eliminarán todas las fotos y datos asociados.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 text-[12px]"
+                  style={{
+                    borderRadius: "var(--p-radius)",
+                    background: "var(--p-surface-2)",
+                    border: "1px solid var(--p-border)",
+                    color: "var(--p-text-2)",
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="px-4 py-2 text-[12px] font-medium"
+                  style={{
+                    borderRadius: "var(--p-radius)",
+                    background: "var(--p-red)",
+                    color: "#fff",
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
             </motion.div>
-          ) : (
-            <motion.div key="list" layout className="space-y-2">
-              {filtered.map((p) => (
-                <PropRow key={p.id} prop={p} locale={locale} onDelete={handleDelete} />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
