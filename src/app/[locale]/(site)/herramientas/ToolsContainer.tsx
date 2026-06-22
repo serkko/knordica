@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import MortgageCalculator from "@/components/tools/MortgageCalculator";
 import InvestmentCalculator from "@/components/tools/InvestmentCalculator";
-import PropertyComparator from "@/components/tools/PropertyComparator";
-import { useComparatorStore } from "@/store/comparator.store";
 import { useLocale } from "@/components/layout/LocaleProvider";
-import { Calculator, TrendingUp, GitCompare } from "lucide-react";
+import { Calculator, TrendingUp } from "lucide-react";
 
-type ToolTab = "mortgage" | "investment" | "compare";
+type ToolTab = "mortgage" | "investment";
 
 export default function ToolsContainer() {
   const { locale } = useLocale();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ToolTab>("mortgage");
-  const { selectedProperties } = useComparatorStore();
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "mortgage" || tabParam === "investment") {
+      setActiveTab(tabParam as ToolTab);
+    }
+  }, [searchParams]);
 
   const tabs = [
     {
@@ -25,12 +31,6 @@ export default function ToolsContainer() {
       id: "investment" as ToolTab,
       label: locale === "es" ? "Inversión y Plusvalía" : "Investment ROI",
       icon: <TrendingUp className="h-4 w-4" />,
-    },
-    {
-      id: "compare" as ToolTab,
-      label: locale === "es" ? "Comparador" : "Compare List",
-      icon: <GitCompare className="h-4 w-4" />,
-      badge: selectedProperties.length > 0 ? selectedProperties.length : undefined,
     },
   ];
 
@@ -50,11 +50,6 @@ export default function ToolsContainer() {
           >
             {tab.icon}
             <span>{tab.label}</span>
-            {tab.badge !== undefined && (
-              <span className="h-5 min-w-5 px-1.5 rounded-full text-[9px] font-mono font-bold bg-[var(--accent)] text-black flex items-center justify-center">
-                {tab.badge}
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -63,7 +58,6 @@ export default function ToolsContainer() {
       <div className="animate-in fade-in duration-300">
         {activeTab === "mortgage" && <MortgageCalculator />}
         {activeTab === "investment" && <InvestmentCalculator />}
-        {activeTab === "compare" && <PropertyComparator />}
       </div>
     </div>
   );

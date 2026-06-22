@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import ToolsContainer from "./ToolsContainer";
 import { getDictionary } from "@/i18n/get-dictionary";
@@ -44,7 +45,9 @@ export default async function HerramientasPage({ params }: PageProps) {
 
       {/* Tools Wrapper Component */}
       <div className="container-knordica">
-        <ToolsContainer />
+        <Suspense fallback={<div className="h-20 w-full animate-pulse bg-[var(--surface)] border border-[var(--border)] rounded-lg" />}>
+          <ToolsContainer />
+        </Suspense>
       </div>
     </div>
   );

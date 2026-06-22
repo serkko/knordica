@@ -47,7 +47,7 @@ const en = {
   },
   catalog: {
     title: "Available properties",
-    subtitle: "Curated selection of properties in Mérida, Venezuela",
+    subtitle: "Houses, apartments and commercial spaces for sale and rent in Mérida",
     filters: {
       title: "Filters",
       operacion: "Operation",

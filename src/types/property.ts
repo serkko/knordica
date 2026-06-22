@@ -138,9 +138,9 @@ export interface Property {
   // Identidad
   id: string;
   slug: string;
-  status: 'activa' | 'reservada' | 'vendida' | 'alquilada' | 'inactiva' | 'cerrada';
+  status: PropertyStatus;
   operation: 'venta' | 'alquiler' | 'vacacional';
-  property_type: 'casa' | 'apartamento' | 'local' | 'terreno' | 'finca' | 'oficina' | 'proyecto' | 'townhouse' | 'penthouse' | 'terreno_lote' | 'edificio' | 'galpon' | 'habitacion' | 'hacienda_finca' | 'anexo';
+  property_type: PropertyType;
 
   // Badges de identidad
   featured: boolean;
@@ -285,13 +285,13 @@ export interface PropertyCard {
 }
 
 export interface PropertyFilters {
-  operacion?: PropertyOperation;
-  tipo?: PropertyType;
-  zona?: string;
+  operacion?: PropertyOperation[];
+  tipo?: PropertyType[];
+  zona?: string[];
   precio_min?: number;
   precio_max?: number;
-  habitaciones?: number;
-  banos?: number;
+  habitaciones?: number[];
+  banos?: number[];
   sort?: "recientes" | "precio_asc" | "precio_desc" | "area_desc";
   page?: number;
   per_page?: number;
@@ -310,4 +310,20 @@ export interface PropertyFilters {
   max_area?: number;
   has_security?: boolean;
   has_elevator?: boolean;
+
+  // Extended amenity filters
+  has_water_tank?: boolean;
+  has_gym?: boolean;
+  has_bbq?: boolean;
+  has_solar_panels?: boolean;
+  has_internet?: boolean;
+  has_terrace?: boolean;
+  has_balcony?: boolean;
+  has_garden?: boolean;
+  has_laundry?: boolean;
+  has_study?: boolean;
+  has_jacuzzi?: boolean;
+  parking_covered?: boolean;
+  has_independent_entrance?: boolean;
 }
+

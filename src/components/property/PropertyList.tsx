@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
+import { EASE_EXPO } from "@/lib/motion/variants";
 import { BedDouble, Bath, Square, MapPin, ArrowUpRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -30,7 +31,7 @@ export function PropertyList({ properties }: PropertyListProps) {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.5, ease: EASE_EXPO } as Transition,
     },
   };
 

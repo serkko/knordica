@@ -1,15 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import type { PropertyFilters, PropertyCard } from "@/types/property";
 
 export function useProperties(filters: PropertyFilters) {
   const queryParams = new URLSearchParams();
-  if (filters.operacion) queryParams.set("operacion", filters.operacion);
-  if (filters.tipo) queryParams.set("tipo", filters.tipo);
-  if (filters.zona) queryParams.set("zona", filters.zona);
+  
+  if (filters.operacion && filters.operacion.length > 0) queryParams.set("operacion", filters.operacion.join(","));
+  if (filters.tipo && filters.tipo.length > 0) queryParams.set("tipo", filters.tipo.join(","));
+  if (filters.zona && filters.zona.length > 0) queryParams.set("zona", filters.zona.join(","));
   if (filters.precio_min) queryParams.set("precio_min", filters.precio_min.toString());
   if (filters.precio_max) queryParams.set("precio_max", filters.precio_max.toString());
-  if (filters.habitaciones) queryParams.set("habitaciones", filters.habitaciones.toString());
-  if (filters.banos) queryParams.set("banos", filters.banos.toString());
+  if (filters.habitaciones && filters.habitaciones.length > 0) queryParams.set("habitaciones", filters.habitaciones.join(","));
+  if (filters.banos && filters.banos.length > 0) queryParams.set("banos", filters.banos.join(","));
   if (filters.area_min) queryParams.set("area_min", filters.area_min.toString());
   if (filters.area_max) queryParams.set("area_max", filters.area_max.toString());
   if (filters.sort) queryParams.set("sort", filters.sort);
@@ -39,5 +40,6 @@ export function useProperties(filters: PropertyFilters) {
       }
       return res.json();
     },
+    placeholderData: keepPreviousData,
   });
 }

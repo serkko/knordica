@@ -12,15 +12,19 @@ export function useFilters() {
   const filters: PropertyFilters = {};
 
   const op = searchParams.get("operacion");
-  if (op === "venta" || op === "alquiler" || op === "vacacional") {
-    filters.operacion = op as PropertyOperation;
+  if (op) {
+    filters.operacion = op.split(",").filter(Boolean) as PropertyOperation[];
   }
 
   const tipo = searchParams.get("tipo");
-  if (tipo) filters.tipo = tipo as PropertyType;
+  if (tipo) {
+    filters.tipo = tipo.split(",").filter(Boolean) as PropertyType[];
+  }
 
   const zona = searchParams.get("zona");
-  if (zona) filters.zona = zona;
+  if (zona) {
+    filters.zona = zona.split(",").filter(Boolean);
+  }
 
   const pMin = searchParams.get("precio_min");
   if (pMin) filters.precio_min = parseInt(pMin, 10);
@@ -29,10 +33,14 @@ export function useFilters() {
   if (pMax) filters.precio_max = parseInt(pMax, 10);
 
   const hab = searchParams.get("habitaciones");
-  if (hab) filters.habitaciones = parseInt(hab, 10);
+  if (hab) {
+    filters.habitaciones = hab.split(",").filter(Boolean).map(x => parseInt(x, 10));
+  }
 
   const ban = searchParams.get("banos");
-  if (ban) filters.banos = parseInt(ban, 10);
+  if (ban) {
+    filters.banos = ban.split(",").filter(Boolean).map(x => parseInt(x, 10));
+  }
 
   const pool = searchParams.get("has_pool");
   if (pool === "true") filters.has_pool = true;
@@ -80,8 +88,10 @@ export function useFilters() {
   const updateFilter = <K extends keyof PropertyFilters>(key: K, value: PropertyFilters[K]) => {
     const params = new URLSearchParams(searchParams.toString());
 
-    if (value === undefined || value === null || value === "") {
+    if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
       params.delete(key);
+    } else if (Array.isArray(value)) {
+      params.set(key, value.join(","));
     } else {
       params.set(key, value.toString());
     }

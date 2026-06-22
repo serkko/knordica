@@ -7,13 +7,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     const filters: PropertyFilters = {
-      operacion: (searchParams.get("operacion") as any) || undefined,
-      tipo: (searchParams.get("tipo") as any) || undefined,
-      zona: searchParams.get("zona") || undefined,
+      operacion: searchParams.get("operacion") ? (searchParams.get("operacion")!.split(",").filter(Boolean) as any) : undefined,
+      tipo: searchParams.get("tipo") ? (searchParams.get("tipo")!.split(",").filter(Boolean) as any) : undefined,
+      zona: searchParams.get("zona") ? searchParams.get("zona")!.split(",").filter(Boolean) : undefined,
       precio_min: searchParams.get("precio_min") ? parseInt(searchParams.get("precio_min")!, 10) : undefined,
       precio_max: searchParams.get("precio_max") ? parseInt(searchParams.get("precio_max")!, 10) : undefined,
-      habitaciones: searchParams.get("habitaciones") ? parseInt(searchParams.get("habitaciones")!, 10) : undefined,
-      banos: searchParams.get("banos") ? parseInt(searchParams.get("banos")!, 10) : undefined,
+      habitaciones: searchParams.get("habitaciones") ? searchParams.get("habitaciones")!.split(",").filter(Boolean).map(x => parseInt(x, 10)) : undefined,
+      banos: searchParams.get("banos") ? searchParams.get("banos")!.split(",").filter(Boolean).map(x => parseInt(x, 10)) : undefined,
       area_min: searchParams.get("area_min") ? parseInt(searchParams.get("area_min")!, 10) : undefined,
       area_max: searchParams.get("area_max") ? parseInt(searchParams.get("area_max")!, 10) : undefined,
       sort: (searchParams.get("sort") as any) || undefined,

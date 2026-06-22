@@ -5,8 +5,9 @@
 // Animación: path drawing reveal (pathLength 0 → 1) al primer load
 // Funciona monocromático a 24px y a 200px
 
-import { motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
 import { cn } from "@/lib/utils/cn";
+import { EASE_EXPO } from "@/lib/motion/variants";
 
 interface KnordicaLogoProps {
   size?: number;
@@ -25,12 +26,12 @@ const PATH_VARIANTS = {
       pathLength: {
         duration: 1.4,
         delay,
-        ease: [0.16, 1, 0.3, 1],
-      },
+        ease: EASE_EXPO,
+      } as Transition,
       opacity: {
         duration: 0.2,
         delay,
-      },
+      } as Transition,
     },
   }),
 };
@@ -114,7 +115,7 @@ export function KnordicaLogo({
         <motion.span
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, delay: 0.6, ease: EASE_EXPO } as Transition}
           className="font-display font-semibold uppercase tracking-widest"
           style={{
             fontSize: size * 0.5,

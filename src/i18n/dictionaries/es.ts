@@ -48,7 +48,7 @@ const es = {
   },
   catalog: {
     title: "Propiedades disponibles",
-    subtitle: "Propiedades seleccionadas en Mérida, Venezuela",
+    subtitle: "Casas, apartamentos y locales en venta y alquiler en Mérida",
     filters: {
       title: "Filtros",
       operacion: "Operación",

@@ -104,7 +104,7 @@ export default function PropertyComparator() {
                       <span className="text-[9px] uppercase tracking-widest text-[var(--accent)] font-semibold font-display">
                         {p.operation}
                       </span>
-                      <h4 className="font-display font-bold text-sm text-[var(--text)] line-clamp-1 mt-0.5">
+                      <h4 className="font-display font-bold text-sm text-[var(--text)] mt-0.5 leading-snug">
                         {p.title}
                       </h4>
                       <p className="font-bold text-[var(--gold)] mt-1">{formattedPrice(p.price, p.price_currency)}</p>

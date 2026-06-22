@@ -175,7 +175,7 @@ export default function MapSearchPage({ zones }: MapSearchPageProps) {
               </button>
             </div>
             {/* Reused filters */}
-            <PropertyFilters zones={zones} />
+            <PropertyFilters zones={zones} properties={activeProperties} />
             <Button onClick={() => setShowFiltersDrawer(false)} className="w-full mt-auto">
               {locale === "es" ? "Aplicar Filtros" : "Apply Filters"}
             </Button>

@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Transition } from "framer-motion";
+import { EASE_EXPO } from "@/lib/motion/variants";
 import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/layout/LocaleProvider";
@@ -32,7 +33,7 @@ export function ZonesSection({ zones, properties }: ZonesSectionProps) {
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.6, ease: EASE_EXPO } as Transition,
     },
   };
 

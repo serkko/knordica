@@ -21,18 +21,14 @@ async function getSupabaseClient() {
 }
 
 function getMockCoordinates(id: string, zoneLat: number | null, zoneLng: number | null) {
-  if (!zoneLat || !zoneLng) return { lat: null, lng: null };
-  let latOffset = 0;
-  let lngOffset = 0;
-  if (id === "prop-1") { latOffset = 0.002; lngOffset = -0.002; }
-  else if (id === "prop-4") { latOffset = -0.002; lngOffset = 0.002; }
-  else if (id === "prop-8") { latOffset = 0.001; lngOffset = 0.005; }
-  else if (id === "prop-2") { latOffset = 0.002; lngOffset = 0.002; }
-  else if (id === "prop-7") { latOffset = -0.002; lngOffset = -0.002; }
-  else if (id === "prop-3") { latOffset = 0.002; lngOffset = -0.003; }
-  else if (id === "prop-5") { latOffset = 0.001; lngOffset = -0.002; }
-  else if (id === "prop-6") { latOffset = 0.002; lngOffset = -0.002; }
-  return { lat: zoneLat + latOffset, lng: zoneLng + lngOffset };
+  const baseLat = zoneLat || 8.5962;
+  const baseLng = zoneLng || -71.1451;
+  
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const latOffset = ((hash % 100) - 50) * 0.00015;
+  const lngOffset = (((hash >> 2) % 100) - 50) * 0.00015;
+  
+  return { lat: baseLat + latOffset, lng: baseLng + lngOffset };
 }
 
 export async function getProperties(filters: PropertyFilters = {}): Promise<{
@@ -100,14 +96,14 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
           `, { count: "exact" })
           .eq("status", "activa");
 
-      if (filters.operacion) {
-        query = query.eq("operation", filters.operacion);
+      if (filters.operacion && filters.operacion.length > 0) {
+        query = query.in("operation", filters.operacion);
       }
-      if (filters.tipo) {
-        query = query.eq("property_type", filters.tipo);
+      if (filters.tipo && filters.tipo.length > 0) {
+        query = query.in("property_type", filters.tipo);
       }
-      if (filters.zona) {
-        query = query.eq("zone.slug", filters.zona);
+      if (filters.zona && filters.zona.length > 0) {
+        query = query.in("zone.slug", filters.zona);
       }
       if (filters.precio_min) {
         query = query.gte("price", filters.precio_min);
@@ -115,11 +111,21 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
       if (filters.precio_max) {
         query = query.lte("price", filters.precio_max);
       }
-      if (filters.habitaciones) {
-        query = query.gte("bedrooms", filters.habitaciones);
+      if (filters.habitaciones && filters.habitaciones.length > 0) {
+        const hasFourPlus = filters.habitaciones.includes(4);
+        if (hasFourPlus) {
+          query = query.gte("bedrooms", Math.min(...filters.habitaciones));
+        } else {
+          query = query.in("bedrooms", filters.habitaciones);
+        }
       }
-      if (filters.banos) {
-        query = query.gte("bathrooms", filters.banos);
+      if (filters.banos && filters.banos.length > 0) {
+        const hasFourPlus = filters.banos.includes(4);
+        if (hasFourPlus) {
+          query = query.gte("bathrooms", Math.min(...filters.banos));
+        } else {
+          query = query.in("bathrooms", filters.banos);
+        }
       }
       if (filters.destacadas) {
         query = query.eq("featured", true);
@@ -243,14 +249,14 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
   // Fallback to local mock data
   let filtered = [...MOCK_PROPERTIES];
 
-  if (filters.operacion) {
-    filtered = filtered.filter((p) => p.operation === filters.operacion);
+  if (filters.operacion && filters.operacion.length > 0) {
+    filtered = filtered.filter((p) => filters.operacion!.includes(p.operation));
   }
-  if (filters.tipo) {
-    filtered = filtered.filter((p) => p.property_type === filters.tipo);
+  if (filters.tipo && filters.tipo.length > 0) {
+    filtered = filtered.filter((p) => filters.tipo!.includes(p.property_type as any));
   }
-  if (filters.zona) {
-    filtered = filtered.filter((p) => p.zone?.slug === filters.zona);
+  if (filters.zona && filters.zona.length > 0) {
+    filtered = filtered.filter((p) => p.zone?.slug && filters.zona!.includes(p.zone.slug));
   }
   if (filters.precio_min) {
     filtered = filtered.filter((p) => p.price >= filters.precio_min!);
@@ -258,11 +264,17 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
   if (filters.precio_max) {
     filtered = filtered.filter((p) => p.price <= filters.precio_max!);
   }
-  if (filters.habitaciones) {
-    filtered = filtered.filter((p) => (p.bedrooms ?? 0) >= filters.habitaciones!);
+  if (filters.habitaciones && filters.habitaciones.length > 0) {
+    filtered = filtered.filter((p) => {
+      if (p.bedrooms === null) return false;
+      return filters.habitaciones!.some((h) => h === 4 ? p.bedrooms! >= 4 : p.bedrooms === h);
+    });
   }
-  if (filters.banos) {
-    filtered = filtered.filter((p) => (p.bathrooms ?? 0) >= filters.banos!);
+  if (filters.banos && filters.banos.length > 0) {
+    filtered = filtered.filter((p) => {
+      if (p.bathrooms === null) return false;
+      return filters.banos!.some((b) => b === 4 ? p.bathrooms! >= 4 : p.bathrooms === b);
+    });
   }
   if (filters.destacadas) {
     filtered = filtered.filter((p) => p.featured);

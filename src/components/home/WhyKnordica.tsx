@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useSpring, useInView, animate } from "framer-motion";
+import { motion, useScroll, useSpring, useInView, animate, type Transition } from "framer-motion";
 import { useLocale } from "@/components/layout/LocaleProvider";
+import { EASE_EXPO } from "@/lib/motion/variants";
 
 function WhyCounter({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -59,7 +60,7 @@ export function WhyKnordica() {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.7, ease: EASE_EXPO } as Transition,
     },
   };
 

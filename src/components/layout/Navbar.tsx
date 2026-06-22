@@ -13,10 +13,14 @@ import {
   Phone,
   ChevronDown,
   User,
+  Heart,
+  GitCompare,
 } from "lucide-react";
 import { KnordicaLogo } from "@/components/ui/KnordicaLogo";
 import { useTheme } from "@/components/layout/ThemeProvider";
 import { useLocale } from "@/components/layout/LocaleProvider";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useComparatorStore } from "@/store/comparator.store";
 import { cn } from "@/lib/utils/cn";
 import type { Locale } from "@/i18n/config";
 
@@ -132,6 +136,16 @@ function MobileDrawer({
   links: Array<{ href: string; label: string }>;
 }) {
   const { dict, locale } = useLocale();
+  const { favorites } = useFavorites();
+  const { selectedProperties } = useComparatorStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const favCount = isMounted ? favorites.length : 0;
+  const compareCount = isMounted ? selectedProperties.length : 0;
 
   return (
     <AnimatePresence>
@@ -207,6 +221,56 @@ function MobileDrawer({
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: links.length * 0.05, duration: 0.3 }}
+              >
+                <Link
+                  href={`/${locale}/favoritos`}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 rounded-sm text-sm font-semibold",
+                    "text-[var(--text)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart size={16} className={cn(favCount > 0 && "fill-red-500 text-red-500")} />
+                    {locale === "es" ? "Favoritos" : "Favorites"}
+                  </span>
+                  {favCount > 0 && (
+                    <span className="h-5 min-w-5 px-1.5 rounded-full text-[10px] font-mono font-bold bg-red-500 text-white flex items-center justify-center">
+                      {favCount}
+                    </span>
+                  )}
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: (links.length + 0.5) * 0.05, duration: 0.3 }}
+              >
+                <Link
+                  href={`/${locale}/comparar`}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 rounded-sm text-sm font-semibold",
+                    "text-[var(--text)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <GitCompare size={16} className="text-[var(--accent)]" />
+                    {locale === "es" ? "Comparador" : "Compare List"}
+                  </span>
+                  {compareCount > 0 && (
+                    <span className="h-5 min-w-5 px-1.5 rounded-full text-[10px] font-mono font-bold bg-[var(--accent)] text-black flex items-center justify-center">
+                      {compareCount}
+                    </span>
+                  )}
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
               >
                 <Link
                   href={`/${locale}/cliente`}
@@ -335,6 +399,16 @@ export function Navbar() {
   const { dict, locale } = useLocale();
   const navLinks = useNavLinks();
   const pathname = usePathname();
+  const { favorites } = useFavorites();
+  const { selectedProperties } = useComparatorStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const favCount = isMounted ? favorites.length : 0;
+  const compareCount = isMounted ? selectedProperties.length : 0;
 
   const isHome = pathname === `/${locale}` || pathname === `/${locale}/`;
   const isOverHero = isHome && !scrolled;
@@ -450,6 +524,53 @@ export function Navbar() {
           <div className="hidden lg:flex items-center gap-4">
             <LanguageSwitcher isOverHero={isOverHero} />
             <ThemeToggle isOverHero={isOverHero} />
+
+            {/* Comparar */}
+            <Link
+              href={`/${locale}/comparar`}
+              className={cn(
+                "relative p-1.5 rounded-sm transition-all duration-150 cursor-pointer flex items-center justify-center",
+                isOverHero
+                  ? "text-white hover:text-[var(--accent)] hover:bg-white/10"
+                  : "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+              )}
+              title={locale === "es" ? "Comparador de propiedades" : "Property comparator"}
+            >
+              <GitCompare size={16} />
+              {compareCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-[var(--accent)] text-black text-[9px] font-bold font-mono flex items-center justify-center shadow-sm"
+                >
+                  {compareCount}
+                </motion.span>
+              )}
+            </Link>
+
+            {/* Favoritos */}
+            <Link
+              href={`/${locale}/favoritos`}
+              className={cn(
+                "relative p-1.5 rounded-sm transition-all duration-150 cursor-pointer flex items-center justify-center mr-1",
+                isOverHero
+                  ? "text-white hover:text-red-400 hover:bg-white/10"
+                  : "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+              )}
+              title={locale === "es" ? "Mis favoritos" : "My favorites"}
+            >
+              <Heart size={16} className={cn(favCount > 0 && "fill-red-500 text-red-500")} />
+              {favCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold font-mono flex items-center justify-center shadow-sm"
+                >
+                  {favCount}
+                </motion.span>
+              )}
+            </Link>
+
             <PrivateAccessDropdown isOverHero={isOverHero} />
             <motion.a
               initial={{ opacity: 0, x: 16 }}
