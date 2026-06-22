@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { useLocale } from "@/components/layout/LocaleProvider";
-import { LayoutDashboard, Heart, CalendarRange, User, ArrowLeft, LogOut } from "lucide-react";
+import { getUserWithRole } from "@/lib/auth/getUserRole";
+import { LayoutDashboard, Heart, CalendarRange, User, ArrowLeft } from "lucide-react";
 import { LogoutButton } from "./LogoutButton";
 
 interface ProtectedLayoutProps {
@@ -12,19 +11,16 @@ interface ProtectedLayoutProps {
 
 export default async function ProtectedLayout({ children, params }: ProtectedLayoutProps) {
   const { locale } = await params;
-  const supabase = await createClient();
 
-  // Check auth server-side
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const authUser = await getUserWithRole();
 
-  if (!user) {
+  if (!authUser) {
     redirect(`/${locale}/login`);
   }
 
-  // Get user details
-  const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "Cliente";
+  const name = authUser.full_name;
+  const email = authUser.email;
+  const initial = name.charAt(0).toUpperCase();
 
   const navItems = [
     {
@@ -61,7 +57,7 @@ export default async function ProtectedLayout({ children, params }: ProtectedLay
                 Knordica Client
               </span>
             </Link>
-            <Link 
+            <Link
               href={`/${locale}`}
               className="md:hidden flex items-center justify-center h-8 w-8 rounded-full border border-[var(--border)] text-[var(--text-2)]"
               title="Volver a la web"
@@ -72,11 +68,19 @@ export default async function ProtectedLayout({ children, params }: ProtectedLay
 
           {/* User profile card */}
           <div className="p-6 border-b border-[var(--border)]">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-semibold font-display">
-              {locale === "es" ? "Bienvenido" : "Welcome"}
-            </p>
-            <h4 className="text-sm font-bold text-[var(--text)] truncate mt-0.5">{name}</h4>
-            <p className="text-[10px] text-[var(--text-muted)] font-mono truncate mt-0.5">{user.email}</p>
+            <div className="flex items-center gap-3">
+              {/* Avatar circle with initial */}
+              <div className="h-9 w-9 rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 flex items-center justify-center font-display font-bold text-xs text-[var(--accent)] shrink-0">
+                {initial}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-semibold font-display">
+                  {locale === "es" ? "Bienvenido" : "Welcome"}
+                </p>
+                <h4 className="text-sm font-bold text-[var(--text)] truncate mt-0.5">{name}</h4>
+                <p className="text-[10px] text-[var(--text-muted)] font-mono truncate mt-0.5">{email}</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation link items */}
