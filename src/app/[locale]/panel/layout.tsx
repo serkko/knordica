@@ -9,48 +9,56 @@ import { motion } from "framer-motion";
 import type { PanelRole } from "@/types/panel";
 
 // ─────────────────────────────────────────────
-// TOKENS DE DISEÑO DEL PANEL — Dark mode
-// Completamente independientes del tema público
+// TOKENS DE DISEÑO DEL PANEL
+// Negro neutro limpio, sin tinte cálido.
+// Referencia visual: Linear, Vercel, Raycast.
 // ─────────────────────────────────────────────
 const PANEL_STYLES = `
   :root {
-    /* Superficies */
-    --p-bg:        #0E0D0C;
-    --p-sidebar:   #111110;
-    --p-surface:   #161513;
-    --p-surface-2: #1D1B18;
-    --p-surface-3: #252320;
+    /* Superficies — negro neutro sin amarronado */
+    --p-bg:        #090909;
+    --p-sidebar:   #0F0F0F;
+    --p-surface:   #141414;
+    --p-surface-2: #1A1A1A;
+    --p-surface-3: #222222;
 
     /* Bordes */
-    --p-border:    rgba(255, 255, 255, 0.07);
+    --p-border:    rgba(255, 255, 255, 0.08);
     --p-border-2:  rgba(255, 255, 255, 0.04);
 
-    /* Texto */
-    --p-text:      #F0EDE8;
-    --p-text-2:    #9C9690;
-    --p-text-3:    #5C5852;
+    /* Texto — máximo contraste, escala clara */
+    --p-text:      #EDEDEC;
+    --p-text-2:    #A1A1A0;
+    --p-text-3:    #616160;
 
-    /* Acento principal — arena/lino */
-    --p-accent:        #C8B49A;
-    --p-accent-soft:   rgba(200, 180, 154, 0.08);
-    --p-accent-medium: rgba(200, 180, 154, 0.15);
+    /* Acento — blanco brillante con toque azul frío, estilo Linear */
+    --p-accent:        #E8E8E6;
+    --p-accent-soft:   rgba(232, 232, 230, 0.07);
+    --p-accent-medium: rgba(232, 232, 230, 0.13);
 
     /* Estados semánticos */
-    --p-green:   #4CAF7D;
-    --p-amber:   #D4924A;
-    --p-red:     #C0605A;
-    --p-blue:    #5B8FD4;
+    --p-green:   #4ADE80;
+    --p-amber:   #FBB040;
+    --p-red:     #F87171;
+    --p-blue:    #60A5FA;
 
     /* Tipografía */
     --p-font-body:    'Inter', 'Helvetica Neue', sans-serif;
     --p-font-display: 'Inter', 'Helvetica Neue', sans-serif;
 
-    /* Radio — consistente en todo el panel */
+    /* Radio */
     --p-radius: 6px;
 
     /* Transición estándar */
     --p-ease: cubic-bezier(0.16, 1, 0.3, 1);
     --p-duration: 200ms;
+
+    /* Tamaños base del panel — más grandes */
+    --p-text-xs:   12px;
+    --p-text-sm:   13px;
+    --p-text-base: 14px;
+    --p-text-lg:   16px;
+    --p-text-xl:   20px;
   }
 
   /* Scrollbar del panel */
@@ -62,6 +70,15 @@ const PANEL_STYLES = `
   }
   .panel-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.15);
+  }
+
+  /* Reset de font-size para todo el panel */
+  .panel-root,
+  .panel-root * {
+    font-size: inherit;
+  }
+  .panel-root {
+    font-size: var(--p-text-base);
   }
 `;
 
@@ -106,7 +123,6 @@ export default function PanelLayout({ children, params }: LayoutProps) {
     fetchUserInfo();
   }, []);
 
-  // Pantalla de carga
   if (loading) {
     return (
       <>
@@ -122,19 +138,10 @@ export default function PanelLayout({ children, params }: LayoutProps) {
               width: 28,
               height: 28,
               borderRadius: "50%",
-              border: "2px solid rgba(200,180,154,0.15)",
+              border: "2px solid rgba(255,255,255,0.08)",
               borderTopColor: "var(--p-accent)",
             }}
           />
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.3, 0.7, 0.3] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="mt-3 text-[11px] tracking-widest uppercase"
-            style={{ color: "var(--p-text-3)" }}
-          >
-            Cargando
-          </motion.p>
         </div>
       </>
     );
@@ -146,12 +153,14 @@ export default function PanelLayout({ children, params }: LayoutProps) {
     <>
       <style>{PANEL_STYLES}</style>
       <div
-        className="flex overflow-hidden"
+        className="panel-root flex"
         style={{
           background: "var(--p-bg)",
           color: "var(--p-text)",
           minHeight: "100dvh",
           fontFamily: "var(--p-font-body)",
+          /* SIN overflow:hidden aqui para que el toggle del sidebar no se corte */
+          position: "relative",
         }}
       >
         <PanelSidebar
@@ -162,18 +171,18 @@ export default function PanelLayout({ children, params }: LayoutProps) {
           locale={locale}
         />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0" style={{ overflow: "hidden" }}>
           <PanelTopbar />
 
           <main
             className="flex-1 overflow-y-auto panel-scroll"
-            style={{ padding: "28px" }}
+            style={{ padding: "28px 32px" }}
           >
             <motion.div
               key={typeof window !== "undefined" ? window.location.pathname : ""}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
               {children}
             </motion.div>
