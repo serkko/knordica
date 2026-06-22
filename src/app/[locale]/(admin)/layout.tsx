@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getUserWithRole } from "@/lib/auth/getUserRole";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 interface AdminLayoutProps {
@@ -9,46 +9,46 @@ interface AdminLayoutProps {
 
 export default async function AdminLayout({ children, params }: AdminLayoutProps) {
   const { locale } = await params;
-  const supabase = await createClient();
 
-  const hasSupabaseKeys = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-                          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD";
+  const hasSupabaseKeys =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD";
 
   let userRole = "admin";
   let userName = "Administrador";
+  let userEmail = "";
+  let avatarUrl: string | null = null;
   let isDemo = true;
 
   if (hasSupabaseKeys) {
-    // Check auth server-side
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const authUser = await getUserWithRole();
 
-    if (!user) {
+    if (!authUser) {
       redirect(`/${locale}/login`);
     }
 
-    // Check if user is an agent in the DB
-    const { data: agent, error } = await supabase
-      .from("agents")
-      .select("full_name, role, active")
-      .eq("user_id", user.id)
-      .single();
-
-    if (error || !agent || !agent.active) {
-      // If not registered as an agent, check if they are standard user and redirect to client portal
+    // Only agents (admin / senior / agent) can access the admin panel
+    if (authUser.role === "cliente" || authUser.role === null) {
       redirect(`/${locale}/cliente`);
     }
 
-    userRole = agent.role || "agent";
-    userName = agent.full_name;
+    userRole = authUser.role ?? "agent";
+    userName = authUser.full_name;
+    userEmail = authUser.email;
+    avatarUrl = authUser.avatar_url;
     isDemo = false;
   }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[var(--background)]">
       {/* Sidebar navigation */}
-      <AdminSidebar userName={userName} userRole={userRole} isDemo={isDemo} />
+      <AdminSidebar
+        userName={userName}
+        userRole={userRole}
+        userEmail={userEmail}
+        avatarUrl={avatarUrl}
+        isDemo={isDemo}
+      />
 
       {/* Main panel workspace */}
       <main className="flex-1 min-h-[300px] md:h-screen md:overflow-y-auto">
@@ -59,3 +59,4 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
     </div>
   );
 }
+
