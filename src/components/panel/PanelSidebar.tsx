@@ -1,245 +1,342 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useLocale } from "@/components/layout/LocaleProvider";
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, Heart, Search, MessageSquare, Building2, Users, Calendar,
-  BarChart3, UserCheck, UsersRound, FileText, TrendingUp, Settings,
-  CircleUser, ArrowLeft, LogOut, Menu, X, ChevronLeft, ChevronRight,
+  LayoutDashboard,
+  Building2,
+  Users,
+  UserCheck,
+  Calendar,
+  BarChart3,
+  Settings,
+  Heart,
+  MessageSquare,
+  User,
+  BookOpen,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  ExternalLink,
 } from "lucide-react";
-import type { PanelRole, NavItem } from "@/types/panel";
-import { PANEL_NAV, ROLE_PERMISSIONS } from "@/types/panel";
+import { useState } from "react";
+import type { PanelRole } from "@/types/panel";
+import { createClient } from "@/lib/supabase/client";
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  Home: <Home className="h-4 w-4" />,
-  Heart: <Heart className="h-4 w-4" />,
-  Search: <Search className="h-4 w-4" />,
-  MessageSquare: <MessageSquare className="h-4 w-4" />,
-  Building2: <Building2 className="h-4 w-4" />,
-  Users: <Users className="h-4 w-4" />,
-  Calendar: <Calendar className="h-4 w-4" />,
-  BarChart3: <BarChart3 className="h-4 w-4" />,
-  UserCheck: <UserCheck className="h-4 w-4" />,
-  UsersRound: <UsersRound className="h-4 w-4" />,
-  FileText: <FileText className="h-4 w-4" />,
-  TrendingUp: <TrendingUp className="h-4 w-4" />,
-  Settings: <Settings className="h-4 w-4" />,
-  CircleUser: <CircleUser className="h-4 w-4" />,
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  roles: PanelRole[];
+  badge?: number;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  // Todos los roles
+  { href: "/panel/inicio", label: "Inicio", icon: LayoutDashboard, roles: ["user", "agent", "senior", "admin"] },
+
+  // Solo usuario
+  { href: "/panel/favoritos", label: "Favoritos", icon: Heart, roles: ["user"] },
+  { href: "/panel/mensajes", label: "Mensajes", icon: MessageSquare, roles: ["user"] },
+
+  // Agente + senior + admin
+  { href: "/panel/propiedades", label: "Propiedades", icon: Building2, roles: ["agent", "senior", "admin"] },
+  { href: "/panel/clientes", label: "Clientes", icon: Users, roles: ["agent", "senior", "admin"] },
+  { href: "/panel/agenda", label: "Agenda", icon: Calendar, roles: ["agent", "senior", "admin"] },
+  { href: "/panel/estadisticas", label: "Estadísticas", icon: TrendingUp, roles: ["agent", "senior", "admin"] },
+
+  // Solo admin
+  { href: "/panel/agentes", label: "Agentes", icon: UserCheck, roles: ["admin"] },
+  { href: "/panel/usuarios", label: "Usuarios", icon: User, roles: ["admin"] },
+  { href: "/panel/blog", label: "Blog", icon: BookOpen, roles: ["admin"] },
+  { href: "/panel/analitica", label: "Analítica", icon: BarChart3, roles: ["admin"] },
+  { href: "/panel/configuracion", label: "Configuración", icon: Settings, roles: ["admin"] },
+];
+
+const ROLE_LABELS: Record<PanelRole, string> = {
+  user: "Usuario",
+  agent: "Agente",
+  senior: "Senior",
+  admin: "Administrador",
+};
+
+const ROLE_COLORS: Record<PanelRole, string> = {
+  user: "#6B7BF7",
+  agent: "#4CAF7D",
+  senior: "#D4924A",
+  admin: "#C8B49A",
 };
 
 interface PanelSidebarProps {
   role: PanelRole;
   userName: string;
   userEmail: string;
-  avatarUrl?: string | null;
-  isDemo?: boolean;
+  avatarUrl: string | null;
+  locale?: string;
 }
 
-function roleColor(role: PanelRole) {
-  if (role === "admin") return { ring: "ring-[var(--accent)]", badge: "text-[var(--accent)] border-[var(--accent)]/20 bg-[var(--accent)]/5" };
-  if (role === "senior") return { ring: "ring-[var(--gold)]", badge: "text-[var(--gold)] border-[var(--gold)]/20 bg-[var(--gold)]/5" };
-  if (role === "agent") return { ring: "ring-blue-400", badge: "text-blue-400 border-blue-400/20 bg-blue-400/5" };
-  return { ring: "ring-[var(--border)]", badge: "text-[var(--text-muted)] border-[var(--border)] bg-transparent" };
-}
-
-export function PanelSidebar({
-  role,
-  userName,
-  userEmail,
-  avatarUrl,
-  isDemo = false,
-}: PanelSidebarProps) {
-  const { locale } = useLocale();
+export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "es" }: PanelSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const supabase = createClient();
+  const [signingOut, setSigningOut] = useState(false);
 
-  const initial = userName.charAt(0).toUpperCase();
-  const colors = roleColor(role);
+  const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
 
-  const visibleNav = PANEL_NAV.filter((item) => item.roles.includes(role));
-  // Separate profile to always render at bottom
-  const mainNav = visibleNav.filter((i) => i.key !== "perfil");
-  const bottomNav = visibleNav.filter((i) => i.key === "perfil");
-
-  const isActive = (item: NavItem) => {
-    const base = `/${locale}/panel/${item.href}`;
-    return pathname === base || pathname.startsWith(base + "/");
+  // Detecta el item activo normalizando el locale del pathname
+  const isActive = (href: string) => {
+    const normalized = pathname.replace(/^\/[a-z]{2}/, "");
+    return normalized === href || normalized.startsWith(href + "/");
   };
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    const supabase = createClient();
     await supabase.auth.signOut();
-    router.push(`/${locale}/login`);
-    router.refresh();
+    router.push(`/${locale}`);
   };
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className={`border-b border-[var(--border)] flex items-center ${collapsed ? "px-3 py-5 justify-center" : "px-5 h-16"}`}>
-        {!collapsed && (
-          <Link href={`/${locale}`} className="font-display font-bold tracking-widest text-[var(--accent)] text-[11px] uppercase">
-            Knordica Panel
-          </Link>
-        )}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="ml-auto hidden md:flex h-7 w-7 items-center justify-center rounded-sm border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-
-      {/* Profile */}
-      {!collapsed && (
-        <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--surface-2)]/20">
-          <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-[var(--background-alt)] ${colors.ring} overflow-hidden`}>
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-[var(--accent)]/10 font-display font-bold text-sm text-[var(--accent)]">
-                  {initial}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-[var(--text)] truncate">{userName}</p>
-              <span className={`inline-block mt-0.5 px-1.5 py-px rounded-xs text-[8px] font-bold uppercase tracking-wider border font-display ${colors.badge}`}>
-                {role}
-              </span>
-            </div>
-          </div>
-          {isDemo && (
-            <div className="mt-3 text-center text-[9px] font-mono text-amber-400 border border-amber-500/20 bg-amber-500/5 rounded-xs py-1">
-              {locale === "es" ? "Modo Demo" : "Demo Mode"}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 flex flex-col gap-0.5">
-        {mainNav.map((item) => {
-          const active = isActive(item);
-          return (
-            <Link
-              key={item.key}
-              href={`/${locale}/panel/${item.href}`}
-              onClick={() => setMobileOpen(false)}
-              title={collapsed ? (locale === "es" ? item.label_es : item.label_en) : undefined}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xs text-xs font-semibold transition-all ${
-                active
-                  ? "bg-[var(--accent)]/10 text-[var(--accent)] border-l-2 border-[var(--accent)] pl-[10px]"
-                  : "text-[var(--text-2)] hover:bg-[var(--surface-2)]/40 hover:text-[var(--text)]"
-              } ${collapsed ? "justify-center" : ""}`}
-            >
-              <span className={`shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}>
-                {ICON_MAP[item.icon]}
-              </span>
-              {!collapsed && <span className="truncate">{locale === "es" ? item.label_es : item.label_en}</span>}
-              {!collapsed && item.badge != null && item.badge > 0 && (
-                <span className="ml-auto h-4 min-w-4 px-1 rounded-full bg-[var(--accent)] text-white text-[9px] font-bold flex items-center justify-center">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Bottom section */}
-      <div className="px-2 py-3 border-t border-[var(--border)] flex flex-col gap-0.5">
-        {bottomNav.map((item) => (
-          <Link
-            key={item.key}
-            href={`/${locale}/panel/${item.href}`}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xs text-xs font-semibold transition-all ${
-              isActive(item)
-                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                : "text-[var(--text-2)] hover:bg-[var(--surface-2)]/40 hover:text-[var(--text)]"
-            } ${collapsed ? "justify-center" : ""}`}
-          >
-            <span className="shrink-0 text-[var(--text-muted)]">{ICON_MAP[item.icon]}</span>
-            {!collapsed && <span>{locale === "es" ? item.label_es : item.label_en}</span>}
-          </Link>
-        ))}
-        <Link
-          href={`/${locale}`}
-          className={`flex items-center gap-3 px-3 py-2 rounded-xs text-xs text-[var(--text-2)] hover:text-[var(--text)] transition-colors ${collapsed ? "justify-center" : ""}`}
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
-          {!collapsed && <span>{locale === "es" ? "Volver a la web" : "Back to site"}</span>}
-        </Link>
-        <button
-          onClick={handleLogout}
-          className={`flex items-center gap-3 px-3 py-2 rounded-xs text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all w-full text-left cursor-pointer ${collapsed ? "justify-center" : ""}`}
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>{locale === "es" ? "Cerrar sesión" : "Logout"}</span>}
-        </button>
-      </div>
-    </div>
-  );
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
-    <>
-      {/* Mobile topbar */}
-      <div className="md:hidden h-14 border-b border-[var(--border)] bg-[var(--background-alt)] px-4 flex items-center justify-between z-40 relative">
-        <Link href={`/${locale}`} className="font-display font-bold tracking-widest text-[var(--accent)] text-[11px] uppercase">
-          Knordica Panel
-        </Link>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="h-8 w-8 border border-[var(--border)] rounded-sm flex items-center justify-center text-[var(--text)] cursor-pointer"
+    <motion.aside
+      animate={{ width: collapsed ? 72 : 220 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="relative flex flex-col flex-shrink-0 overflow-hidden"
+      style={{
+        background: "var(--p-sidebar)",
+        borderRight: "1px solid var(--p-border)",
+        height: "100dvh",
+        position: "sticky",
+        top: 0,
+      }}
+    >
+      {/* Logo */}
+      <div
+        className="flex items-center h-[60px] px-4 flex-shrink-0"
+        style={{ borderBottom: "1px solid var(--p-border)" }}
+      >
+        <motion.div
+          animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : "auto" }}
+          transition={{ duration: 0.2 }}
+          className="overflow-hidden"
         >
-          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </button>
+          <span
+            className="text-[15px] font-semibold tracking-tight whitespace-nowrap"
+            style={{ color: "var(--p-text)", fontFamily: "var(--p-font-display)" }}
+          >
+            Knordica
+          </span>
+        </motion.div>
+
+        {collapsed && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[11px] font-bold"
+            style={{ background: "var(--p-accent)", color: "#0E0D0C" }}
+          >
+            K
+          </motion.div>
+        )}
       </div>
 
-      {/* Desktop sidebar */}
-      <aside
-        className={`hidden md:flex flex-col border-r border-[var(--border)] bg-[var(--background-alt)] shrink-0 transition-all duration-200 ${
-          collapsed ? "w-14" : "w-56"
-        }`}
-      >
-        <SidebarContent />
-      </aside>
+      {/* Nav items */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2">
+        <div className="space-y-0.5">
+          {visibleItems.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={`/${locale}${item.href}`}>
+                <motion.div
+                  className="relative flex items-center gap-3 h-9 px-2.5 cursor-pointer select-none"
+                  style={{
+                    borderRadius: "6px",
+                    color: active ? "var(--p-text)" : "var(--p-text-2)",
+                    background: active ? "var(--p-surface-3)" : "transparent",
+                  }}
+                  whileHover={{
+                    background: "var(--p-surface-2)",
+                    color: "var(--p-text)",
+                  }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {/* Indicador activo */}
+                  {active && (
+                    <motion.div
+                      layoutId="nav-active-dot"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5"
+                      style={{
+                        borderRadius: "0 3px 3px 0",
+                        background: "var(--p-accent)",
+                      }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    />
+                  )}
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              key="overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 bg-black/60 z-20 md:hidden backdrop-blur-xs"
-            />
-            <motion.aside
-              key="drawer"
-              initial={{ x: -256 }}
-              animate={{ x: 0 }}
-              exit={{ x: -256 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 left-0 bottom-0 w-56 z-30 bg-[var(--background-alt)] border-r border-[var(--border)] md:hidden"
-            >
-              <SidebarContent />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex-shrink-0"
+                  >
+                    <Icon
+                      size={16}
+                      style={{ color: active ? "var(--p-accent)" : "inherit" }}
+                      strokeWidth={active ? 2.5 : 1.75}
+                    />
+                  </motion.div>
+
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -6 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-[13px] font-medium whitespace-nowrap truncate"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  {!collapsed && item.badge && item.badge > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                      style={{ background: "var(--p-accent)", color: "#0E0D0C" }}
+                    >
+                      {item.badge}
+                    </motion.span>
+                  )}
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Footer: usuario + acciones */}
+      <div
+        className="flex-shrink-0 p-2"
+        style={{ borderTop: "1px solid var(--p-border)" }}
+      >
+        {/* Volver al sitio */}
+        <Link href={`/${locale}`}>
+          <motion.div
+            className="flex items-center gap-3 h-9 px-2.5 cursor-pointer mb-0.5"
+            style={{ borderRadius: "6px", color: "var(--p-text-3)" }}
+            whileHover={{ background: "var(--p-surface-2)", color: "var(--p-text-2)" }}
+            transition={{ duration: 0.15 }}
+          >
+            <ExternalLink size={15} strokeWidth={1.75} className="flex-shrink-0" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-[12px] whitespace-nowrap"
+                >
+                  Ir al sitio
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </Link>
+
+        {/* Logout */}
+        <motion.button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="w-full flex items-center gap-3 h-9 px-2.5 cursor-pointer mb-2"
+          style={{ borderRadius: "6px", color: "var(--p-text-3)" }}
+          whileHover={{ background: "rgba(192,96,90,0.12)", color: "#C0605A" }}
+          transition={{ duration: 0.15 }}
+        >
+          <LogOut size={15} strokeWidth={1.75} className="flex-shrink-0" />
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-[12px] whitespace-nowrap"
+              >
+                {signingOut ? "Saliendo..." : "Cerrar sesión"}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+
+        {/* Avatar + info usuario */}
+        <div
+          className="flex items-center gap-2.5 px-2 py-2"
+          style={{ borderRadius: "6px", background: "var(--p-surface-2)" }}
+        >
+          {/* Avatar */}
+          <div
+            className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold overflow-hidden"
+            style={{ background: "var(--p-surface-3)", color: "var(--p-accent)" }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+            ) : (
+              <span>{initials}</span>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="min-w-0 flex-1"
+              >
+                <p
+                  className="text-[12px] font-medium truncate leading-tight"
+                  style={{ color: "var(--p-text)" }}
+                >
+                  {userName}
+                </p>
+                <p
+                  className="text-[10px] truncate leading-tight"
+                  style={{ color: "var(--p-text-3)" }}
+                >
+                  {ROLE_LABELS[role]}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Botón colapsar */}
+      <motion.button
+        onClick={() => setCollapsed((v) => !v)}
+        className="absolute top-[70px] -right-3 w-6 h-6 flex items-center justify-center z-10"
+        style={{
+          borderRadius: "50%",
+          background: "var(--p-surface-3)",
+          border: "1px solid var(--p-border)",
+          color: "var(--p-text-2)",
+        }}
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.9 }}
+        transition={{ duration: 0.15 }}
+      >
+        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+      </motion.button>
+    </motion.aside>
   );
 }

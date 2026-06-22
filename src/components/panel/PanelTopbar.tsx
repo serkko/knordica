@@ -1,71 +1,99 @@
 "use client";
 
-import { Bell, Sun, Moon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useLocale } from "@/components/layout/LocaleProvider";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+import { Bell, Search } from "lucide-react";
+import { useState } from "react";
 
-interface PanelTopbarProps {
-  title?: string;
-  subtitle?: string;
-  notificationCount?: number;
-}
+const PAGE_TITLES: Record<string, string> = {
+  "/panel/inicio": "Inicio",
+  "/panel/propiedades": "Propiedades",
+  "/panel/propiedades/nueva": "Nueva propiedad",
+  "/panel/clientes": "Clientes",
+  "/panel/agenda": "Agenda",
+  "/panel/estadisticas": "Estadísticas",
+  "/panel/agentes": "Agentes",
+  "/panel/usuarios": "Usuarios",
+  "/panel/blog": "Blog",
+  "/panel/analitica": "Analítica",
+  "/panel/configuracion": "Configuración",
+  "/panel/favoritos": "Favoritos",
+  "/panel/mensajes": "Mensajes",
+  "/panel/perfil": "Mi perfil",
+};
 
-export function PanelTopbar({ title, subtitle, notificationCount = 0 }: PanelTopbarProps) {
-  const { locale } = useLocale();
-  const [isDark, setIsDark] = useState(false);
+export function PanelTopbar() {
+  const pathname = usePathname();
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => {
-    const stored = document.documentElement.getAttribute("data-theme");
-    if (stored) {
-      setIsDark(stored === "dark");
-    } else {
-      setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const next = isDark ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    setIsDark(!isDark);
-  };
+  const normalized = pathname.replace(/^\/[a-z]{2}/, "");
+  
+  // Determinar título: match exacto o match de prefijo
+  let title = "Panel";
+  if (PAGE_TITLES[normalized]) {
+    title = PAGE_TITLES[normalized];
+  } else {
+    // match de subpáginas como /panel/propiedades/[id]/editar
+    const match = Object.entries(PAGE_TITLES).find(([key]) =>
+      normalized.startsWith(key + "/")
+    );
+    if (match) title = match[1];
+  }
 
   return (
-    <header className="h-14 border-b border-[var(--border)] bg-[var(--background-alt)]/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
-      {/* Left: title */}
-      <div className="flex flex-col justify-center">
-        {title && (
-          <h1 className="text-sm font-bold text-[var(--text)] font-display tracking-tight leading-none">
-            {title}
-          </h1>
-        )}
-        {subtitle && (
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{subtitle}</p>
-        )}
-      </div>
+    <header
+      className="flex items-center justify-between px-6 flex-shrink-0"
+      style={{
+        height: "60px",
+        borderBottom: "1px solid var(--p-border)",
+        background: "var(--p-bg)",
+      }}
+    >
+      {/* Título de página con animación al cambiar */}
+      <motion.h1
+        key={title}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="text-[15px] font-semibold"
+        style={{ color: "var(--p-text)", fontFamily: "var(--p-font-display)" }}
+      >
+        {title}
+      </motion.h1>
 
-      {/* Right: actions */}
-      <div className="flex items-center gap-2">
-        {/* Notifications */}
-        <button
-          className="relative h-8 w-8 flex items-center justify-center rounded-sm border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
-          aria-label={locale === "es" ? "Notificaciones" : "Notifications"}
+      {/* Acciones derecha */}
+      <div className="flex items-center gap-1">
+        {/* Búsqueda */}
+        <motion.button
+          onClick={() => setSearchOpen((v) => !v)}
+          className="w-8 h-8 flex items-center justify-center"
+          style={{
+            borderRadius: "6px",
+            color: "var(--p-text-2)",
+            background: searchOpen ? "var(--p-surface-2)" : "transparent",
+          }}
+          whileHover={{ background: "var(--p-surface-2)", color: "var(--p-text)" }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ duration: 0.15 }}
         >
-          <Bell className="h-4 w-4" />
-          {notificationCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-[var(--accent)] text-white text-[8px] font-bold flex items-center justify-center">
-              {notificationCount > 99 ? "99+" : notificationCount}
-            </span>
-          )}
-        </button>
+          <Search size={15} strokeWidth={1.75} />
+        </motion.button>
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="h-8 w-8 flex items-center justify-center rounded-sm border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        {/* Notificaciones */}
+        <motion.button
+          className="relative w-8 h-8 flex items-center justify-center"
+          style={{ borderRadius: "6px", color: "var(--p-text-2)" }}
+          whileHover={{ background: "var(--p-surface-2)", color: "var(--p-text)" }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ duration: 0.15 }}
         >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
+          <Bell size={15} strokeWidth={1.75} />
+          {/* Dot indicador — visible cuando hay notificaciones */}
+          <span
+            className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
+            style={{ background: "var(--p-accent)" }}
+          />
+        </motion.button>
       </div>
     </header>
   );
