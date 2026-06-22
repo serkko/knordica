@@ -139,9 +139,32 @@ function MobileDrawer({
   const { favorites } = useFavorites();
   const { selectedProperties } = useComparatorStore();
   const [isMounted, setIsMounted] = useState(false);
+  const [isAgent, setIsAgent] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        setIsLoggedIn(true);
+        const { data } = await supabase
+          .from("agents")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (data && ["admin", "senior", "agent"].includes(data.role)) {
+          setIsAgent(true);
+        }
+      } catch { /* no-op */ }
+    }
+    checkAuth();
   }, []);
 
   const favCount = isMounted ? favorites.length : 0;
@@ -214,7 +237,7 @@ function MobileDrawer({
                 </motion.div>
               ))}
 
-              {/* Private portals links in mobile menu */}
+              {/* Favoritos & Comparador — visible for all */}
               <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
 
               <motion.div
@@ -267,39 +290,65 @@ function MobileDrawer({
                 </Link>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
-              >
-                <Link
-                  href={`/${locale}/cliente`}
-                  onClick={onClose}
-                  className={cn(
-                    "block px-4 py-3 rounded-sm text-sm font-semibold",
-                    "text-[var(--accent)] hover:bg-[var(--surface-2)] transition-all duration-150"
-                  )}
-                >
-                  {locale === "es" ? "Portal Cliente" : "Client Portal"}
-                </Link>
-              </motion.div>
+              {/* Portales privados: condicional por estado de auth */}
+              {isLoggedIn && (
+                <>
+                  <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
 
-              <motion.div
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
-              >
-                <Link
-                  href={`/${locale}/admin`}
-                  onClick={onClose}
-                  className={cn(
-                    "block px-4 py-3 rounded-sm text-sm font-semibold",
-                    "text-[var(--gold)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  <motion.div
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
+                  >
+                    <Link
+                      href={`/${locale}/cliente`}
+                      onClick={onClose}
+                      className={cn(
+                        "block px-4 py-3 rounded-sm text-sm font-semibold",
+                        "text-[var(--accent)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                      )}
+                    >
+                      {locale === "es" ? "Mi Portal" : "My Portal"}
+                    </Link>
+                  </motion.div>
+
+                  {isAgent && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: (links.length + 1.5) * 0.05, duration: 0.3 }}
+                    >
+                      <Link
+                        href="/admin"
+                        onClick={onClose}
+                        className={cn(
+                          "block px-4 py-3 rounded-sm text-sm font-semibold",
+                          "text-[var(--gold)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                        )}
+                      >
+                        {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
+                      </Link>
+                    </motion.div>
                   )}
+                </>
+              )}
+
+              {!isLoggedIn && (
+                <motion.div
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
                 >
-                  {locale === "es" ? "Panel CRM (Agentes)" : "CRM Dashboard (Agents)"}
-                </Link>
-              </motion.div>
+                  <div className="border-t border-[var(--border)] my-3 pt-3 opacity-60" />
+                  <Link
+                    href={`/${locale}/login`}
+                    onClick={onClose}
+                    className="block px-4 py-3 rounded-sm text-sm font-semibold text-[var(--accent)] hover:bg-[var(--surface-2)] transition-all duration-150"
+                  >
+                    {locale === "es" ? "Iniciar sesión" : "Sign in"}
+                  </Link>
+                </motion.div>
+              )}
             </nav>
 
             {/* Footer */}
@@ -341,50 +390,152 @@ function MobileDrawer({
 function PrivateAccessDropdown({ isOverHero }: { isOverHero?: boolean }) {
   const { locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
+  const [authState, setAuthState] = useState<{
+    checked: boolean;
+    user: { email: string; avatarInitial: string } | null;
+    isAgent: boolean;
+  }>({ checked: false, user: null, isAgent: false });
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setAuthState({ checked: true, user: null, isAgent: false }); return; }
+        const { data: agent } = await supabase
+          .from("agents")
+          .select("role, full_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const displayName = agent?.full_name || user.email || "U";
+        setAuthState({
+          checked: true,
+          user: {
+            email: user.email ?? "",
+            avatarInitial: displayName.charAt(0).toUpperCase(),
+          },
+          isAgent: !!agent && ["admin", "senior", "agent"].includes(agent.role),
+        });
+      } catch {
+        setAuthState({ checked: true, user: null, isAgent: false });
+      }
+    }
+    checkAuth();
+  }, []);
+
+  // Mientras carga no renderizar nada (evita CLS)
+  if (!authState.checked) return null;
+
+  const btnBase = cn(
+    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-[0.7rem] font-medium uppercase tracking-wider transition-all duration-150 cursor-pointer",
+    isOverHero
+      ? "border border-white/20 text-white hover:bg-white/10 hover:border-white/40"
+      : "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)]"
+  );
 
   return (
-    <div 
+    <div
       className="relative"
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-1 px-2.5 py-1.5 rounded-sm text-[0.7rem] font-medium uppercase tracking-wider transition-all duration-150 cursor-pointer",
-          isOverHero
-            ? "border border-white/20 text-white hover:bg-white/10 hover:border-white/40"
-            : "border border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)]"
+      {/* Trigger button */}
+      <button onClick={() => setIsOpen(!isOpen)} className={btnBase}>
+        {authState.user ? (
+          <>
+            {/* Avatar con inicial */}
+            <span className="w-5 h-5 rounded-full bg-[var(--accent)] text-black text-[10px] font-bold flex items-center justify-center shrink-0">
+              {authState.user.avatarInitial}
+            </span>
+            <span>{locale === "es" ? "Mi cuenta" : "My account"}</span>
+          </>
+        ) : (
+          <>
+            <User size={12} className="text-[var(--accent)] shrink-0" />
+            <span>{locale === "es" ? "Acceso" : "Sign in"}</span>
+          </>
         )}
-      >
-        <User size={12} className="text-[var(--accent)] shrink-0" />
-        <span>{locale === "es" ? "Acceso" : "Access"}</span>
-        <ChevronDown size={11} className={cn("transition-transform duration-200 shrink-0", isOpen ? "rotate-180" : "")} />
+        <ChevronDown
+          size={11}
+          className={cn("transition-transform duration-200 shrink-0", isOpen ? "rotate-180" : "")}
+        />
       </button>
 
+      {/* Dropdown panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-sm shadow-lg py-1.5 z-50 glass"
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.18 }}
+            className="absolute right-0 mt-1.5 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-sm shadow-lg py-1.5 z-50"
           >
-            <Link
-              href={`/${locale}/cliente`}
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
-            >
-              {locale === "es" ? "Portal Cliente" : "Client Portal"}
-            </Link>
-            <Link
-              href={`/${locale}/admin`}
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors border-t border-[var(--border)]"
-            >
-              {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
-            </Link>
+            {authState.user ? (
+              <>
+                {/* Email header */}
+                <div className="px-4 py-2 border-b border-[var(--border)] mb-1">
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono truncate">
+                    {authState.user.email}
+                  </p>
+                </div>
+
+                {/* Mi Portal — visible para cualquier usuario logueado */}
+                <Link
+                  href={`/${locale}/cliente`}
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+                >
+                  {locale === "es" ? "Mi Portal" : "My Portal"}
+                </Link>
+
+                {/* Panel CRM — solo agentes/admin */}
+                {authState.isAgent && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
+                    {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
+                  </Link>
+                )}
+
+                {/* Cerrar sesión */}
+                <div className="border-t border-[var(--border)] mt-1 pt-1">
+                  <button
+                    onClick={async () => {
+                      setIsOpen(false);
+                      const { createClient } = await import("@/lib/supabase/client");
+                      const supabase = createClient();
+                      await supabase.auth.signOut();
+                      window.location.href = `/${locale}`;
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-400 hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                  >
+                    {locale === "es" ? "Cerrar sesión" : "Sign out"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* No autenticado */}
+                <Link
+                  href={`/${locale}/login`}
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--surface-hover)] transition-colors"
+                >
+                  {locale === "es" ? "Iniciar sesión" : "Sign in"}
+                </Link>
+                <Link
+                  href={`/${locale}/registro`}
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
+                >
+                  {locale === "es" ? "Crear cuenta" : "Create account"}
+                </Link>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
