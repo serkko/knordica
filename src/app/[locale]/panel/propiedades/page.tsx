@@ -670,7 +670,7 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   const router = useRouter();
   const items: { icon: React.ElementType; label: string; action: () => void; danger?: boolean }[] = [
     { icon: Eye, label: "Ver en sitio", action: () => window.open(`/${locale}/${slug}`, "_blank") },
-    { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/${id}/editar`) },
+    { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/editar/${id}`) },
     { icon: Copy, label: "Duplicar", action: () => onDuplicate(id) },
     { icon: Trash2, label: "Eliminar", action: () => onDelete(id), danger: true },
   ];
@@ -1198,7 +1198,7 @@ export default function PropiedadesPage() {
                             property={p}
                             onClose={() => setQuickEditId(null)}
                             onSaved={next => { handleSaved(next); setQuickEditId(null); }}
-                            onEdit={() => router.push(`/${locale}/panel/propiedades/${p.id}/editar`)}
+                            onEdit={() => router.push(`/${locale}/panel/propiedades/editar/${p.id}`)}
                           />
                         )}
                       </AnimatePresence>

@@ -578,7 +578,7 @@ export default function NuevaPropiedadPage() {
       }
 
       // Redirigir a la propiedad recién creada
-      router.push(`/${locale}/panel/propiedades/${prop.id}/editar`);
+      router.push(`/${locale}/panel/propiedades/editar/${prop.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error inesperado");
       setSaving(false);
