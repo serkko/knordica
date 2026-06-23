@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
 import {
   Upload,
   X,
@@ -495,6 +496,7 @@ export default function NuevaPropiedadPage() {
           floors: form.floors ? parseInt(form.floors) : null,
           floor_number: form.floor_number ? parseInt(form.floor_number) : null,
           year_built: form.year_built ? parseInt(form.year_built) : null,
+          property_age: form.year_built ? (new Date().getFullYear() - parseInt(form.year_built)) : null,
           municipio: form.municipio || null,
           zone_id: form.zone_id || null,
           address_es: form.address_es || null,
@@ -655,9 +657,9 @@ export default function NuevaPropiedadPage() {
               onChange={(e) => set("operation", e.target.value)}
               style={INPUT.base}
             >
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="vacacional">Vacacional</option>
+              <option value="venta" disabled={isCombinationInconsistent(form.property_type, "venta")}>Venta</option>
+              <option value="alquiler" disabled={isCombinationInconsistent(form.property_type, "alquiler")}>Alquiler</option>
+              <option value="vacacional" disabled={isCombinationInconsistent(form.property_type, "vacacional")}>Vacacional</option>
             </select>
           </div>
           <div>
@@ -668,7 +670,7 @@ export default function NuevaPropiedadPage() {
               style={INPUT.base}
             >
               {["apartamento","casa","townhouse","anexo","edificio","galpon","habitacion","hacienda_finca","local","oficina","terreno_lote"].map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                <option key={t} value={t} disabled={isCombinationInconsistent(t, form.operation)}>{t.replace(/_/g, " ")}</option>
               ))}
             </select>
           </div>
@@ -747,16 +749,18 @@ export default function NuevaPropiedadPage() {
               <option value="VES">VES</option>
             </select>
           </div>
-          <div>
-            <Label>Mantenimiento</Label>
-            <input
-              type="number"
-              value={form.maintenance_fee}
-              onChange={(e) => set("maintenance_fee", e.target.value)}
-              placeholder="0"
-              style={INPUT.base}
-            />
-          </div>
+          {checkFieldApplies("maintenance", form.property_type, form.operation) && (
+            <div>
+              <Label>Mantenimiento</Label>
+              <input
+                type="number"
+                value={form.maintenance_fee}
+                onChange={(e) => set("maintenance_fee", e.target.value)}
+                placeholder="0"
+                style={INPUT.base}
+              />
+            </div>
+          )}
         </div>
         <div className="mt-3">
           <Toggle checked={form.price_negotiable} onChange={(v) => set("price_negotiable", v)} label="Precio negociable" />
@@ -776,7 +780,16 @@ export default function NuevaPropiedadPage() {
             { key: "floors", label: "Pisos del edificio" },
             { key: "floor_number", label: "Piso de la unidad" },
             { key: "year_built", label: "Año de construcción" },
-          ].map(({ key, label }) => (
+          ].filter(({ key }) => {
+            if (key === "bedrooms") return checkFieldApplies("bedrooms", form.property_type, form.operation);
+            if (key === "bathrooms") return checkFieldApplies("bathrooms", form.property_type, form.operation);
+            if (key === "half_bathrooms") return checkFieldApplies("half_bathrooms", form.property_type, form.operation);
+            if (key === "parking_spaces") return checkFieldApplies("parking", form.property_type, form.operation);
+            if (key === "floors") return checkFieldApplies("floors", form.property_type, form.operation);
+            if (key === "floor_number") return checkFieldApplies("floor_number", form.property_type, form.operation);
+            if (key === "year_built") return checkFieldApplies("year_built", form.property_type, form.operation);
+            return true;
+          }).map(({ key, label }) => (
             <div key={key}>
               <Label>{label}</Label>
               <input
@@ -896,7 +909,7 @@ export default function NuevaPropiedadPage() {
             ["has_security", "Seguridad"],
             ["has_elevator", "Ascensor"],
             ["allows_pets", "Acepta mascotas"],
-            ["furnished", "Amueblado"],
+            ["furnished", "Amoblado"],
             ["has_gym", "Gym"],
             ["has_jacuzzi", "Jacuzzi"],
             ["has_bbq", "BBQ"],
@@ -904,7 +917,11 @@ export default function NuevaPropiedadPage() {
             ["has_balcony", "Balcón"],
             ["has_terrace", "Terraza"],
             ["has_solar_panels", "Paneles solares"],
-          ].map(([key, label]) => (
+          ].filter(([key]) => {
+            if (key === "has_elevator") return checkFieldApplies("elevator", form.property_type, form.operation);
+            if (key === "furnished") return checkFieldApplies("furnished", form.property_type, form.operation);
+            return true;
+          }).map(([key, label]) => (
             <Toggle
               key={key}
               checked={!!form[key as keyof FormData]}

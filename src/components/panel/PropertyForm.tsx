@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
 import {
   Upload,
   X,
@@ -32,107 +33,192 @@ interface ImageFile {
 }
 
 interface FormData {
-  // Clasificación
+  // Clasificación y Gamificación
   operation: string;
   property_type: string;
   status: string;
-  // Precio
-  price: string;
-  price_currency: string;
-  price_negotiable: boolean;
-  maintenance_fee: string;
-  // Dimensiones
-  area_built: string;
-  area_total: string;
-  bedrooms: string;
-  bathrooms: string;
-  half_bathrooms: string;
-  parking_spaces: string;
-  floors: string;
-  floor_number: string;
-  year_built: string;
-  // Ubicación
-  municipio: string;
-  zone_id: string;
-  address_es: string;
-  lat: string;
-  lng: string;
-  // Contenido
-  title_es: string;
-  description_es: string;
-  // Video
-  video_url: string;
-  virtual_tour_url: string;
-  // Badges
+  listing_badge: string;
+  completeness_score: string;
   featured: boolean;
   exclusive: boolean;
   new_listing: boolean;
   price_reduced: boolean;
-  // Amenidades
-  has_pool: boolean;
-  has_garden: boolean;
-  has_ac: boolean;
-  has_generator: boolean;
-  has_water_tank: boolean;
-  has_security: boolean;
+
+  // Título y Descripción (Multi-idioma)
+  title_es: string;
+  description_es: string;
+  title_en: string;
+  description_en: string;
+
+  // Precio y Condiciones
+  price: string;
+  price_currency: string;
+  price_negotiable: boolean;
+  price_usd: string;
+  maintenance_fee: string;
+  maintenance_included: boolean;
+
+  // Vacacional
+  price_per_night: string;
+  price_weekend: string;
+  min_nights: string;
+  max_guests: string;
+  checkin_time: string;
+  checkout_time: string;
+  house_rules: string;
+  includes_breakfast: boolean;
+
+  // Dimensiones y Habitáculos
+  area_built: string;
+  area_total: string;
+  area_hectares: string;
+  bedrooms: string;
+  bathrooms: string;
+  half_bathrooms: string;
+  parking_spaces: string;
+  parking_covered: boolean;
+  floors: string;
+  floor_number: string;
+  property_age: string;
+  year_built: string;
+  condition: string;
+  furnished: string;
+
+  // Ubicación
+  municipio: string;
+  zone_id: string;
+  address_es: string;
+  address_en: string;
+  lat: string;
+  lng: string;
+  show_exact_location: boolean;
+
+  // Servicios Básicos
   has_elevator: boolean;
+  has_water_tank: boolean;
+  has_hot_water: boolean;
+  has_generator: boolean;
+  gas_type: string;
+  has_internet: boolean;
+
+  // Seguridad
+  has_security_24h: boolean;
+  has_electric_gate: boolean;
+  has_cctv: boolean;
+  has_electric_fence: boolean;
+  has_intercom: boolean;
+  has_armored_door: boolean;
+
+  // Climatización
+  has_ac: boolean;
+  has_heating: boolean;
+  kitchen_type: string;
+
+  // Habitación y Anexo
+  bathroom_type: string;
+  host_housing_type: string;
+  cohabitation: string;
+  occupants_count: string;
+  gender_policy: string;
+  deposit_required: boolean;
+  deposit_amount: string;
   allows_pets: boolean;
-  furnished: boolean;
-  has_gym: boolean;
-  has_jacuzzi: boolean;
-  has_bbq: boolean;
-  has_laundry: boolean;
-  has_balcony: boolean;
-  has_terrace: boolean;
-  has_solar_panels: boolean;
+  allows_cooking: boolean;
+  has_independent_entrance: boolean;
+
+  // Terreno y Finca
+  topography: string;
+  land_use: string;
+  access_type: string;
+  current_use: string;
+  has_own_water: boolean;
+
+  // Media
+  video_url: string;
+  virtual_tour_url: string;
 }
 
 const INIT: FormData = {
   operation: "venta",
   property_type: "apartamento",
   status: "activa",
-  price: "",
-  price_currency: "USD",
-  price_negotiable: false,
-  maintenance_fee: "",
-  area_built: "",
-  area_total: "",
-  bedrooms: "",
-  bathrooms: "",
-  half_bathrooms: "",
-  parking_spaces: "",
-  floors: "",
-  floor_number: "",
-  year_built: "",
-  municipio: "",
-  zone_id: "",
-  address_es: "",
-  lat: "",
-  lng: "",
-  title_es: "",
-  description_es: "",
-  video_url: "",
-  virtual_tour_url: "",
+  listing_badge: "basico",
+  completeness_score: "0",
   featured: false,
   exclusive: false,
   new_listing: true,
   price_reduced: false,
-  has_pool: false,
-  has_garden: false,
-  has_ac: false,
-  has_generator: false,
-  has_water_tank: false,
-  has_security: false,
+  title_es: "",
+  description_es: "",
+  title_en: "",
+  description_en: "",
+  price: "",
+  price_currency: "USD",
+  price_negotiable: false,
+  price_usd: "",
+  maintenance_fee: "",
+  maintenance_included: false,
+  price_per_night: "",
+  price_weekend: "",
+  min_nights: "1",
+  max_guests: "",
+  checkin_time: "14:00",
+  checkout_time: "11:00",
+  house_rules: "",
+  includes_breakfast: false,
+  area_built: "",
+  area_total: "",
+  area_hectares: "",
+  bedrooms: "",
+  bathrooms: "",
+  half_bathrooms: "",
+  parking_spaces: "",
+  parking_covered: false,
+  floors: "",
+  floor_number: "",
+  property_age: "",
+  year_built: "",
+  condition: "",
+  furnished: "sin_muebles",
+  municipio: "",
+  zone_id: "",
+  address_es: "",
+  address_en: "",
+  lat: "",
+  lng: "",
+  show_exact_location: true,
   has_elevator: false,
+  has_water_tank: false,
+  has_hot_water: false,
+  has_generator: false,
+  gas_type: "",
+  has_internet: false,
+  has_security_24h: false,
+  has_electric_gate: false,
+  has_cctv: false,
+  has_electric_fence: false,
+  has_intercom: false,
+  has_armored_door: false,
+  has_ac: false,
+  has_heating: false,
+  kitchen_type: "",
+  bathroom_type: "",
+  host_housing_type: "",
+  cohabitation: "",
+  occupants_count: "",
+  gender_policy: "",
+  deposit_required: false,
+  deposit_amount: "",
   allows_pets: false,
-  furnished: false,
-  has_gym: false,
-  has_jacuzzi: false,
-  has_bbq: false,
-  has_laundry: false,
-  has_balcony: false,
-  has_terrace: false,
-  has_solar_panels: false,
+  allows_cooking: true,
+  has_independent_entrance: false,
+  topography: "",
+  land_use: "",
+  access_type: "",
+  current_use: "",
+  has_own_water: false,
+  video_url: "",
+  virtual_tour_url: "",
 };
 
 const INPUT = {
@@ -157,7 +243,7 @@ const INPUT = {
     outline: "none",
     width: "100%",
     resize: "vertical" as const,
-    minHeight: "120px",
+    minHeight: "100px",
   } as React.CSSProperties,
 };
 
@@ -169,7 +255,7 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionCard({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function SectionCard({ title, children, defaultOpen = true, style = {} }: { title: string; children: React.ReactNode; defaultOpen?: boolean; style?: React.CSSProperties }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div
@@ -178,12 +264,13 @@ function SectionCard({ title, children, defaultOpen = true }: { title: string; c
         border: "1px solid var(--p-border)",
         borderRadius: "var(--p-radius)",
         overflow: "hidden",
+        ...style,
       }}
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4"
+        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
         style={{ borderBottom: open ? "1px solid var(--p-border)" : "none" }}
       >
         <span className="text-[13px] font-semibold" style={{ color: "var(--p-text)" }}>
@@ -378,6 +465,21 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     setForm((prev) => ({ ...prev, [key]: val }));
   };
 
+  const checkApplies = (fieldOrGroup: string): boolean => {
+    return checkFieldApplies(fieldOrGroup, form.property_type, form.operation);
+  };
+
+  const getVerificationStyle = (applies: boolean): React.CSSProperties => {
+    if (applies) return {};
+    return {
+      border: "1px dashed rgba(239, 68, 68, 0.7)",
+      boxShadow: "0 0 10px rgba(239, 68, 68, 0.35)",
+      background: "rgba(239, 68, 68, 0.03)",
+      position: "relative" as const,
+      transition: "all 0.3s ease",
+    };
+  };
+
   // ── Load Property ──
   useEffect(() => {
     async function loadData() {
@@ -395,12 +497,13 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         if (propErr || !prop) throw propErr || new Error("Propiedad no encontrada");
 
         // 2. Fetch translations
-        const { data: trans } = await supabase
+        const { data: translations } = await supabase
           .from("property_translations")
-          .select("title, description")
-          .eq("property_id", propertyId)
-          .eq("locale", "es")
-          .maybeSingle();
+          .select("locale, title, description")
+          .eq("property_id", propertyId);
+
+        const transEs = (translations as any)?.find((t: any) => t.locale === "es") || {};
+        const transEn = (translations as any)?.find((t: any) => t.locale === "en") || {};
 
         // 3. Fetch images
         const { data: imgs } = await supabase
@@ -414,48 +517,83 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           operation: prop.operation || "venta",
           property_type: prop.property_type || "apartamento",
           status: prop.status || "activa",
-          price: prop.price?.toString() || "",
-          price_currency: prop.price_currency || "USD",
-          price_negotiable: !!prop.price_negotiable,
-          maintenance_fee: prop.maintenance_fee?.toString() || "",
-          area_built: prop.area_built?.toString() || "",
-          area_total: prop.area_total?.toString() || "",
-          bedrooms: prop.bedrooms?.toString() || "",
-          bathrooms: prop.bathrooms?.toString() || "",
-          half_bathrooms: prop.half_bathrooms?.toString() || "",
-          parking_spaces: prop.parking_spaces?.toString() || "",
-          floors: prop.floors?.toString() || "",
-          floor_number: prop.floor_number?.toString() || "",
-          year_built: prop.year_built?.toString() || "",
-          municipio: prop.municipio || "",
-          zone_id: prop.zone_id || "",
-          address_es: prop.address_es || "",
-          lat: prop.lat?.toString() || "",
-          lng: prop.lng?.toString() || "",
-          title_es: trans?.title || "",
-          description_es: trans?.description || "",
-          video_url: prop.video_url || "",
-          virtual_tour_url: prop.virtual_tour_url || "",
+          listing_badge: prop.listing_badge || "basico",
+          completeness_score: prop.completeness_score?.toString() || "0",
           featured: !!prop.featured,
           exclusive: !!prop.exclusive,
           new_listing: !!prop.new_listing,
           price_reduced: !!prop.price_reduced,
-          has_pool: !!prop.has_pool,
-          has_garden: !!prop.has_garden,
-          has_ac: !!prop.has_ac,
-          has_generator: !!prop.has_generator,
-          has_water_tank: !!prop.has_water_tank,
-          has_security: !!prop.has_security,
+          title_es: transEs.title || "",
+          description_es: transEs.description || "",
+          title_en: transEn.title || "",
+          description_en: transEn.description || "",
+          price: prop.price?.toString() || "",
+          price_currency: prop.price_currency || "USD",
+          price_negotiable: !!prop.price_negotiable,
+          price_usd: prop.price_usd?.toString() || "",
+          maintenance_fee: prop.maintenance_fee?.toString() || "",
+          maintenance_included: !!prop.maintenance_included,
+          price_per_night: prop.price_per_night?.toString() || "",
+          price_weekend: prop.price_weekend?.toString() || "",
+          min_nights: prop.min_nights?.toString() || "1",
+          max_guests: prop.max_guests?.toString() || "",
+          checkin_time: prop.checkin_time || "14:00",
+          checkout_time: prop.checkout_time || "11:00",
+          house_rules: prop.house_rules || "",
+          includes_breakfast: !!prop.includes_breakfast,
+          area_built: prop.area_built?.toString() || "",
+          area_total: prop.area_total?.toString() || "",
+          area_hectares: prop.area_hectares?.toString() || "",
+          bedrooms: prop.bedrooms?.toString() || "",
+          bathrooms: prop.bathrooms?.toString() || "",
+          half_bathrooms: prop.half_bathrooms?.toString() || "",
+          parking_spaces: prop.parking_spaces?.toString() || "",
+          parking_covered: !!prop.parking_covered,
+          floors: prop.total_floors?.toString() || "",
+          floor_number: prop.floor_number?.toString() || "",
+          property_age: prop.property_age?.toString() || "",
+          year_built: prop.year_built?.toString() || (prop.property_age ? (new Date().getFullYear() - prop.property_age).toString() : ""),
+          condition: prop.condition || "",
+          furnished: prop.furnished || "sin_muebles",
+          municipio: prop.municipio || "",
+          zone_id: prop.zone_id || "",
+          address_es: prop.address_es || "",
+          address_en: prop.address_en || "",
+          lat: prop.lat?.toString() || "",
+          lng: prop.lng?.toString() || "",
+          show_exact_location: !!prop.show_exact_location,
           has_elevator: !!prop.has_elevator,
+          has_water_tank: !!prop.has_water_tank,
+          has_hot_water: !!prop.has_hot_water,
+          has_generator: !!prop.has_generator,
+          gas_type: prop.gas_type || "",
+          has_internet: !!prop.has_internet,
+          has_security_24h: !!prop.has_security_24h,
+          has_electric_gate: !!prop.has_electric_gate,
+          has_cctv: !!prop.has_cctv,
+          has_electric_fence: !!prop.has_electric_fence,
+          has_intercom: !!prop.has_intercom,
+          has_armored_door: !!prop.has_armored_door,
+          has_ac: !!prop.has_ac,
+          has_heating: !!prop.has_heating,
+          kitchen_type: prop.kitchen_type || "",
+          bathroom_type: prop.bathroom_type || "",
+          host_housing_type: prop.host_housing_type || "",
+          cohabitation: prop.cohabitation || "",
+          occupants_count: prop.occupants_count?.toString() || "",
+          gender_policy: prop.gender_policy || "",
+          deposit_required: !!prop.deposit_required,
+          deposit_amount: prop.deposit_amount?.toString() || "",
           allows_pets: !!prop.allows_pets,
-          furnished: !!prop.furnished,
-          has_gym: !!prop.has_gym,
-          has_jacuzzi: !!prop.has_jacuzzi,
-          has_bbq: !!prop.has_bbq,
-          has_laundry: !!prop.has_laundry,
-          has_balcony: !!prop.has_balcony,
-          has_terrace: !!prop.has_terrace,
-          has_solar_panels: !!prop.has_solar_panels,
+          allows_cooking: !!prop.allows_cooking,
+          has_independent_entrance: !!prop.has_independent_entrance,
+          topography: prop.topography || "",
+          land_use: prop.land_use || "",
+          access_type: prop.access_type || "",
+          current_use: prop.current_use || "",
+          has_own_water: !!prop.has_own_water,
+          video_url: prop.video_url || "",
+          virtual_tour_url: prop.virtual_tour_url || "",
         });
 
         // Map images to image file list
@@ -542,59 +680,91 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           price: parseFloat(form.price) || 0,
           price_currency: form.price_currency,
           price_negotiable: form.price_negotiable,
+          price_usd: form.price_usd ? parseFloat(form.price_usd) : null,
           maintenance_fee: form.maintenance_fee ? parseFloat(form.maintenance_fee) : null,
+          maintenance_included: form.maintenance_included,
+          price_per_night: form.price_per_night ? parseFloat(form.price_per_night) : null,
+          price_weekend: form.price_weekend ? parseFloat(form.price_weekend) : null,
+          min_nights: form.min_nights ? parseInt(form.min_nights) : 1,
+          max_guests: form.max_guests ? parseInt(form.max_guests) : null,
+          checkin_time: form.checkin_time || null,
+          checkout_time: form.checkout_time || null,
+          house_rules: form.house_rules || null,
+          includes_breakfast: form.includes_breakfast,
           area_built: form.area_built ? parseFloat(form.area_built) : null,
           area_total: form.area_total ? parseFloat(form.area_total) : null,
+          area_hectares: form.area_hectares ? parseFloat(form.area_hectares) : null,
           bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
           bathrooms: form.bathrooms ? parseInt(form.bathrooms) : null,
           half_bathrooms: form.half_bathrooms ? parseInt(form.half_bathrooms) : null,
           parking_spaces: form.parking_spaces ? parseInt(form.parking_spaces) : null,
-          floors: form.floors ? parseInt(form.floors) : null,
+          parking_covered: form.parking_covered,
+          total_floors: form.floors ? parseInt(form.floors) : null,
           floor_number: form.floor_number ? parseInt(form.floor_number) : null,
           year_built: form.year_built ? parseInt(form.year_built) : null,
+          property_age: form.year_built ? (new Date().getFullYear() - parseInt(form.year_built)) : (form.property_age ? parseInt(form.property_age) : null),
+          condition: form.condition || null,
+          furnished: form.furnished || "sin_muebles",
           municipio: form.municipio || null,
           zone_id: form.zone_id || null,
           address_es: form.address_es || null,
+          address_en: form.address_en || null,
           lat: form.lat ? parseFloat(form.lat) : null,
           lng: form.lng ? parseFloat(form.lng) : null,
+          show_exact_location: form.show_exact_location,
+          has_water_tank: form.has_water_tank,
+          has_hot_water: form.has_hot_water,
+          has_generator: form.has_generator,
+          gas_type: form.gas_type || null,
+          has_internet: form.has_internet,
+          has_security_24h: form.has_security_24h,
+          has_electric_gate: form.has_electric_gate,
+          has_cctv: form.has_cctv,
+          has_electric_fence: form.has_electric_fence,
+          has_intercom: form.has_intercom,
+          has_armored_door: form.has_armored_door,
+          has_ac: form.has_ac,
+          has_heating: form.has_heating,
+          kitchen_type: form.kitchen_type || null,
+          bathroom_type: form.bathroom_type || null,
+          host_housing_type: form.host_housing_type || null,
+          cohabitation: form.cohabitation || null,
+          occupants_count: form.occupants_count ? parseInt(form.occupants_count) : null,
+          gender_policy: form.gender_policy || null,
+          deposit_required: form.deposit_required,
+          deposit_amount: form.deposit_amount ? parseFloat(form.deposit_amount) : null,
+          allows_pets: form.allows_pets,
+          allows_cooking: form.allows_cooking,
+          has_independent_entrance: form.has_independent_entrance,
+          topography: form.topography || null,
+          land_use: form.land_use || null,
+          access_type: form.access_type || null,
+          current_use: form.current_use || null,
+          has_own_water: form.has_own_water,
           video_url: form.video_url || null,
           virtual_tour_url: form.virtual_tour_url || null,
-          featured: form.featured,
-          exclusive: form.exclusive,
-          new_listing: form.new_listing,
-          price_reduced: form.price_reduced,
-          has_pool: form.has_pool,
-          has_garden: form.has_garden,
-          has_ac: form.has_ac,
-          has_generator: form.has_generator,
-          has_water_tank: form.has_water_tank,
-          has_security: form.has_security,
-          has_elevator: form.has_elevator,
-          allows_pets: form.allows_pets,
-          furnished: form.furnished,
-          has_gym: form.has_gym,
-          has_jacuzzi: form.has_jacuzzi,
-          has_bbq: form.has_bbq,
-          has_laundry: form.has_laundry,
-          has_balcony: form.has_balcony,
-          has_terrace: form.has_terrace,
-          has_solar_panels: form.has_solar_panels,
+          listing_badge: form.listing_badge || "basico",
+          completeness_score: form.completeness_score ? parseInt(form.completeness_score) : 0,
         })
         .eq("id", propertyId);
 
       if (propErr) throw propErr;
 
-      // 2. Update Translation (upsert)
-      const { error: transErr } = await supabase
-        .from("property_translations")
-        .upsert({
+      // 2. Update Translations (upsert both ES and EN)
+      await supabase.from("property_translations").upsert([
+        {
           property_id: propertyId,
           locale: "es",
           title: form.title_es,
           description: form.description_es || null,
-        }, { onConflict: "property_id,locale" });
-
-      if (transErr) throw transErr;
+        },
+        {
+          property_id: propertyId,
+          locale: "en",
+          title: form.title_en || form.title_es,
+          description: form.description_en || null,
+        }
+      ], { onConflict: "property_id,locale" });
 
       // 3. Remove deleted images from db
       if (removedImages.length > 0) {
@@ -705,10 +875,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </button>
           <div>
             <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-              Editar propiedad
+              Editar propiedad (Formulario Completo)
             </h2>
             <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-              Modifica la información y fotos de la publicación
+              Modifica la información y fotos de la publicación sin restricciones
             </p>
           </div>
         </div>
@@ -762,40 +932,57 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </motion.div>
       )}
 
-      {/* SECCIÓN: Clasificación */}
-      <SectionCard title="Clasificación">
-        <div className="grid grid-cols-3 gap-4">
+      {/* Alerta de inconsistencia lógica preexistente (Informativa, no bloqueante) */}
+      {isCombinationInconsistent(form.property_type, form.operation) && (
+        <div 
+          className="px-4 py-3 text-[12px] rounded" 
+          style={{ 
+            background: "rgba(212,146,74,0.12)", 
+            border: "1px solid rgba(212,146,74,0.2)", 
+            color: "#D4924A",
+            marginBottom: "16px"
+          }}
+        >
+          ⚠️ <strong>Aviso de inconsistencia lógica:</strong> La combinación actual ({form.property_type.replace(/_/g, " ")} × {form.operation}) no está recomendada (ej. habitación en venta, o galpón/local/oficina/terreno/edificio en vacacional). Es solo informativo y no impedirá guardar los cambios.
+        </div>
+      )}
+
+      {/* SECCIÓN: Clasificación y Gamificación */}
+      <SectionCard title="Clasificación y Gamificación">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Operación</Label>
-            <select
-              value={form.operation}
-              onChange={(e) => set("operation", e.target.value)}
+            <select 
+              value={form.operation} 
+              onChange={(e) => set("operation", e.target.value)} 
               style={INPUT.base}
             >
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="vacacional">Vacacional</option>
+              <option value="venta" disabled={isCombinationInconsistent(form.property_type, "venta")}>Venta</option>
+              <option value="alquiler" disabled={isCombinationInconsistent(form.property_type, "alquiler")}>Alquiler</option>
+              <option value="vacacional" disabled={isCombinationInconsistent(form.property_type, "vacacional")}>Vacacional</option>
             </select>
           </div>
           <div>
             <Label>Tipo de inmueble</Label>
-            <select
-              value={form.property_type}
-              onChange={(e) => set("property_type", e.target.value)}
+            <select 
+              value={form.property_type} 
+              onChange={(e) => set("property_type", e.target.value)} 
               style={INPUT.base}
             >
               {["apartamento","casa","townhouse","anexo","edificio","galpon","habitacion","hacienda_finca","local","oficina","terreno_lote"].map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                <option 
+                  key={t} 
+                  value={t} 
+                  disabled={isCombinationInconsistent(t, form.operation)}
+                >
+                  {t.replace(/_/g, " ")}
+                </option>
               ))}
             </select>
           </div>
           <div>
-            <Label>Estado</Label>
-            <select
-              value={form.status}
-              onChange={(e) => set("status", e.target.value)}
-              style={INPUT.base}
-            >
+            <Label>Estado de publicación</Label>
+            <select value={form.status} onChange={(e) => set("status", e.target.value)} style={INPUT.base}>
               <option value="activa">Activa</option>
               <option value="reservada">Reservada</option>
               <option value="vendida">Vendida</option>
@@ -803,75 +990,84 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <option value="cerrada">Cerrada</option>
             </select>
           </div>
+          <div>
+            <Label>Insignia (Badge)</Label>
+            <select value={form.listing_badge} onChange={(e) => set("listing_badge", e.target.value)} style={INPUT.base}>
+              <option value="basico">Básico</option>
+              <option value="destacado">Destacado</option>
+              <option value="oportunidad">Oportunidad</option>
+              <option value="ultima_unidad">Última Unidad</option>
+              <option value="exclusivo">Exclusivo</option>
+            </select>
+          </div>
+          <div>
+            <Label>Puntaje de Completitud (0-100)</Label>
+            <input type="number" value={form.completeness_score} onChange={(e) => set("completeness_score", e.target.value)} style={INPUT.base} />
+          </div>
         </div>
         <div className="flex flex-wrap gap-4 mt-4">
           <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
           <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
-          <Toggle checked={form.new_listing} onChange={(v) => set("new_listing", v)} label="Nueva" />
+          <Toggle checked={form.new_listing} onChange={(v) => set("new_listing", v)} label="Nueva publicación" />
           <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
         </div>
       </SectionCard>
 
-      {/* SECCIÓN: Contenido */}
-      <SectionCard title="Título y descripción">
+      {/* SECCIÓN: Contenido Multi-idioma */}
+      <SectionCard title="Contenido de la publicación (Español e Inglés)">
         <div className="space-y-4">
-          <div>
-            <Label>Título (Español) *</Label>
-            <input
-              value={form.title_es}
-              onChange={(e) => set("title_es", e.target.value)}
-              placeholder="Ej: Hermoso apartamento en El Parque..."
-              style={INPUT.base}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Título (Español) *</Label>
+              <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
+            </div>
+            <div>
+              <Label>Título (Inglés)</Label>
+              <input value={form.title_en} onChange={(e) => set("title_en", e.target.value)} placeholder="Ej: Duplex apartment in La Pedregosa" style={INPUT.base} />
+            </div>
           </div>
-          <div>
-            <Label>Descripción</Label>
-            <textarea
-              value={form.description_es}
-              onChange={(e) => set("description_es", e.target.value)}
-              placeholder="Describe la propiedad con detalle..."
-              style={INPUT.textarea}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Descripción (Español)</Label>
+              <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} />
+            </div>
+            <div>
+              <Label>Descripción (Inglés)</Label>
+              <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} />
+            </div>
           </div>
         </div>
       </SectionCard>
 
-      {/* SECCIÓN: Precio */}
-      <SectionCard title="Precio">
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label>Precio *</Label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-              placeholder="0"
-              style={INPUT.base}
-              required
-            />
+      {/* SECCIÓN: Precio y Finanzas */}
+      <SectionCard title="Precio y Condiciones">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={getVerificationStyle(form.operation !== "vacacional")} className="p-1 rounded">
+            <Label>{form.operation === "alquiler" ? "Canon mensual *" : "Precio base *"}</Label>
+            <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} style={INPUT.base} required={form.operation !== "vacacional"} />
+            {form.operation === "vacacional" && <span className="text-[10px] text-red-400 block mt-1">No aplica en vacacional</span>}
           </div>
           <div>
-            <Label>Moneda</Label>
-            <select
-              value={form.price_currency}
-              onChange={(e) => set("price_currency", e.target.value)}
-              style={INPUT.base}
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="VES">VES</option>
+            <Label>Moneda base</Label>
+            <select value={form.price_currency} onChange={(e) => set("price_currency", e.target.value)} style={INPUT.base}>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="VES">VES (Bs.)</option>
             </select>
           </div>
-          <div>
-            <Label>Mantenimiento</Label>
-            <input
-              type="number"
-              value={form.maintenance_fee}
-              onChange={(e) => set("maintenance_fee", e.target.value)}
-              placeholder="0"
-              style={INPUT.base}
-            />
+          <div style={getVerificationStyle(checkApplies("maintenance"))} className="p-1 rounded">
+            <Label>Cuota de condominio/mantenimiento</Label>
+            <input type="number" value={form.maintenance_fee} onChange={(e) => set("maintenance_fee", e.target.value)} style={INPUT.base} />
+            {form.operation === "alquiler" && (
+              <div className="mt-2">
+                <Toggle checked={form.maintenance_included} onChange={(v) => set("maintenance_included", v)} label="Condominio incluido en el canon" />
+              </div>
+            )}
+            {!checkApplies("maintenance") && (
+              <span className="text-[10px] text-red-400 block mt-1">
+                No aplica para {form.operation === "vacacional" ? "alquiler vacacional" : "terrenos"}
+              </span>
+            )}
           </div>
         </div>
         <div className="mt-3">
@@ -879,44 +1075,136 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </div>
       </SectionCard>
 
-      {/* SECCIÓN: Dimensiones */}
-      <SectionCard title="Dimensiones y habitaciones">
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { key: "area_built", label: "m² construidos" },
-            { key: "area_total", label: "m² totales" },
-            { key: "bedrooms", label: "Habitaciones" },
-            { key: "bathrooms", label: "Baños" },
-            { key: "half_bathrooms", label: "Medios baños" },
-            { key: "parking_spaces", label: "Estacionamientos" },
-            { key: "floors", label: "Pisos del edificio" },
-            { key: "floor_number", label: "Piso de la unidad" },
-            { key: "year_built", label: "Año de construcción" },
-          ].map(({ key, label }) => (
-            <div key={key}>
-              <Label>{label}</Label>
-              <input
-                type="number"
-                value={form[key as keyof FormData] as string}
-                onChange={(e) => set(key as keyof FormData, e.target.value)}
-                placeholder="-"
-                style={INPUT.base}
-              />
-            </div>
-          ))}
+      {/* SECCIÓN: Detalles de Alquiler Vacacional */}
+      <SectionCard title="Condiciones Vacacionales" defaultOpen={false} style={getVerificationStyle(checkApplies("vacational_section"))}>
+        {!checkApplies("vacational_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para operación: {form.operation}</div>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Precio por noche (USD)</Label>
+            <input type="number" value={form.price_per_night} onChange={(e) => set("price_per_night", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Tarifa por noche - Fines de semana (Vie - Dom)</Label>
+            <input type="number" value={form.price_weekend} onChange={(e) => set("price_weekend", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Mínimo de noches</Label>
+            <input type="number" value={form.min_nights} onChange={(e) => set("min_nights", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Máximo de huéspedes</Label>
+            <input type="number" value={form.max_guests} onChange={(e) => set("max_guests", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Hora Check-in</Label>
+            <select value={form.checkin_time} onChange={(e) => set("checkin_time", e.target.value)} style={INPUT.base}>
+              {["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map((time) => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Hora Check-out</Label>
+            <select value={form.checkout_time} onChange={(e) => set("checkout_time", e.target.value)} style={INPUT.base}>
+              {["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map((time) => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 space-y-4">
+          <div>
+            <Label>Normas de la casa / House Rules</Label>
+            <textarea value={form.house_rules} onChange={(e) => set("house_rules", e.target.value)} placeholder="Normas de convivencia, políticas de ruido..." style={INPUT.textarea} />
+          </div>
+          <Toggle checked={form.includes_breakfast} onChange={(v) => set("includes_breakfast", v)} label="Incluye desayuno" />
+        </div>
+      </SectionCard>
+
+      {/* SECCIÓN: Estructura y Dimensiones */}
+      <SectionCard title="Dimensiones y Estructura Física">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Área construida (m²)</Label>
+            <input type="number" value={form.area_built} onChange={(e) => set("area_built", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Área total terreno (m²)</Label>
+            <input type="number" value={form.area_total} onChange={(e) => set("area_total", e.target.value)} style={INPUT.base} />
+          </div>
+          <div style={getVerificationStyle(checkApplies("area_hectares"))} className="p-1.5 rounded">
+            <Label>Área en Hectáreas (Rural)</Label>
+            <input type="number" step="any" value={form.area_hectares} onChange={(e) => set("area_hectares", e.target.value)} style={INPUT.base} />
+            {!checkApplies("area_hectares") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("bedrooms"))} className="p-1.5 rounded">
+            <Label>Habitaciones / Dormitorios</Label>
+            <input type="number" value={form.bedrooms} onChange={(e) => set("bedrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("bedrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("bathrooms"))} className="p-1.5 rounded">
+            <Label>Baños completos</Label>
+            <input type="number" value={form.bathrooms} onChange={(e) => set("bathrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("bathrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("half_bathrooms"))} className="p-1.5 rounded">
+            <Label>Medios Baños (Visitas)</Label>
+            <input type="number" value={form.half_bathrooms} onChange={(e) => set("half_bathrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("half_bathrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("parking"))} className="p-1.5 rounded">
+            <Label>Puestos estacionamiento</Label>
+            <input type="number" value={form.parking_spaces} onChange={(e) => set("parking_spaces", e.target.value)} style={INPUT.base} />
+            {!checkApplies("parking") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("floor_number"))} className="p-1.5 rounded">
+            <Label>Número de piso (Unidad)</Label>
+            <input type="number" value={form.floor_number} onChange={(e) => set("floor_number", e.target.value)} style={INPUT.base} />
+            {!checkApplies("floor_number") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("floors"))} className="p-1.5 rounded">
+            <Label>Pisos totales (Edificio)</Label>
+            <input type="number" value={form.floors} onChange={(e) => set("floors", e.target.value)} style={INPUT.base} />
+            {!checkApplies("floors") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("year_built"))} className="p-1.5 rounded">
+            <Label>Año de construcción (Year Built)</Label>
+            <input type="number" value={form.year_built} onChange={(e) => set("year_built", e.target.value)} placeholder="Ej: 2015" style={INPUT.base} />
+            {!checkApplies("year_built") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("condition"))} className="p-1.5 rounded">
+            <Label>Estado de conservación</Label>
+            <select value={form.condition} onChange={(e) => set("condition", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="nuevo">Nuevo / A estrenar</option>
+              <option value="excelente">Excelente estado</option>
+              <option value="bueno">Buen estado</option>
+              <option value="por_remodelar">Por remodelar / Reparar</option>
+              <option value="en_gris">En obra gris</option>
+            </select>
+            {!checkApplies("condition") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={getVerificationStyle(checkApplies("furnished"))} className="p-1.5 rounded">
+            <Label>Mobiliario</Label>
+            <select value={form.furnished} onChange={(e) => set("furnished", e.target.value)} style={INPUT.base}>
+              <option value="sin_muebles">Sin muebles</option>
+              <option value="semi_amueblado">Semi amoblado</option>
+              <option value="completamente_amueblado">Completamente amoblado</option>
+            </select>
+            {!checkApplies("furnished") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+        </div>
+        <div style={getVerificationStyle(checkApplies("parking"))} className="mt-3 p-1.5 rounded max-w-xs">
+          <Toggle checked={form.parking_covered} onChange={(v) => set("parking_covered", v)} label="Estacionamiento techado" />
         </div>
       </SectionCard>
 
       {/* SECCIÓN: Ubicación */}
-      <SectionCard title="Ubicación">
-        <div className="grid grid-cols-2 gap-4">
+      <SectionCard title="Ubicación y Coordenadas">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Municipio</Label>
-            <select
-              value={form.municipio}
-              onChange={(e) => set("municipio", e.target.value)}
-              style={INPUT.base}
-            >
+            <select value={form.municipio} onChange={(e) => set("municipio", e.target.value)} style={INPUT.base}>
               <option value="">Seleccionar...</option>
               <option value="libertador">Libertador</option>
               <option value="campo_elias">Campo Elías</option>
@@ -926,41 +1214,184 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             </select>
           </div>
           <div>
-            <Label>Dirección</Label>
-            <input
-              value={form.address_es}
-              onChange={(e) => set("address_es", e.target.value)}
-              placeholder="Calle, edificio, referencia..."
-              style={INPUT.base}
-            />
+            <Label>ID de Zona (Relacional)</Label>
+            <input value={form.zone_id} onChange={(e) => set("zone_id", e.target.value)} placeholder="UUID de la zona" style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Dirección (Español)</Label>
+            <input value={form.address_es} onChange={(e) => set("address_es", e.target.value)} placeholder="Calle, edificio..." style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Dirección (Inglés)</Label>
+            <input value={form.address_en} onChange={(e) => set("address_en", e.target.value)} placeholder="Street name, reference..." style={INPUT.base} />
           </div>
           <div>
             <Label>Latitud</Label>
-            <input
-              type="number"
-              step="any"
-              value={form.lat}
-              onChange={(e) => set("lat", e.target.value)}
-              placeholder="8.5933"
-              style={INPUT.base}
-            />
+            <input type="number" step="any" value={form.lat} onChange={(e) => set("lat", e.target.value)} placeholder="8.59" style={INPUT.base} />
           </div>
           <div>
             <Label>Longitud</Label>
-            <input
-              type="number"
-              step="any"
-              value={form.lng}
-              onChange={(e) => set("lng", e.target.value)}
-              placeholder="-71.1440"
-              style={INPUT.base}
-            />
+            <input type="number" step="any" value={form.lng} onChange={(e) => set("lng", e.target.value)} placeholder="-71.14" style={INPUT.base} />
           </div>
+        </div>
+        <div className="mt-3">
+          <Toggle checked={form.show_exact_location} onChange={(v) => set("show_exact_location", v)} label="Mostrar ubicación exacta públicamente" />
         </div>
       </SectionCard>
 
-      {/* SECCIÓN: Imágenes */}
-      <SectionCard title="Fotos (hasta 20)">
+      {/* SECCIÓN: Servicios Básicos y Seguridad */}
+      <SectionCard title="Servicios y Climatización" style={getVerificationStyle(checkApplies("services_section"))}>
+        {!checkApplies("services_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Tipo de gas</Label>
+            <select value={form.gas_type} onChange={(e) => set("gas_type", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="bombona">Bombona de gas</option>
+              <option value="directo">Gas directo</option>
+              <option value="no_tiene">No tiene</option>
+            </select>
+          </div>
+          <div>
+            <Label>Tipo de cocina</Label>
+            <select value={form.kitchen_type} onChange={(e) => set("kitchen_type", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="gas">A gas</option>
+              <option value="electrica">Eléctrica</option>
+              <option value="induccion">Inducción</option>
+              <option value="mixta">Mixta</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+          <Toggle checked={form.has_water_tank} onChange={(v) => set("has_water_tank", v)} label="Tanque de agua" />
+          <Toggle checked={form.has_hot_water} onChange={(v) => set("has_hot_water", v)} label="Agua caliente" />
+          <Toggle checked={form.has_generator} onChange={(v) => set("has_generator", v)} label="Planta eléctrica / Generador" />
+          <div className="flex flex-col gap-0.5">
+            <Toggle checked={form.has_internet} onChange={(v) => set("has_internet", v)} label="Internet" />
+            <span className="text-[9px] text-[var(--p-text-3)] block ml-10">Acometida instalada (Listo para traspaso de titularidad)</span>
+          </div>
+          <Toggle checked={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" />
+          <Toggle checked={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" />
+          <div style={getVerificationStyle(checkApplies("elevator"))} className="p-1 rounded">
+            <Toggle checked={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" />
+            {!checkApplies("elevator") && <span className="text-[9px] text-red-400 block ml-10">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          {checkApplies("has_independent_entrance") && !checkApplies("shared_section") && (
+            <div style={getVerificationStyle(true)} className="p-1 rounded">
+              <Toggle checked={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      {/* SECCIÓN: Seguridad */}
+      <SectionCard title="Seguridad Física" style={getVerificationStyle(checkApplies("security_section"))}>
+        {!checkApplies("security_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Toggle checked={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24 horas" />
+          <Toggle checked={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" />
+          <Toggle checked={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" />
+          <div style={getVerificationStyle(checkApplies("has_electric_fence"))} className="p-1 rounded">
+            <Toggle checked={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" />
+            {!checkApplies("has_electric_fence") && <span className="text-[9px] text-red-400 block ml-10">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <Toggle checked={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" />
+          <Toggle checked={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" />
+        </div>
+      </SectionCard>
+
+      {/* SECCIÓN: Habitación y Anexo */}
+      <SectionCard title="Parámetros de Compartido / Habitación" defaultOpen={false} style={getVerificationStyle(checkApplies("shared_section"))}>
+        {!checkApplies("shared_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para esta combinación (Tipo: {form.property_type.replace(/_/g, " ")}, Operación: {form.operation})</div>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Tipo de baño</Label>
+            <select value={form.bathroom_type} onChange={(e) => set("bathroom_type", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="privado">Baño privado</option>
+              <option value="compartido">Baño compartido</option>
+            </select>
+          </div>
+          <div>
+            <Label>Tipo de vivienda del anfitrión</Label>
+            <select value={form.host_housing_type} onChange={(e) => set("host_housing_type", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="casa">Casa</option>
+              <option value="apartamento">Apartamento</option>
+            </select>
+          </div>
+          <div>
+            <Label>Cohabitación</Label>
+            <select value={form.cohabitation} onChange={(e) => set("cohabitation", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="solo_inquilinos">Solo cohabitan inquilinos</option>
+              <option value="con_propietario">Cohabita con propietario</option>
+            </select>
+          </div>
+          <div>
+            <Label>Número de ocupantes actuales</Label>
+            <input type="number" value={form.occupants_count} onChange={(e) => set("occupants_count", e.target.value)} style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Política de género</Label>
+            <select value={form.gender_policy} onChange={(e) => set("gender_policy", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="mixto">Mixto</option>
+              <option value="solo_mujeres">Solo mujeres</option>
+              <option value="solo_hombres">Solo hombres</option>
+            </select>
+          </div>
+          <div>
+            <Label>Monto de depósito (USD)</Label>
+            <input type="number" value={form.deposit_amount} onChange={(e) => set("deposit_amount", e.target.value)} style={INPUT.base} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+          <Toggle checked={form.deposit_required} onChange={(v) => set("deposit_required", v)} label="Requiere depósito" />
+          <Toggle checked={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
+          <Toggle checked={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
+        </div>
+      </SectionCard>
+
+      {/* SECCIÓN: Terrenos y Fincas */}
+      <SectionCard title="Parámetros de Terreno y Campo" defaultOpen={false} style={getVerificationStyle(checkApplies("land_section"))}>
+        {!checkApplies("land_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Topografía</Label>
+            <select value={form.topography} onChange={(e) => set("topography", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="plano">Plano</option>
+              <option value="inclinado">Semi-inclinado</option>
+              <option value="irregular">Irregular / Quebrado</option>
+            </select>
+          </div>
+          <div>
+            <Label>Uso del suelo</Label>
+            <input value={form.land_use} onChange={(e) => set("land_use", e.target.value)} placeholder="Ej: Residencial, Agrícola" style={INPUT.base} />
+          </div>
+          <div>
+            <Label>Vía de acceso</Label>
+            <select value={form.access_type} onChange={(e) => set("access_type", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="asfalto">Asfalto / Pavimento</option>
+              <option value="tierra">Tierra / Granzón</option>
+              <option value="concreto">Concreto</option>
+            </select>
+          </div>
+          <div>
+            <Label>Uso actual del terreno</Label>
+            <input value={form.current_use} onChange={(e) => set("current_use", e.target.value)} placeholder="Ej: Cultivo, Vacío" style={INPUT.base} />
+          </div>
+        </div>
+        <div className="mt-3">
+          <Toggle checked={form.has_own_water} onChange={(v) => set("has_own_water", v)} label="Tiene agua propia (Manantial / Pozo)" />
+        </div>
+      </SectionCard>
+
+      {/* SECCIÓN: Fotos (hasta 20) */}
+      <SectionCard title="Fotos de la propiedad (hasta 20)">
         <ImageDropzone
           images={images}
           onAdd={handleAddImages}
@@ -970,8 +1401,8 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         />
       </SectionCard>
 
-      {/* SECCIÓN: Video */}
-      <SectionCard title="Video y tour virtual" defaultOpen={false}>
+      {/* SECCIÓN: Video y Tour Virtual */}
+      <SectionCard title="Video y Tour Virtual (Enlaces)" defaultOpen={false}>
         <div className="space-y-4">
           <div>
             <Label>Enlace de YouTube o Vimeo</Label>
@@ -997,37 +1428,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               />
             </div>
           </div>
-        </div>
-      </SectionCard>
-
-      {/* SECCIÓN: Amenidades */}
-      <SectionCard title="Amenidades" defaultOpen={false}>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {[
-            ["has_pool", "Piscina"],
-            ["has_garden", "Jardín"],
-            ["has_ac", "Aire acondicionado"],
-            ["has_generator", "Planta eléctrica"],
-            ["has_water_tank", "Tanque de agua"],
-            ["has_security", "Seguridad"],
-            ["has_elevator", "Ascensor"],
-            ["allows_pets", "Acepta mascotas"],
-            ["furnished", "Amueblado"],
-            ["has_gym", "Gym"],
-            ["has_jacuzzi", "Jacuzzi"],
-            ["has_bbq", "BBQ"],
-            ["has_laundry", "Lavandería"],
-            ["has_balcony", "Balcón"],
-            ["has_terrace", "Terraza"],
-            ["has_solar_panels", "Paneles solares"],
-          ].map(([key, label]) => (
-            <Toggle
-              key={key}
-              checked={!!form[key as keyof FormData]}
-              onChange={(v) => set(key as keyof FormData, v)}
-              label={label as string}
-            />
-          ))}
         </div>
       </SectionCard>
 
