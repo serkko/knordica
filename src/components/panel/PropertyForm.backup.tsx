@@ -1,4 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
+// =============================================================================
+// ⚠️  ARCHIVO DE AUDITORÍA — NO USAR EN PRODUCCIÓN
+// =============================================================================
+//
+// Este archivo es una copia de respaldo del formulario completo de propiedades.
+// Su propósito es permitir auditorías visuales de las reglas de discriminación
+// de campos sin afectar el comportamiento en producción.
+//
+// DIFERENCIAS CON PropertyForm.tsx (producción):
+//   - Muestra TODOS los campos del formulario, sin ocultar ninguno.
+//   - Los campos inaplicables para la combinación (tipo × operación) actual se
+//     resaltan con un borde rojo punteado y fondo rojo translúcido.
+//   - El componente se exporta como `PropertyFormAudit` para evitar colisiones.
+//
+// CÓMO USAR:
+//   Importar en una ruta de panel protegida (solo admins) para inspeccionar
+//   visualmente qué campos aplican a cada combinación tipo × operación.
+//   Cambiar los selectores "Operación" y "Tipo de inmueble" para ver en tiempo
+//   real cómo cambia la discriminación.
+//
+// SINCRONIZACIÓN:
+//   Este archivo debe mantenerse sincronizado con PropertyForm.tsx cada vez que
+//   se añadan nuevos campos o se modifiquen las reglas de discriminación en
+//   src/utils/propertyDiscrimination.ts
+//
+// Última sincronización: 2026-06-23
+// =============================================================================
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -446,12 +473,15 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
   );
 }
 
-interface PropertyFormProps {
+interface PropertyFormAuditProps {
   locale: string;
   propertyId: string;
 }
 
-export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
+// ── COMPONENTE DE AUDITORÍA ──
+// Muestra TODOS los campos con sombras rojas en los inaplicables.
+// No oculta nada — sirve para inspección visual de las reglas de discriminación.
+export function PropertyFormAudit({ locale, propertyId }: PropertyFormAuditProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormData>(INIT);
   const [images, setImages] = useState<ImageFile[]>([]);
@@ -469,8 +499,17 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     return checkFieldApplies(fieldOrGroup, form.property_type, form.operation);
   };
 
-  // En producción: los campos inaplicables se ocultan directamente.
-  // Para ver todos los campos con sombras de auditoría, usar PropertyFormAudit (PropertyForm.backup.tsx)
+  // ── Estilo de auditoría: SIEMPRE MUESTRA, marca en rojo si no aplica ──
+  const auditStyle = (applies: boolean): React.CSSProperties => {
+    if (applies) return {};
+    return {
+      border: "1px dashed rgba(239, 68, 68, 0.7)",
+      boxShadow: "0 0 10px rgba(239, 68, 68, 0.35)",
+      background: "rgba(239, 68, 68, 0.03)",
+      position: "relative" as const,
+      transition: "all 0.3s ease",
+    };
+  };
 
   // ── Load Property ──
   useEffect(() => {
@@ -623,7 +662,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     }));
     setImages((prev) => {
       const next = [...prev, ...added];
-      // ensure we have at least one cover if none is cover
       if (next.length > 0 && !next.some((x) => x.isCover) && next[0]) {
         next[0].isCover = true;
       }
@@ -635,7 +673,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     setImages((prev) => {
       const target = prev.find((x) => x.id === id);
       if (target && target.url) {
-        setRemovedImages((r) => [...r, target.id]); // flag as deleted from database
+        setRemovedImages((r) => [...r, target.id]);
       }
       const filtered = prev.filter((x) => x.id !== id);
       if (target?.isCover && filtered.length > 0 && filtered[0]) {
@@ -649,191 +687,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     setImages((prev) => prev.map((img) => ({ ...img, isCover: img.id === id })));
   };
 
-  // ── Submit ──
+  // ── Submit (deshabilitado en auditoría — solo lectura visual) ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!form.title_es.trim()) { setError("El título es obligatorio."); return; }
-    if (!form.price) { setError("El precio es obligatorio."); return; }
-
-    setSaving(true);
-    try {
-      const supabase = createClient();
-
-      // 1. Update property in properties table
-      const { error: propErr } = await supabase
-        .from("properties")
-        .update({
-          operation: form.operation,
-          property_type: form.property_type,
-          status: form.status,
-          price: parseFloat(form.price) || 0,
-          price_currency: form.price_currency,
-          price_negotiable: form.price_negotiable,
-          price_usd: form.price_usd ? parseFloat(form.price_usd) : null,
-          maintenance_fee: form.maintenance_fee ? parseFloat(form.maintenance_fee) : null,
-          maintenance_included: form.maintenance_included,
-          price_per_night: form.price_per_night ? parseFloat(form.price_per_night) : null,
-          price_weekend: form.price_weekend ? parseFloat(form.price_weekend) : null,
-          min_nights: form.min_nights ? parseInt(form.min_nights) : 1,
-          max_guests: form.max_guests ? parseInt(form.max_guests) : null,
-          checkin_time: form.checkin_time || null,
-          checkout_time: form.checkout_time || null,
-          house_rules: form.house_rules || null,
-          includes_breakfast: form.includes_breakfast,
-          area_built: form.area_built ? parseFloat(form.area_built) : null,
-          area_total: form.area_total ? parseFloat(form.area_total) : null,
-          area_hectares: form.area_hectares ? parseFloat(form.area_hectares) : null,
-          bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
-          bathrooms: form.bathrooms ? parseInt(form.bathrooms) : null,
-          half_bathrooms: form.half_bathrooms ? parseInt(form.half_bathrooms) : null,
-          parking_spaces: form.parking_spaces ? parseInt(form.parking_spaces) : null,
-          parking_covered: form.parking_covered,
-          total_floors: form.floors ? parseInt(form.floors) : null,
-          floor_number: form.floor_number ? parseInt(form.floor_number) : null,
-          year_built: form.year_built ? parseInt(form.year_built) : null,
-          property_age: form.year_built ? (new Date().getFullYear() - parseInt(form.year_built)) : (form.property_age ? parseInt(form.property_age) : null),
-          condition: form.condition || null,
-          furnished: form.furnished || "sin_muebles",
-          municipio: form.municipio || null,
-          zone_id: form.zone_id || null,
-          address_es: form.address_es || null,
-          address_en: form.address_en || null,
-          lat: form.lat ? parseFloat(form.lat) : null,
-          lng: form.lng ? parseFloat(form.lng) : null,
-          show_exact_location: form.show_exact_location,
-          has_water_tank: form.has_water_tank,
-          has_hot_water: form.has_hot_water,
-          has_generator: form.has_generator,
-          gas_type: form.gas_type || null,
-          has_internet: form.has_internet,
-          has_security_24h: form.has_security_24h,
-          has_electric_gate: form.has_electric_gate,
-          has_cctv: form.has_cctv,
-          has_electric_fence: form.has_electric_fence,
-          has_intercom: form.has_intercom,
-          has_armored_door: form.has_armored_door,
-          has_ac: form.has_ac,
-          has_heating: form.has_heating,
-          kitchen_type: form.kitchen_type || null,
-          bathroom_type: form.bathroom_type || null,
-          host_housing_type: form.host_housing_type || null,
-          cohabitation: form.cohabitation || null,
-          occupants_count: form.occupants_count ? parseInt(form.occupants_count) : null,
-          gender_policy: form.gender_policy || null,
-          deposit_required: form.deposit_required,
-          deposit_amount: form.deposit_amount ? parseFloat(form.deposit_amount) : null,
-          allows_pets: form.allows_pets,
-          allows_cooking: form.allows_cooking,
-          has_independent_entrance: form.has_independent_entrance,
-          topography: form.topography || null,
-          land_use: form.land_use || null,
-          access_type: form.access_type || null,
-          current_use: form.current_use || null,
-          has_own_water: form.has_own_water,
-          video_url: form.video_url || null,
-          virtual_tour_url: form.virtual_tour_url || null,
-          listing_badge: form.listing_badge || "basico",
-          completeness_score: form.completeness_score ? parseInt(form.completeness_score) : 0,
-        })
-        .eq("id", propertyId);
-
-      if (propErr) throw propErr;
-
-      // 2. Update Translations (upsert both ES and EN)
-      await supabase.from("property_translations").upsert([
-        {
-          property_id: propertyId,
-          locale: "es",
-          title: form.title_es,
-          description: form.description_es || null,
-        },
-        {
-          property_id: propertyId,
-          locale: "en",
-          title: form.title_en || form.title_es,
-          description: form.description_en || null,
-        }
-      ], { onConflict: "property_id,locale" });
-
-      // 3. Remove deleted images from db
-      if (removedImages.length > 0) {
-        await supabase.from("property_images").delete().in("id", removedImages);
-        setRemovedImages([]);
-      }
-
-      // 4. Handle images (Update sort_order/cover status or Upload new ones)
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        if (!img) continue;
-        if (img.url) {
-          // Existing image: update sorting and cover flags
-          await supabase
-            .from("property_images")
-            .update({
-              sort_order: i,
-              is_cover: img.isCover,
-            })
-            .eq("id", img.id);
-        } else if (img.file) {
-          // New image: upload & insert
-          const currentId = img.id;
-          const currentIsCover = img.isCover;
-
-          setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, uploading: true, progress: 15 } : x));
-
-          const ext = img.file.name.split(".").pop();
-          const path = `properties/${propertyId}/${Date.now()}-${i}.${ext}`;
-
-          const { data: uploaded, error: upErr } = await supabase.storage
-            .from("property-images")
-            .upload(path, img.file, { upsert: false, cacheControl: "31536000" });
-
-          setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, progress: 80 } : x));
-
-          if (!upErr && uploaded) {
-            const { data: { publicUrl } } = supabase.storage
-              .from("property-images")
-              .getPublicUrl(path);
-
-            const { data: insertedImg } = await supabase
-              .from("property_images")
-              .insert({
-                property_id: propertyId,
-                url: publicUrl,
-                is_cover: currentIsCover,
-                sort_order: i,
-                alt_es: form.title_es,
-                alt_en: form.title_es,
-              })
-              .select()
-              .single();
-
-            // Replace mock/temporary id with actual db id
-            if (insertedImg) {
-              setImages((prev) =>
-                prev.map((x) =>
-                  x.id === currentId
-                    ? { ...x, id: insertedImg.id, url: publicUrl, file: undefined, uploading: false, progress: 100 }
-                    : x
-                )
-              );
-            }
-          } else {
-            setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, uploading: false } : x));
-          }
-        }
-      }
-
-      setSuccess("Propiedad guardada correctamente");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err: any) {
-      setError(err.message || "Error al guardar los cambios");
-    } finally {
-      setSaving(false);
-    }
+    alert("⚠️ Este formulario es solo de auditoría. No guarda cambios en producción.");
   };
 
   if (loading) {
@@ -849,6 +706,21 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-4">
+      {/* Banner de auditoría */}
+      <div
+        className="px-4 py-3 text-[12px] rounded mb-2"
+        style={{
+          background: "rgba(212,146,74,0.10)",
+          border: "1px solid rgba(212,146,74,0.35)",
+          color: "#D4924A",
+        }}
+      >
+        🔍 <strong>Modo Auditoría</strong> — Todos los campos están visibles. Los campos con{" "}
+        <span style={{ display: "inline-block", width: 12, height: 12, border: "1px dashed rgba(239,68,68,0.7)", background: "rgba(239,68,68,0.08)", verticalAlign: "middle", borderRadius: 2 }} />{" "}
+        borde rojo punteado <strong>no aplican</strong> para la combinación actual ({form.property_type.replace(/_/g, " ")} × {form.operation}).
+        Cambia los selectores de arriba para explorar la discriminación en tiempo real.
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -867,45 +739,27 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </button>
           <div>
             <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-              Editar propiedad (Formulario Completo)
+              Auditoría de Formulario (Vista Completa)
             </h2>
             <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-              Modifica la información y fotos de la publicación sin restricciones
+              Todos los campos visibles · Campos inaplicables marcados con borde rojo
             </p>
           </div>
         </div>
         <button
           type="submit"
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+          disabled
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-not-allowed opacity-40"
           style={{
             borderRadius: "var(--p-radius)",
-            background: saving ? "var(--p-surface-3)" : "var(--p-accent)",
-            color: saving ? "var(--p-text-2)" : "#0E0D0C",
-            opacity: saving ? 0.7 : 1,
+            background: "var(--p-surface-3)",
+            color: "var(--p-text-2)",
           }}
         >
           <Save size={14} />
-          {saving ? "Guardando..." : "Guardar cambios"}
+          Solo lectura
         </button>
       </div>
-
-      {/* Success */}
-      {success && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 py-3 text-[13px]"
-          style={{
-            borderRadius: "var(--p-radius)",
-            background: "rgba(76,175,125,0.12)",
-            border: "1px solid rgba(76,175,125,0.2)",
-            color: "var(--p-green)",
-          }}
-        >
-          {success}
-        </motion.div>
-      )}
 
       {/* Error */}
       {error && (
@@ -924,7 +778,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </motion.div>
       )}
 
-      {/* Alerta de inconsistencia lógica preexistente (Informativa, no bloqueante) */}
+      {/* Alerta de inconsistencia lógica */}
       {isCombinationInconsistent(form.property_type, form.operation) && (
         <div
           className="px-4 py-3 text-[12px] rounded"
@@ -935,7 +789,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             marginBottom: "16px"
           }}
         >
-          ⚠️ <strong>Aviso de inconsistencia lógica:</strong> La combinación actual ({form.property_type.replace(/_/g, " ")} × {form.operation}) no está recomendada. Es solo informativo y no impedirá guardar los cambios.
+          ⚠️ <strong>Combinación inconsistente:</strong> ({form.property_type.replace(/_/g, " ")} × {form.operation}) no está permitida en producción.
         </div>
       )}
 
@@ -944,9 +798,9 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Operación</Label>
-            <select 
-              value={form.operation} 
-              onChange={(e) => set("operation", e.target.value)} 
+            <select
+              value={form.operation}
+              onChange={(e) => set("operation", e.target.value)}
               style={INPUT.base}
             >
               <option value="venta" disabled={isCombinationInconsistent(form.property_type, "venta")}>Venta</option>
@@ -956,15 +810,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </div>
           <div>
             <Label>Tipo de inmueble</Label>
-            <select 
-              value={form.property_type} 
-              onChange={(e) => set("property_type", e.target.value)} 
+            <select
+              value={form.property_type}
+              onChange={(e) => set("property_type", e.target.value)}
               style={INPUT.base}
             >
-              {["apartamento","casa","townhouse","anexo","edificio","galpon","habitacion","hacienda_finca","local","oficina","terreno_lote"].map((t) => (
-                <option 
-                  key={t} 
-                  value={t} 
+              {["apartamento", "casa", "townhouse", "anexo", "edificio", "galpon", "habitacion", "hacienda_finca", "local", "oficina", "terreno_lote"].map((t) => (
+                <option
+                  key={t}
+                  value={t}
                   disabled={isCombinationInconsistent(t, form.operation)}
                 >
                   {t.replace(/_/g, " ")}
@@ -1011,7 +865,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Título (Español) *</Label>
-              <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
+              <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} />
             </div>
             <div>
               <Label>Título (Inglés)</Label>
@@ -1034,12 +888,11 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       {/* SECCIÓN: Precio y Finanzas */}
       <SectionCard title="Precio y Condiciones">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {form.operation !== "vacacional" && (
-            <div>
-              <Label>{form.operation === "alquiler" ? "Canon mensual *" : "Precio base *"}</Label>
-              <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} style={INPUT.base} required />
-            </div>
-          )}
+          <div style={auditStyle(form.operation !== "vacacional")} className="p-1 rounded">
+            <Label>{form.operation === "alquiler" ? "Canon mensual *" : "Precio base *"}</Label>
+            <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} style={INPUT.base} />
+            {form.operation === "vacacional" && <span className="text-[10px] text-red-400 block mt-1">No aplica en vacacional</span>}
+          </div>
           <div>
             <Label>Moneda base</Label>
             <select value={form.price_currency} onChange={(e) => set("price_currency", e.target.value)} style={INPUT.base}>
@@ -1048,17 +901,20 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <option value="VES">VES (Bs.)</option>
             </select>
           </div>
-          {checkApplies("maintenance") && (
-            <div>
-              <Label>Cuota de condominio/mantenimiento</Label>
-              <input type="number" value={form.maintenance_fee} onChange={(e) => set("maintenance_fee", e.target.value)} style={INPUT.base} />
-              {form.operation === "alquiler" && (
-                <div className="mt-2">
-                  <Toggle checked={form.maintenance_included} onChange={(v) => set("maintenance_included", v)} label="Condominio incluido en el canon" />
-                </div>
-              )}
-            </div>
-          )}
+          <div style={auditStyle(checkApplies("maintenance"))} className="p-1 rounded">
+            <Label>Cuota de condominio/mantenimiento</Label>
+            <input type="number" value={form.maintenance_fee} onChange={(e) => set("maintenance_fee", e.target.value)} style={INPUT.base} />
+            {form.operation === "alquiler" && (
+              <div className="mt-2">
+                <Toggle checked={form.maintenance_included} onChange={(v) => set("maintenance_included", v)} label="Condominio incluido en el canon" />
+              </div>
+            )}
+            {!checkApplies("maintenance") && (
+              <span className="text-[10px] text-red-400 block mt-1">
+                No aplica para {form.operation === "vacacional" ? "alquiler vacacional" : "terrenos"}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-3">
           <Toggle checked={form.price_negotiable} onChange={(v) => set("price_negotiable", v)} label="Precio negociable" />
@@ -1066,8 +922,8 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       </SectionCard>
 
       {/* SECCIÓN: Detalles de Alquiler Vacacional */}
-      {checkApplies("vacational_section") && (
-      <SectionCard title="Condiciones Vacacionales" defaultOpen={false}>
+      <SectionCard title="Condiciones Vacacionales" defaultOpen={false} style={auditStyle(checkApplies("vacational_section"))}>
+        {!checkApplies("vacational_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para operación: {form.operation}</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Precio por noche (USD)</Label>
@@ -1088,7 +944,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <div>
             <Label>Hora Check-in</Label>
             <select value={form.checkin_time} onChange={(e) => set("checkin_time", e.target.value)} style={INPUT.base}>
-              {["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map((time) => (
+              {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"].map((time) => (
                 <option key={time} value={time}>{time}</option>
               ))}
             </select>
@@ -1096,7 +952,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <div>
             <Label>Hora Check-out</Label>
             <select value={form.checkout_time} onChange={(e) => set("checkout_time", e.target.value)} style={INPUT.base}>
-              {["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map((time) => (
+              {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"].map((time) => (
                 <option key={time} value={time}>{time}</option>
               ))}
             </select>
@@ -1110,7 +966,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <Toggle checked={form.includes_breakfast} onChange={(v) => set("includes_breakfast", v)} label="Incluye desayuno" />
         </div>
       </SectionCard>
-      )}
 
       {/* SECCIÓN: Estructura y Dimensiones */}
       <SectionCard title="Dimensiones y Estructura Física">
@@ -1123,83 +978,71 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             <Label>Área total terreno (m²)</Label>
             <input type="number" value={form.area_total} onChange={(e) => set("area_total", e.target.value)} style={INPUT.base} />
           </div>
-          {checkApplies("area_hectares") && (
-            <div>
-              <Label>Área en Hectáreas (Rural)</Label>
-              <input type="number" step="any" value={form.area_hectares} onChange={(e) => set("area_hectares", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("bedrooms") && (
-            <div>
-              <Label>Habitaciones / Dormitorios</Label>
-              <input type="number" value={form.bedrooms} onChange={(e) => set("bedrooms", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("bathrooms") && (
-            <div>
-              <Label>Baños completos</Label>
-              <input type="number" value={form.bathrooms} onChange={(e) => set("bathrooms", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("half_bathrooms") && (
-            <div>
-              <Label>Medios Baños (Visitas)</Label>
-              <input type="number" value={form.half_bathrooms} onChange={(e) => set("half_bathrooms", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("parking") && (
-            <div>
-              <Label>Puestos estacionamiento</Label>
-              <input type="number" value={form.parking_spaces} onChange={(e) => set("parking_spaces", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("floor_number") && (
-            <div>
-              <Label>Número de piso (Unidad)</Label>
-              <input type="number" value={form.floor_number} onChange={(e) => set("floor_number", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("floors") && (
-            <div>
-              <Label>Pisos totales (Edificio)</Label>
-              <input type="number" value={form.floors} onChange={(e) => set("floors", e.target.value)} style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("year_built") && (
-            <div>
-              <Label>Año de construcción (Year Built)</Label>
-              <input type="number" value={form.year_built} onChange={(e) => set("year_built", e.target.value)} placeholder="Ej: 2015" style={INPUT.base} />
-            </div>
-          )}
-          {checkApplies("condition") && (
-            <div>
-              <Label>Estado de conservación</Label>
-              <select value={form.condition} onChange={(e) => set("condition", e.target.value)} style={INPUT.base}>
-                <option value="">Seleccionar...</option>
-                <option value="nuevo">Nuevo / A estrenar</option>
-                <option value="excelente">Excelente estado</option>
-                <option value="bueno">Buen estado</option>
-                <option value="por_remodelar">Por remodelar / Reparar</option>
-                <option value="en_gris">En obra gris</option>
-              </select>
-            </div>
-          )}
-          {checkApplies("furnished") && (
-            <div>
-              <Label>Mobiliario</Label>
-              <select value={form.furnished} onChange={(e) => set("furnished", e.target.value)} style={INPUT.base}>
-                <option value="sin_muebles">Sin muebles</option>
-                <option value="semi_amueblado">Semi amoblado</option>
-                <option value="completamente_amueblado">Completamente amoblado</option>
-              </select>
-            </div>
-          )}
-        </div>
-        {checkApplies("parking") && (
-          <div className="mt-3 max-w-xs">
-            <Toggle checked={form.parking_covered} onChange={(v) => set("parking_covered", v)} label="Estacionamiento techado" />
+          <div style={auditStyle(checkApplies("area_hectares"))} className="p-1.5 rounded">
+            <Label>Área en Hectáreas (Rural)</Label>
+            <input type="number" step="any" value={form.area_hectares} onChange={(e) => set("area_hectares", e.target.value)} style={INPUT.base} />
+            {!checkApplies("area_hectares") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
           </div>
-        )}
+          <div style={auditStyle(checkApplies("bedrooms"))} className="p-1.5 rounded">
+            <Label>Habitaciones / Dormitorios</Label>
+            <input type="number" value={form.bedrooms} onChange={(e) => set("bedrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("bedrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("bathrooms"))} className="p-1.5 rounded">
+            <Label>Baños completos</Label>
+            <input type="number" value={form.bathrooms} onChange={(e) => set("bathrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("bathrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("half_bathrooms"))} className="p-1.5 rounded">
+            <Label>Medios Baños (Visitas)</Label>
+            <input type="number" value={form.half_bathrooms} onChange={(e) => set("half_bathrooms", e.target.value)} style={INPUT.base} />
+            {!checkApplies("half_bathrooms") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("parking"))} className="p-1.5 rounded">
+            <Label>Puestos estacionamiento</Label>
+            <input type="number" value={form.parking_spaces} onChange={(e) => set("parking_spaces", e.target.value)} style={INPUT.base} />
+            {!checkApplies("parking") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("floor_number"))} className="p-1.5 rounded">
+            <Label>Número de piso (Unidad)</Label>
+            <input type="number" value={form.floor_number} onChange={(e) => set("floor_number", e.target.value)} style={INPUT.base} />
+            {!checkApplies("floor_number") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("floors"))} className="p-1.5 rounded">
+            <Label>Pisos totales (Edificio)</Label>
+            <input type="number" value={form.floors} onChange={(e) => set("floors", e.target.value)} style={INPUT.base} />
+            {!checkApplies("floors") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("year_built"))} className="p-1.5 rounded">
+            <Label>Año de construcción (Year Built)</Label>
+            <input type="number" value={form.year_built} onChange={(e) => set("year_built", e.target.value)} placeholder="Ej: 2015" style={INPUT.base} />
+            {!checkApplies("year_built") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("condition"))} className="p-1.5 rounded">
+            <Label>Estado de conservación</Label>
+            <select value={form.condition} onChange={(e) => set("condition", e.target.value)} style={INPUT.base}>
+              <option value="">Seleccionar...</option>
+              <option value="nuevo">Nuevo / A estrenar</option>
+              <option value="excelente">Excelente estado</option>
+              <option value="bueno">Buen estado</option>
+              <option value="por_remodelar">Por remodelar / Reparar</option>
+              <option value="en_gris">En obra gris</option>
+            </select>
+            {!checkApplies("condition") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          <div style={auditStyle(checkApplies("furnished"))} className="p-1.5 rounded">
+            <Label>Mobiliario</Label>
+            <select value={form.furnished} onChange={(e) => set("furnished", e.target.value)} style={INPUT.base}>
+              <option value="sin_muebles">Sin muebles</option>
+              <option value="semi_amueblado">Semi amoblado</option>
+              <option value="completamente_amueblado">Completamente amoblado</option>
+            </select>
+            {!checkApplies("furnished") && <span className="text-[10px] text-red-400 block mt-1">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+        </div>
+        <div style={auditStyle(checkApplies("parking"))} className="mt-3 p-1.5 rounded max-w-xs">
+          <Toggle checked={form.parking_covered} onChange={(v) => set("parking_covered", v)} label="Estacionamiento techado" />
+        </div>
       </SectionCard>
 
       {/* SECCIÓN: Ubicación */}
@@ -1243,8 +1086,8 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       </SectionCard>
 
       {/* SECCIÓN: Servicios Básicos y Seguridad */}
-      {checkApplies("services_section") && (
-      <SectionCard title="Servicios y Climatización">
+      <SectionCard title="Servicios y Climatización" style={auditStyle(checkApplies("services_section"))}>
+        {!checkApplies("services_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Tipo de gas</Label>
@@ -1276,35 +1119,37 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </div>
           <Toggle checked={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" />
           <Toggle checked={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" />
-          {checkApplies("elevator") && (
+          <div style={auditStyle(checkApplies("elevator"))} className="p-1 rounded">
             <Toggle checked={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" />
-          )}
-          {checkApplies("has_independent_entrance") && !checkApplies("shared_section") && (
+            {!checkApplies("elevator") && <span className="text-[9px] text-red-400 block ml-10">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
+          {/* has_independent_entrance fuera de shared_section (vacacional) */}
+          <div style={auditStyle(checkApplies("has_independent_entrance"))} className="p-1 rounded">
             <Toggle checked={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
-          )}
+            {!checkApplies("has_independent_entrance") && <span className="text-[9px] text-red-400 block ml-10">No aplica para {form.property_type.replace(/_/g, " ")} × {form.operation}</span>}
+          </div>
         </div>
       </SectionCard>
-      )}
 
       {/* SECCIÓN: Seguridad */}
-      {checkApplies("security_section") && (
-      <SectionCard title="Seguridad Física">
+      <SectionCard title="Seguridad Física" style={auditStyle(checkApplies("security_section"))}>
+        {!checkApplies("security_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Toggle checked={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24 horas" />
           <Toggle checked={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" />
           <Toggle checked={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" />
-          {checkApplies("has_electric_fence") && (
+          <div style={auditStyle(checkApplies("has_electric_fence"))} className="p-1 rounded">
             <Toggle checked={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" />
-          )}
+            {!checkApplies("has_electric_fence") && <span className="text-[9px] text-red-400 block ml-10">No aplica para {form.property_type.replace(/_/g, " ")}</span>}
+          </div>
           <Toggle checked={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" />
           <Toggle checked={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" />
         </div>
       </SectionCard>
-      )}
 
       {/* SECCIÓN: Habitación y Anexo */}
-      {checkApplies("shared_section") && (
-      <SectionCard title="Parámetros de Compartido / Habitación" defaultOpen={false}>
+      <SectionCard title="Parámetros de Compartido / Habitación" defaultOpen={false} style={auditStyle(checkApplies("shared_section"))}>
+        {!checkApplies("shared_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para esta combinación (Tipo: {form.property_type.replace(/_/g, " ")}, Operación: {form.operation})</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Tipo de baño</Label>
@@ -1354,11 +1199,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <Toggle checked={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
         </div>
       </SectionCard>
-      )}
 
       {/* SECCIÓN: Terrenos y Fincas */}
-      {checkApplies("land_section") && (
-      <SectionCard title="Parámetros de Terreno y Campo" defaultOpen={false}>
+      <SectionCard title="Parámetros de Terreno y Campo" defaultOpen={false} style={auditStyle(checkApplies("land_section"))}>
+        {!checkApplies("land_section") && <div className="text-red-400 text-xs mb-3 font-semibold">⚠️ No aplica para tipo de propiedad: {form.property_type.replace(/_/g, " ")}</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label>Topografía</Label>
@@ -1391,9 +1235,8 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <Toggle checked={form.has_own_water} onChange={(v) => set("has_own_water", v)} label="Tiene agua propia (Manantial / Pozo)" />
         </div>
       </SectionCard>
-      )}
 
-      {/* SECCIÓN: Fotos (hasta 20) */}
+      {/* SECCIÓN: Fotos */}
       <SectionCard title="Fotos de la propiedad (hasta 20)">
         <ImageDropzone
           images={images}
@@ -1434,21 +1277,18 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </div>
       </SectionCard>
 
-      {/* Botón submit bottom */}
+      {/* Pie de página */}
       <div className="flex justify-end pt-2 pb-8">
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 text-[13px] font-medium cursor-pointer"
+        <div
+          className="text-[11px] px-4 py-2 rounded"
           style={{
-            borderRadius: "var(--p-radius)",
-            background: saving ? "var(--p-surface-3)" : "var(--p-accent)",
-            color: saving ? "var(--p-text-2)" : "#0E0D0C",
+            background: "rgba(212,146,74,0.08)",
+            border: "1px solid rgba(212,146,74,0.2)",
+            color: "#D4924A",
           }}
         >
-          <Save size={15} />
-          {saving ? "Guardando..." : "Guardar cambios"}
-        </button>
+          ⚠️ Formulario de auditoría — Los cambios no se guardan en producción
+        </div>
       </div>
     </form>
   );
