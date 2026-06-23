@@ -32,6 +32,7 @@ interface Property {
   cover_url?: string | null;
   title: string;
   savedFlash?: boolean;
+  reactKey?: string;
 }
 
 type SortField = "created_at" | "price" | "status" | "operation";
@@ -148,7 +149,8 @@ function StyledSelect({ value, onChange, options, placeholder }: {
               left: 0,
               zIndex: 100,
               minWidth: "100%",
-              background: "var(--p-surface-2)",
+              background: "rgba(24, 24, 27, 0.98)",
+              backdropFilter: "blur(12px)",
               border: "1px solid var(--p-border)",
               borderRadius: "var(--p-radius)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
@@ -251,7 +253,8 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
               width: dropPos.width,
               zIndex: 9999,
               minWidth: 160,
-              background: "var(--p-surface-2)",
+              background: "rgba(24, 24, 27, 0.98)",
+              backdropFilter: "blur(12px)",
               border: "1px solid var(--p-border)",
               borderRadius: "var(--p-radius)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
@@ -314,7 +317,7 @@ function DropdownItem({ label, active, muted, onClick }: {
         background: active
           ? "var(--p-accent-soft)"
           : hovered
-            ? "var(--p-surface-3)"
+            ? "rgba(255, 255, 255, 0.06)"
             : "transparent",
         border: "none", cursor: "pointer",
         fontWeight: active ? 500 : 400,
@@ -361,18 +364,18 @@ function ChipToggle({ active, onClick, label }: { active: boolean; onClick: () =
       type="button"
       onClick={onClick}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 5,
+        display: "inline-flex", alignItems: "center",
         padding: "5px 11px",
         borderRadius: "3px",
-        border: `1px solid ${active ? "var(--p-accent)" : "var(--p-border)"}`,
+        border: "1px solid",
+        borderColor: active ? "var(--p-accent)" : "var(--p-border)",
         background: active ? "var(--p-accent-soft)" : "var(--p-surface-3)",
         color: active ? "var(--p-accent)" : "var(--p-text-3)",
-        fontSize: "12px", fontWeight: active ? 600 : 400,
+        fontSize: "12px", fontWeight: 500,
         cursor: "pointer",
         transition: "all 0.18s ease",
       }}
     >
-      {active && <Check size={11} />}
       {label}
     </button>
   );
@@ -487,8 +490,8 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       style={{
         overflow: "visible",
-        borderBottom: "1px solid var(--p-border)",
-        background: "var(--p-surface-2)",
+        borderBottom: "none",
+        background: "transparent",
         minHeight: 200,
         position: "relative",
         zIndex: 20,
@@ -539,6 +542,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             ]} />
           </div>
           <div>
+            {label("Tipo de propiedad")}
             <StyledSelectFull value={propType} onChange={setPropType}
               options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
             />
@@ -661,6 +665,37 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   );
 }
 
+// ─── RowMenuItem ─────────────────────────────────────────────────────────────
+function RowMenuItem({ icon: Icon, label, action, danger }: {
+  icon: React.ElementType; label: string; action: () => void; danger?: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); action(); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 14px",
+        fontSize: "13px",
+        color: danger ? "var(--p-red)" : hovered ? "var(--p-text)" : "var(--p-text-2)",
+        background: hovered ? "rgba(255, 255, 255, 0.06)" : "transparent",
+        border: "none",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        textAlign: "left",
+      }}
+    >
+      <Icon size={13} style={{ opacity: hovered ? 1 : 0.7 }} />
+      {label}
+    </button>
+  );
+}
+
 // ─── RowMenu ──────────────────────────────────────────────────────────────────
 function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplicate }: {
   id: string; slug: string; locale: string; isOpen: boolean;
@@ -710,20 +745,16 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
                 right: dropPos.right,
                 zIndex: 9999,
                 minWidth: 190,
-                background: "var(--p-surface-2)",
-                border: "1px solid var(--p-border)",
+                background: "rgba(24, 24, 27, 0.98)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
                 borderRadius: "var(--p-radius)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.7)",
                 padding: "4px 0",
               }}
             >
-              {items.map(({ icon: Icon, label, action, danger }) => (
-                <button key={label}
-                  onClick={e => { e.stopPropagation(); action(); onClose(); }}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", fontSize: "13px", color: danger ? "var(--p-red)" : "var(--p-text-2)", background: "none", border: "none", cursor: "pointer" }}
-                >
-                  <Icon size={13} />{label}
-                </button>
+              {items.map(item => (
+                <RowMenuItem key={item.label} icon={item.icon} label={item.label} action={() => { item.action(); onClose(); }} danger={item.danger} />
               ))}
             </motion.div>
           </>
@@ -736,20 +767,27 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
 // ─── FilterChip ───────────────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: "3px 8px 3px 10px",
-      borderRadius: "3px",
-      background: "rgba(96,165,250,0.10)",
-      border: "1px solid rgba(96,165,250,0.28)",
-      color: "#60A5FA",
-      fontSize: "12px", fontWeight: 500,
-    }}>
+    <motion.span
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 5,
+        padding: "3px 8px 3px 10px",
+        borderRadius: "3px",
+        background: "rgba(96,165,250,0.10)",
+        border: "1px solid rgba(96,165,250,0.28)",
+        color: "#60A5FA",
+        fontSize: "12px", fontWeight: 500,
+      }}
+    >
       {label}
       <button onClick={onRemove} style={{ display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "#60A5FA", padding: 0, opacity: 0.7 }}>
         <X size={10} />
       </button>
-    </span>
+    </motion.span>
   );
 }
 
@@ -811,6 +849,7 @@ export default function PropiedadesPage() {
       half_bathrooms: p.half_bathrooms ?? null,
       title: titleMap[p.id] ?? p.slug ?? "Sin título",
       cover_url: imageMap[p.id] ?? null,
+      reactKey: p.id,
     })));
     setLoading(false);
   }, []);
@@ -853,57 +892,102 @@ export default function PropiedadesPage() {
   const handleDelete = async (id: string) => {
     setDeletingIds(prev => new Set(prev).add(id));
     setDeleteConfirm(null);
-    await createClient().from("properties").delete().eq("id", id);
+
+    const res = await fetch("/api/panel/delete-property", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Error al eliminar" }));
+      console.error("[Delete] Error:", err.error);
+    }
+
     setTimeout(() => {
       setAllProps(prev => prev.filter(p => p.id !== id));
       setDeletingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
       setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
-    }, 320);
+    }, 600);
   };
 
   const handleDuplicate = async (id: string) => {
     const prop = allProps.find(p => p.id === id);
     if (!prop) return;
-    const newSlug = `${prop.slug}-copia-${Date.now().toString(36)}`;
+    const tempId = `temp-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 5)}`;
+    const newSlug = `${prop.slug}-copia-${Math.floor(Date.now() / 1000)}`;
+    const newTitle = `${prop.title} (Copia)`;
+
+    const tempProp: Property = {
+      ...prop,
+      id: tempId,
+      reactKey: tempId,
+      slug: newSlug,
+      title: newTitle,
+      created_at: new Date().toISOString(),
+      featured: false,
+      exclusive: false,
+    };
+
+    // Immediately insert in UI list (sorted by created_at desc, so it goes to the top)
+    setAllProps(prev => [tempProp, ...prev]);
+    setFlashIds(prev => new Set(prev).add(tempId));
+    setTimeout(() => setFlashIds(prev => { const n = new Set(prev); n.delete(tempId); return n; }), 2500);
 
     const res = await fetch("/api/panel/duplicate-property", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        slug: newSlug,
-        operation: prop.operation,
-        property_type: prop.property_type,
-        price: prop.price,
-        price_currency: prop.price_currency ?? "USD",
-        area_built: prop.area_built,
-        area_total: prop.area_total,
-        bedrooms: prop.bedrooms,
-        bathrooms: prop.bathrooms,
-        parking_spaces: prop.parking_spaces,
-        municipio: prop.municipio,
-        featured: false,
-        exclusive: false,
-        title: `${prop.title} (Copia)`,
+        sourceId: id,
+        newSlug: newSlug,
       }),
     });
 
     if (!res.ok) {
+      // Rollback UI update on failure
+      setAllProps(prev => prev.filter(p => p.id !== tempId));
+      setFlashIds(prev => { const n = new Set(prev); n.delete(tempId); return n; });
       const err = await res.json().catch(() => ({ error: "Error desconocido" }));
       console.error("[Duplicar] Error:", err.error);
       return;
     }
-    fetchAll();
+
+    const data = await res.json().catch(() => ({}));
+    if (data.id) {
+      // Swap temp ID with final database ID
+      setAllProps(prev => prev.map(p => p.id === tempId ? { ...p, id: data.id } : p));
+      setFlashIds(prev => {
+        const n = new Set(prev);
+        if (n.has(tempId)) {
+          n.delete(tempId);
+          n.add(data.id);
+        }
+        return n;
+      });
+      setTimeout(() => setFlashIds(prev => { const n = new Set(prev); n.delete(data.id); return n; }), 2500);
+    }
   };
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selected);
     setDeletingIds(new Set(ids));
-    await createClient().from("properties").delete().in("id", ids);
+
+    const res = await fetch("/api/panel/delete-property", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Error al eliminar" }));
+      console.error("[Bulk Delete] Error:", err.error);
+    }
+
     setTimeout(() => {
       setAllProps(prev => prev.filter(p => !ids.includes(p.id)));
       setDeletingIds(new Set());
       setSelected(new Set());
-    }, 320);
+    }, 600);
   };
 
   const handleBulkStatus = async (status: string) => {
@@ -1047,19 +1131,25 @@ export default function PropiedadesPage() {
       </div>
 
       {/* Active filter chips */}
-      <AnimatePresence>
-        {activeFilters.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-            style={{ display: "flex", flexWrap: "wrap", gap: 6, overflow: "hidden" }}
-          >
-            {filterOp && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`} onRemove={() => setFilterOp("")} />}
-            {filterStatus && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
-            {filterType && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`} onRemove={() => setFilterType("")} />}
-            {filterMunicipio && <FilterChip label={`Municipio: ${MUNICIPIO_LABEL[filterMunicipio] ?? filterMunicipio}`} onRemove={() => setFilterMunicipio("")} />}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div style={{ overflow: "hidden" }}>
+        <AnimatePresence initial={false}>
+          {activeFilters.length > 0 && (
+            <motion.div
+              layout
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: "auto", opacity: 1, marginBottom: 12 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+            >
+              {filterOp && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`} onRemove={() => setFilterOp("")} />}
+              {filterStatus && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
+              {filterType && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`} onRemove={() => setFilterType("")} />}
+              {filterMunicipio && <FilterChip label={`Municipio: ${MUNICIPIO_LABEL[filterMunicipio] ?? filterMunicipio}`} onRemove={() => setFilterMunicipio("")} />}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Table */}
       <div style={{ ...cardStyle, overflow: "visible", position: "relative" }}>
@@ -1107,56 +1197,83 @@ export default function PropiedadesPage() {
 
                   return (
                     <motion.div
-                      key={p.id}
+                      key={p.reactKey || p.id}
                       layout
-                      layoutId={p.id}
-                      initial={{ opacity: 0, scaleY: 0.95 }}
+                      layoutId={p.reactKey || p.id}
+                      initial={{ opacity: 0, scaleY: 0.9, height: 0 }}
                       animate={{
                         opacity: isDeleting ? 0 : dimmed ? 0.38 : 1,
-                        scaleY: isDeleting ? 0 : 1,
+                        scaleY: isDeleting ? 0.9 : 1,
                         y: 0,
+                        height: isDeleting ? 0 : "auto",
+                        marginTop: isExpanded ? 14 : 0,
+                        marginBottom: isExpanded ? 14 : 0,
+                        boxShadow: isDeleting
+                          ? "0 0 25px rgba(239, 68, 68, 0.3), inset 0 0 8px rgba(239, 68, 68, 0.15)"
+                          : isExpanded
+                            ? "0 20px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)"
+                            : "none",
+                        backgroundColor: isDeleting
+                          ? "rgba(239, 68, 68, 0.08)"
+                          : isFlash
+                            ? "rgba(74, 222, 128, 0.06)"
+                            : isExpanded
+                              ? "rgba(24, 24, 27, 0.72)"
+                              : "transparent",
                       }}
                       exit={{
                         opacity: 0,
-                        scaleY: 0,
-                        transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                        x: "100%",
+                        height: 0,
+                        transition: {
+                          x: { duration: 0.35, ease: "easeIn" },
+                          opacity: { duration: 0.25 },
+                          height: { duration: 0.3, delay: 0.1, ease: [0.16, 1, 0.3, 1] }
+                        }
                       }}
                       transition={{
-                        layout: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
+                        layout: { type: "spring", stiffness: 300, damping: 30 },
                         opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
                         scaleY: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                        boxShadow: { duration: isFlash ? 0.8 : 0.22 },
+                        backgroundColor: { duration: isFlash ? 0.8 : 0.22 },
+                        height: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
                       }}
                       style={{
                         transformOrigin: "top center",
                         overflow: isExpanded ? "visible" : "hidden",
                         position: "relative",
-                        zIndex: isExpanded ? 5 : 1,
+                        zIndex: isExpanded ? 10 : isFlash || isDeleting ? 9 : 1,
+                        borderRadius: isExpanded || isFlash || isDeleting ? "var(--p-radius)" : 0,
+                        border: isExpanded
+                          ? "1px solid rgba(99, 220, 180, 0.25)"
+                          : isFlash
+                            ? "1px solid rgba(74, 222, 128, 0.25)"
+                            : isDeleting
+                              ? "1px solid rgba(239, 68, 68, 0.25)"
+                              : "1px solid transparent",
+                        transition: "border-radius 0.3s, border-color 0.3s",
                       }}
                     >
                       {/* Row principal */}
                       <motion.div
                         animate={{
-                          backgroundColor: isExpanded
-                            ? "rgba(99,220,180,0.07)"
-                            : isFlash
-                              ? "rgba(74,222,128,0.07)"
-                              : isSelected
-                                ? "var(--p-accent-soft)"
-                                : "rgba(0,0,0,0)",
+                          backgroundColor: isExpanded || isFlash
+                            ? "transparent"
+                            : isSelected
+                              ? "var(--p-accent-soft)"
+                              : "rgba(0,0,0,0)",
                         }}
-                        transition={{ backgroundColor: { duration: isFlash ? 0.6 : 0.22 } }}
+                        transition={{ backgroundColor: { duration: 0.22 } }}
                         style={{
                           display: "grid",
                           gridTemplateColumns: COLS,
                           alignItems: "center",
                           padding: "10px 14px",
-                          borderBottom: "1px solid var(--p-border)",
+                          borderBottom: isExpanded || isFlash || isDeleting ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid var(--p-border)",
                           cursor: "pointer",
-                          outline: isFlash ? "1px solid rgba(74,222,128,0.2)" : "none",
-                          outlineOffset: "-1px",
-                          transition: "outline 0.6s",
-                          borderLeft: isExpanded ? "3px solid var(--p-accent)" : "3px solid transparent",
-                          boxShadow: isExpanded ? "0 2px 0 0 rgba(99,220,180,0.15) inset, 0 -1px 0 0 rgba(99,220,180,0.1) inset" : "none",
+                          outline: "none",
+                          transition: "border-bottom-color 0.3s",
                         }}
                         onClick={() => !isDeleting && setQuickEditId(v => v === p.id ? null : p.id)}
                       >

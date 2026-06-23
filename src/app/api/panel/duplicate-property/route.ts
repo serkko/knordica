@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const { id: _id, created_at: _ca, updated_at: _ua, slug: _slug, ...rest } = source;
     const { data: inserted, error: insertErr } = await supabaseAdmin
       .from("properties")
-      .insert({ ...rest, slug: newSlug, user_id: user.id, featured: false, exclusive: false })
+      .insert({ ...rest, slug: newSlug, featured: false, exclusive: false })
       .select()
       .single();
 
@@ -67,86 +67,107 @@ export async function POST(req: NextRequest) {
 
     const newId = inserted.id;
 
-    // ── 3. Copy all translations ───────────────────────────────────────────
-    const { data: translations } = await supabaseAdmin
-      .from("property_translations")
-      .select("*")
-      .eq("property_id", sourceId);
+    // ── 3. Fetch all children in parallel ──────────────────────────────────
+    const [
+      { data: translations },
+      { data: images },
+      { data: videos },
+      { data: features },
+      { data: amenities },
+      { data: characteristics },
+      { data: locations }
+    ] = await Promise.all([
+      supabaseAdmin.from("property_translations").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_images").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_videos").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_features").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_amenities").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_characteristics").select("*").eq("property_id", sourceId),
+      supabaseAdmin.from("property_locations").select("*").eq("property_id", sourceId),
+    ]);
+
+    // ── 4. Insert all children in parallel with modified titles ────────────
+    const insertPromises: any[] = [];
 
     if (translations?.length) {
-      await supabaseAdmin.from("property_translations").insert(
-        translations.map(({ id: _i, property_id: _p, ...t }) => ({
-          ...t,
-          property_id: newId,
-        }))
+      insertPromises.push(
+        supabaseAdmin.from("property_translations").insert(
+          translations.map(({ id: _i, property_id: _p, ...t }) => ({
+            ...t,
+            title: `${t.title || ""} (Copia)`,
+            property_id: newId,
+          }))
+        )
       );
     }
-
-    // ── 4. Copy images ─────────────────────────────────────────────────────
-    const { data: images } = await supabaseAdmin
-      .from("property_images")
-      .select("*")
-      .eq("property_id", sourceId);
 
     if (images?.length) {
-      await supabaseAdmin.from("property_images").insert(
-        images.map(({ id: _i, property_id: _p, created_at: _ca, ...img }) => ({
-          ...img,
-          property_id: newId,
-        }))
+      insertPromises.push(
+        supabaseAdmin.from("property_images").insert(
+          images.map(({ id: _i, property_id: _p, created_at: _ca, ...img }) => ({
+            ...img,
+            property_id: newId,
+          }))
+        )
       );
     }
-
-    // ── 5. Copy videos ─────────────────────────────────────────────────────
-    const { data: videos } = await supabaseAdmin
-      .from("property_videos")
-      .select("*")
-      .eq("property_id", sourceId)
-      .maybeSingle()
-      .then(() => supabaseAdmin.from("property_videos").select("*").eq("property_id", sourceId));
 
     if (videos?.length) {
-      await supabaseAdmin.from("property_videos").insert(
-        videos.map(({ id: _i, property_id: _p, created_at: _ca, ...v }) => ({
-          ...v,
-          property_id: newId,
-        }))
+      insertPromises.push(
+        supabaseAdmin.from("property_videos").insert(
+          videos.map(({ id: _i, property_id: _p, created_at: _ca, ...v }) => ({
+            ...v,
+            property_id: newId,
+          }))
+        )
       );
     }
 
-    // ── 6. Copy features / amenities ──────────────────────────────────────
-    const featureTables = ["property_features", "property_amenities", "property_characteristics"];
-    await Promise.allSettled(
-      featureTables.map(async (table) => {
-        const { data: rows } = await supabaseAdmin
-          .from(table)
-          .select("*")
-          .eq("property_id", sourceId);
-        if (rows?.length) {
-          await supabaseAdmin.from(table).insert(
-            rows.map(({ id: _i, property_id: _p, created_at: _ca, ...row }) => ({
-              ...row,
-              property_id: newId,
-            }))
-          );
-        }
-      })
-    );
-
-    // ── 7. Copy location data if stored separately ─────────────────────────
-    const { data: locationRows } = await supabaseAdmin
-      .from("property_locations")
-      .select("*")
-      .eq("property_id", sourceId);
-
-    if (locationRows?.length) {
-      await supabaseAdmin.from("property_locations").insert(
-        locationRows.map(({ id: _i, property_id: _p, ...loc }) => ({
-          ...loc,
-          property_id: newId,
-        }))
+    if (features?.length) {
+      insertPromises.push(
+        supabaseAdmin.from("property_features").insert(
+          features.map(({ id: _i, property_id: _p, created_at: _ca, ...f }) => ({
+            ...f,
+            property_id: newId,
+          }))
+        )
       );
     }
+
+    if (amenities?.length) {
+      insertPromises.push(
+        supabaseAdmin.from("property_amenities").insert(
+          amenities.map(({ id: _i, property_id: _p, created_at: _ca, ...a }) => ({
+            ...a,
+            property_id: newId,
+          }))
+        )
+      );
+    }
+
+    if (characteristics?.length) {
+      insertPromises.push(
+        supabaseAdmin.from("property_characteristics").insert(
+          characteristics.map(({ id: _i, property_id: _p, created_at: _ca, ...c }) => ({
+            ...c,
+            property_id: newId,
+          }))
+        )
+      );
+    }
+
+    if (locations?.length) {
+      insertPromises.push(
+        supabaseAdmin.from("property_locations").insert(
+          locations.map(({ id: _i, property_id: _p, ...loc }) => ({
+            ...loc,
+            property_id: newId,
+          }))
+        )
+      );
+    }
+
+    await Promise.all(insertPromises);
 
     return NextResponse.json({ ok: true, id: newId });
   } catch (err) {
