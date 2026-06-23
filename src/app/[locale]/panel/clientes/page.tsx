@@ -288,13 +288,12 @@ export default function ClientesCRMPage({ params }: PageProps) {
                       {stageClients.map((client, index) => (
                         <Draggable key={client.id} draggableId={client.id} index={index}>
                           {(provided, snapshot) => (
-                            <motion.div
+                            <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              whileHover={{ y: -2 }}
                               onClick={() => handleOpenDrawer(client)}
-                              className="p-3 rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between"
+                              className="p-3 rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between hover:-translate-y-0.5 duration-150"
                               style={{
                                 background: snapshot.isDragging ? "var(--surface-dynamic)" : "var(--surface-2)",
                                 borderColor: "var(--border)",
@@ -329,7 +328,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                                   <ArrowRight size={10} />
                                 </span>
                               </div>
-                            </motion.div>
+                            </div>
                           )}
                         </Draggable>
                       ))}
@@ -425,7 +424,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                         {locale === "en" ? "Preferred Zones" : "Zonas de Interés"}
                       </span>
                       <span className="font-semibold">
-                        {selectedClient.interested_zones.join(", ") || "N/A"}
+                        {selectedClient.interested_zones?.join(", ") || "N/A"}
                       </span>
                     </div>
                   </div>

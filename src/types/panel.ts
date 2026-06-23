@@ -34,7 +34,7 @@ export interface KPIData {
 export type PanelPropertyStatus = "activa" | "vendida" | "alquilada" | "reservada" | "cerrada";
 
 // Estado de un cliente en CRM
-export type CRMStage = "nuevo" | "contactado" | "visita" | "negociacion" | "cerrado" | "perdido";
+export type CRMStage = "nuevo" | "contactado" | "visita" | "negociacion" | "cerrado" | "perdido" | "calificado" | "propuesta";
 
 export interface CRMClient {
   id: string;
@@ -43,11 +43,15 @@ export interface CRMClient {
   phone: string | null;
   whatsapp: string | null;
   stage: CRMStage;
+  client_type?: ClientType | null;
   agent_id: string;
   property_interest?: string | null;
   budget_min?: number | null;
   budget_max?: number | null;
+  budget_currency?: string | null;
+  interested_zones?: string[] | null;
   notes?: string | null;
+  last_contact?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -65,4 +69,74 @@ export interface AgendaEvent {
   property_id?: string | null;
   completed: boolean;
   created_at: string;
+}
+
+// Estado del autoguardado
+export type AutoSaveStatus = "idle" | "saving" | "saved" | "error";
+
+// Estadísticas de KPI
+export interface KPIStat {
+  id?: string;
+  key: string;
+  title?: string;
+  title_es: string;
+  title_en: string;
+  value: string | number;
+  delta?: string;
+  deltaType?: "increase" | "decrease" | "moderate";
+  sparkline?: number[];
+  change?: number;
+  is_currency?: boolean;
+  unit?: string;
+}
+
+// Artículos de blog
+export interface BlogArticle {
+  id: string;
+  title_es: string;
+  title_en?: string | null;
+  slug: string;
+  content_es: string;
+  content_en?: string | null;
+  status: "published" | "draft" | "scheduled" | "publicado" | "borrador";
+  author_id: string;
+  cover_image_url?: string | null;
+  category?: string | null;
+  views?: number;
+  excerpt_es?: string | null;
+  excerpt_en?: string | null;
+  seo_title_es?: string | null;
+  seo_description_es?: string | null;
+  tags?: string[] | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Tipos del CRM extendidos
+export type ClientStage = CRMStage;
+export type ClientType = "comprador" | "propietario" | "inquilino" | "inversionista" | "inversor" | "arrendatario";
+
+export interface CRMClient {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  stage: CRMStage;
+  client_type?: ClientType | null;
+  agent_id: string;
+  property_interest?: string | null;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  budget_currency?: string | null;
+  interested_zones?: string[] | null;
+  interested_types?: string[] | null;
+  properties_shown?: string[] | null;
+  notes?: string | null;
+  last_contact?: string | null;
+  next_action?: string | null;
+  next_action_date?: string | null;
+  created_at: string;
+  updated_at: string;
 }

@@ -144,7 +144,7 @@ function StatusBadge({ status }: { status: string }) {
     reservada: { label: "Reservada", color: "var(--p-amber)", bg: "rgba(212,146,74,0.1)" },
     cerrada:   { label: "Cerrada",   color: "var(--p-text-3)",bg: "var(--p-surface-3)" },
   };
-  const s = map[status] ?? map.cerrada;
+  const s = map[status] || { label: "Cerrada", color: "var(--p-text-3)", bg: "var(--p-surface-3)" };
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"
@@ -254,22 +254,16 @@ export default function InicioPanelPage() {
       ]);
 
       // Propiedades recientes formateadas
-      const formatted: RecentProperty[] = (props ?? []).map((p: {
-        id: string; slug: string; status: string; operation: string;
-        price: number; price_currency: string; created_at: string;
-        translations: Array<{ locale: string; title: string }>;
-        images: Array<{ url: string; is_cover: boolean }>;
-        zone: { name_es: string } | null;
-      }) => ({
+      const formatted: RecentProperty[] = (props ?? []).map((p: any) => ({
         id: p.id,
         slug: p.slug,
-        title: p.translations?.find((t) => t.locale === "es")?.title ?? p.slug,
+        title: p.translations?.find((t: any) => t.locale === "es")?.title ?? p.slug,
         status: p.status,
         price: p.price,
         price_currency: p.price_currency,
         operation: p.operation,
-        cover_url: p.images?.find((i) => i.is_cover)?.url ?? p.images?.[0]?.url ?? null,
-        zone_name: p.zone?.name_es ?? null,
+        cover_url: p.images?.find((i: any) => i.is_cover)?.url ?? p.images?.[0]?.url ?? null,
+        zone_name: p.zone ? (Array.isArray(p.zone) ? p.zone[0]?.name_es : p.zone.name_es) : null,
         created_at: p.created_at,
       }));
       setRecent(formatted);

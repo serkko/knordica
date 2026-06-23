@@ -13,6 +13,7 @@ interface StatCardProps {
     isPositive: boolean;
     label?: string;
   };
+  change?: number;
   sparkline?: number[];
   accentColor?: string;
   isCurrency?: boolean;
@@ -24,6 +25,7 @@ export function StatCard({
   value,
   icon,
   trend,
+  change,
   sparkline,
   accentColor = "var(--accent)",
   isCurrency = false,
@@ -31,6 +33,12 @@ export function StatCard({
 }: StatCardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  const activeTrend = trend ?? (typeof change === "number" ? {
+    value: Math.abs(change),
+    isPositive: change >= 0,
+    label: "vs. mes anterior"
+  } : undefined);
 
   const chartData = sparkline?.map((v) => ({ value: v })) ?? [];
   const gradId = `sg-${title.replace(/\s+/g, "").toLowerCase()}`;
@@ -59,22 +67,22 @@ export function StatCard({
       </div>
 
       <div className="flex items-end justify-between gap-2 mt-1">
-        {trend && (
+        {activeTrend && (
           <div className="flex flex-col gap-0.5">
             <span
               className={`flex items-center gap-0.5 text-xs font-bold ${
-                trend.isPositive ? "text-emerald-400" : "text-red-400"
+                activeTrend.isPositive ? "text-emerald-400" : "text-red-400"
               }`}
             >
-              {trend.isPositive ? (
+              {activeTrend.isPositive ? (
                 <ArrowUpRight className="h-3.5 w-3.5" />
               ) : (
                 <ArrowDownRight className="h-3.5 w-3.5" />
               )}
-              {trend.isPositive ? "+" : ""}{trend.value}%
+              {activeTrend.isPositive ? "+" : ""}{activeTrend.value}%
             </span>
-            {trend.label && (
-              <span className="text-[10px] text-[var(--text-muted)]">{trend.label}</span>
+            {activeTrend.label && (
+              <span className="text-[10px] text-[var(--text-muted)]">{activeTrend.label}</span>
             )}
           </div>
         )}
