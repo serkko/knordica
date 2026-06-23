@@ -32,6 +32,7 @@ interface Property {
   title: string;
   savedFlash?: boolean;
   _duplicating?: boolean;
+  _isNew?: boolean; // flag for slide-in animation on freshly duplicated rows
 }
 
 type SortField = "created_at" | "price" | "status" | "operation";
@@ -195,9 +196,9 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
         type="button"
         onClick={() => setOpen(v => !v)}
         style={{
-          width: "100%", height: 30, padding: "0 8px",
+          width: "100%", height: 28, padding: "0 8px",
           display: "flex", alignItems: "center", gap: 4,
-          fontSize: "12px",
+          fontSize: "11px",
           background: "var(--p-surface-3)",
           border: "1px solid var(--p-border)",
           borderRadius: "var(--p-radius)",
@@ -211,7 +212,7 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
           style={{ display: "flex", alignItems: "center", opacity: 0.5, flexShrink: 0 }}>
-          <ChevronDown size={11} />
+          <ChevronDown size={10} />
         </motion.span>
       </button>
 
@@ -264,7 +265,7 @@ function DropdownItem({ label, active, muted, onClick }: {
   );
 }
 
-// ─── StatusBadge — fixed width, centered ─────────────────────────────────────
+// ─── StatusBadge — inline chip, always centered in its cell ──────────────────
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_CFG[status] ?? STATUS_CFG.cerrada;
   return (
@@ -282,6 +283,7 @@ function StatusBadge({ status }: { status: string }) {
       whiteSpace: "nowrap",
       lineHeight: 1.4,
       minWidth: 68,
+      maxWidth: "fit-content",
       textAlign: "center",
     }}>
       {s.label}
@@ -295,21 +297,22 @@ function ChipToggle({ active, onClick, label }: { active: boolean; onClick: () =
     <button type="button" onClick={onClick}
       style={{
         display: "inline-flex", alignItems: "center", gap: 4,
-        padding: "3px 9px", borderRadius: "3px",
+        padding: "2px 8px", borderRadius: "3px",
         border: `1px solid ${active ? "var(--p-accent)" : "var(--p-border)"}`,
         background: active ? "var(--p-accent-soft)" : "var(--p-surface-3)",
         color: active ? "var(--p-accent)" : "var(--p-text-3)",
         fontSize: "11px", fontWeight: active ? 600 : 400,
         cursor: "pointer", transition: "all 0.18s ease",
+        whiteSpace: "nowrap",
       }}
     >
-      {active && <Check size={10} />}
+      {active && <Check size={9} />}
       {label}
     </button>
   );
 }
 
-// ─── Quick Edit (compact) ─────────────────────────────────────────────────────
+// ─── Quick Edit (compact, highlighted header) ─────────────────────────────────
 function QuickEditRow({ property, onClose, onSaved }: {
   property: Property;
   onClose: () => void;
@@ -339,22 +342,23 @@ function QuickEditRow({ property, onClose, onSaved }: {
 
   const rawPrice = () => Number(price.replace(/\./g, "").replace(/[^0-9]/g, "")) || 0;
 
+  // Compact input styles for quick-edit
   const inputS: React.CSSProperties = {
     background: "var(--p-surface-3)",
     border: "1px solid var(--p-border)",
     borderRadius: "var(--p-radius)",
     color: "var(--p-text)",
-    height: "30px",
-    padding: "0 8px",
-    fontSize: "12px",
+    height: "28px",
+    padding: "0 7px",
+    fontSize: "11px",
     width: "100%",
     outline: "none",
     WebkitAppearance: "none",
     transition: "border-color 0.15s",
   };
-  const numS: React.CSSProperties = { ...inputS, textAlign: "center", padding: "0 4px" };
+  const numS: React.CSSProperties = { ...inputS, textAlign: "center", padding: "0 3px" };
   const lbl = (text: string) => (
-    <p style={{ fontSize: "10px", color: "var(--p-text-3)", marginBottom: 3, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{text}</p>
+    <p style={{ fontSize: "9px", color: "var(--p-text-3)", marginBottom: 2, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{text}</p>
   );
 
   const handleSave = async () => {
@@ -404,56 +408,67 @@ function QuickEditRow({ property, onClose, onSaved }: {
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
       style={{ overflow: "hidden", borderBottom: "1px solid var(--p-border)" }}
     >
-      {/* Header strip — property identifier */}
+      {/* ── Header: prominent property identifier ── */}
       <div style={{
-        padding: "8px 14px 7px",
-        background: "linear-gradient(90deg, rgba(var(--p-accent-rgb,1,105,111),0.12) 0%, var(--p-surface-2) 60%)",
-        borderTop: "1px solid rgba(var(--p-accent-rgb,1,105,111),0.2)",
-        display: "flex", alignItems: "center", gap: 8,
+        padding: "9px 16px 8px",
+        background: "linear-gradient(90deg, rgba(1,105,111,0.18) 0%, rgba(1,105,111,0.06) 55%, transparent 100%)",
+        borderTop: "2px solid var(--p-accent)",
+        display: "flex", alignItems: "center", gap: 10,
       }}>
-        <span style={{ width: 3, height: 14, borderRadius: 2, background: "var(--p-accent)", flexShrink: 0 }} />
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--p-accent)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Editando</span>
-        <span style={{ fontSize: "12px", color: "var(--p-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{property.title}</span>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 22, height: 22, borderRadius: "4px",
+          background: "var(--p-accent)", flexShrink: 0,
+        }}>
+          <Pencil size={11} color="#090909" />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: "9px", fontWeight: 700, color: "var(--p-accent)", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>Edición rápida</p>
+          <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--p-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{property.title}</p>
+        </div>
+        <button onClick={onClose} style={{ marginLeft: "auto", display: "flex", alignItems: "center", background: "none", border: "none", cursor: "pointer", color: "var(--p-text-3)", padding: 2 }}>
+          <X size={14} />
+        </button>
       </div>
 
-      {/* Compact fields grid */}
-      <div style={{ padding: "10px 14px 0", background: "var(--p-surface-2)" }}>
+      {/* ── Compact fields grid ── */}
+      <div style={{ padding: "8px 14px 0", background: "var(--p-surface-2)" }}>
 
-        {/* Row A: Title */}
-        <div style={{ marginBottom: 8 }}>
+        {/* Title row */}
+        <div style={{ marginBottom: 6 }}>
           {lbl("Título")}
-          <input value={title} onChange={e => setTitle(e.target.value)} style={{ ...inputS, fontSize: "13px", height: 32 }} placeholder="Sin título" />
+          <input value={title} onChange={e => setTitle(e.target.value)} style={{ ...inputS, fontSize: "12px", height: 30 }} placeholder="Sin título" />
         </div>
 
-        {/* Row B: Precio + Op + Estado + Tipo + Municipio — single row */}
-        <div style={{ display: "grid", gridTemplateColumns: "140px 90px 90px 1fr 1fr", gap: 6, marginBottom: 8 }}>
+        {/* Row: Precio + Op + Estado + Tipo + Municipio */}
+        <div style={{ display: "grid", gridTemplateColumns: "130px 80px 82px 1fr 1fr", gap: 5, marginBottom: 6 }}>
           <div>
-            {lbl("Precio (USD)")}
+            {lbl("Precio USD")}
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontSize: "11px", color: "var(--p-text-3)", pointerEvents: "none" }}>$</span>
+              <span style={{ position: "absolute", left: 7, top: "50%", transform: "translateY(-50%)", fontSize: "10px", color: "var(--p-text-3)", pointerEvents: "none" }}>$</span>
               <input value={price}
                 onChange={e => { const r = e.target.value.replace(/[^0-9]/g,""); setPrice(r ? fmtNum(Number(r)) : ""); }}
-                type="text" inputMode="numeric" style={{ ...inputS, paddingLeft: 18 }} placeholder="0" />
+                type="text" inputMode="numeric" style={{ ...inputS, paddingLeft: 16 }} placeholder="0" />
             </div>
           </div>
-          <div>{lbl("Operación")}<StyledSelectFull value={operation} onChange={setOperation} options={[{value:"venta",label:"Venta"},{value:"alquiler",label:"Alquiler"},{value:"vacacional",label:"Vacacional"}]} /></div>
+          <div>{lbl("Op.")}<StyledSelectFull value={operation} onChange={setOperation} options={[{value:"venta",label:"Venta"},{value:"alquiler",label:"Alquiler"},{value:"vacacional",label:"Vacacional"}]} /></div>
           <div>{lbl("Estado")}<StyledSelectFull value={status} onChange={setStatus} options={[{value:"activa",label:"Activa"},{value:"reservada",label:"Reservada"},{value:"vendida",label:"Vendida"},{value:"alquilada",label:"Alquilada"},{value:"cerrada",label:"Cerrada"}]} /></div>
           <div>{lbl("Tipo")}<StyledSelectFull value={propType} onChange={setPropType} options={Object.entries(PROP_TYPE_LABEL).map(([v,l])=>({value:v,label:l}))} /></div>
           <div>{lbl("Municipio")}<StyledSelectFull value={municipio} onChange={setMunicipio} placeholder="—" options={MUNICIPIOS.map(m=>({value:m,label:MUNICIPIO_LABEL[m]}))} /></div>
         </div>
 
-        {/* Row C: dynamic numeric fields */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+        {/* Row: numeric fields + tags */}
+        <div style={{ display: "flex", gap: 5, marginBottom: 7, flexWrap: "wrap", alignItems: "flex-end" }}>
           <AnimatePresence>
             {isResidential && (
               <motion.div key="res" initial={{opacity:0,width:0}} animate={{opacity:1,width:"auto"}} exit={{opacity:0,width:0}}
-                transition={{duration:0.2,ease:[0.16,1,0.3,1]}} style={{display:"flex",gap:6,overflow:"hidden"}}>
-                <div style={{width:52}}>{lbl("Hab.")}<input value={bedrooms} onChange={e=>setBedrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-                <div style={{width:52}}>{lbl("Baños")}<input value={bathrooms} onChange={e=>setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-                <div style={{width:52}}>{lbl("½ b.")}<input value={halfBath} onChange={e=>setHalfBath(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                transition={{duration:0.2,ease:[0.16,1,0.3,1]}} style={{display:"flex",gap:5,overflow:"hidden"}}>
+                <div style={{width:46}}>{lbl("Hab.")}<input value={bedrooms} onChange={e=>setBedrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div style={{width:46}}>{lbl("Baños")}<input value={bathrooms} onChange={e=>setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div style={{width:40}}>{lbl("½b.")}<input value={halfBath} onChange={e=>setHalfBath(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -461,17 +476,16 @@ function QuickEditRow({ property, onClose, onSaved }: {
             {hasParking && (
               <motion.div key="park" initial={{opacity:0,width:0}} animate={{opacity:1,width:"auto"}} exit={{opacity:0,width:0}}
                 transition={{duration:0.2,ease:[0.16,1,0.3,1]}} style={{overflow:"hidden"}}>
-                <div style={{width:52}}>{lbl("Est.")}<input value={parking} onChange={e=>setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div style={{width:44}}>{lbl("Est.")}<input value={parking} onChange={e=>setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
               </motion.div>
             )}
           </AnimatePresence>
           {hasAreaBuilt && !isTerrain && (
-            <div style={{width:80}}>{lbl("Const. m²")}<input value={areaBuilt} onChange={e=>setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
+            <div style={{width:70}}>{lbl("Const.m²")}<input value={areaBuilt} onChange={e=>setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
           )}
-          <div style={{width:80}}>{lbl("Total m²")}<input value={areaTotal} onChange={e=>setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
+          <div style={{width:70}}>{lbl("Total m²")}<input value={areaTotal} onChange={e=>setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
 
-          {/* Tags inline */}
-          <div style={{display:"flex",alignItems:"flex-end",gap:5,paddingBottom:1}}>
+          <div style={{display:"flex",alignItems:"flex-end",gap:4,paddingBottom:0}}>
             <ChipToggle active={featured}  onClick={()=>setFeatured(v=>!v)}  label="Destacada" />
             <ChipToggle active={exclusive} onClick={()=>setExclusive(v=>!v)} label="Exclusiva" />
           </div>
@@ -481,13 +495,13 @@ function QuickEditRow({ property, onClose, onSaved }: {
 
       {/* Footer */}
       <div style={{
-        padding: "8px 14px",
+        padding: "6px 14px 8px",
         background: "var(--p-surface-2)",
-        display: "flex", justifyContent: "flex-end", gap: 7,
+        display: "flex", justifyContent: "flex-end", gap: 6,
         borderTop: "1px solid var(--p-border)",
       }}>
         <button onClick={onClose}
-          style={{ borderRadius:"var(--p-radius)",border:"1px solid var(--p-border)",color:"var(--p-text-2)",padding:"5px 13px",fontSize:"12px",background:"none",cursor:"pointer" }}
+          style={{ borderRadius:"var(--p-radius)",border:"1px solid var(--p-border)",color:"var(--p-text-2)",padding:"4px 12px",fontSize:"11px",background:"none",cursor:"pointer" }}
         >Cancelar</button>
         <button onClick={handleSave} disabled={saving||saved}
           style={{
@@ -495,13 +509,13 @@ function QuickEditRow({ property, onClose, onSaved }: {
             background: saved ? "rgba(74,222,128,0.15)" : "var(--p-accent)",
             color: saved ? "#4ADE80" : "#090909",
             border: saved ? "1px solid rgba(74,222,128,0.3)" : "none",
-            padding:"5px 14px",fontSize:"12px",fontWeight:600,
-            display:"flex",alignItems:"center",gap:6,
+            padding:"4px 13px",fontSize:"11px",fontWeight:600,
+            display:"flex",alignItems:"center",gap:5,
             cursor: saving||saved ? "default" : "pointer",
             transition:"all 0.3s",
           }}
         >
-          {saved ? <><Check size={12}/> Guardado</> : saving ? "Guardando..." : <><Save size={11}/> Guardar</>}
+          {saved ? <><Check size={11}/> Guardado</> : saving ? "Guardando…" : <><Save size={10}/> Guardar</>}
         </button>
       </div>
     </motion.div>
@@ -680,7 +694,7 @@ export default function PropiedadesPage() {
     const prop = allProps.find(p => p.id === id);
     if (!prop) return;
 
-    // Mark as duplicating for animation
+    // Mark source as duplicating (dim it slightly)
     setDuplicatingIds(prev => new Set(prev).add(id));
 
     const newSlug = `${prop.slug}-copia-${Date.now().toString(36)}`;
@@ -701,27 +715,33 @@ export default function PropiedadesPage() {
 
     const { id: newId } = await res.json();
 
-    // Optimistically insert the duplicate right after the original
+    // Build optimistic duplicate — exact copy of source, only id/slug/created_at differ.
+    // Title is NOT modified ("Copia") so it matches DB exactly.
     const newProp: Property = {
       ...prop,
       id: newId,
       slug: newSlug,
-      title: `${prop.title} (Copia)`,
-      featured: false,
-      exclusive: false,
+      // Keep featured/exclusive as-is (server also copies them from source)
       created_at: new Date().toISOString(),
+      _isNew: true, // drives the slide-in animation
     };
 
+    // Insert right after the original
     setAllProps(prev => {
       const idx = prev.findIndex(p => p.id === id);
       if (idx === -1) return [...prev, newProp];
       return [...prev.slice(0, idx + 1), newProp, ...prev.slice(idx + 1)];
     });
 
-    // Flash the new duplicate
+    // Flash the new duplicate row
     setFlashIds(prev => new Set(prev).add(newId));
-    setTimeout(() => setFlashIds(prev => { const n = new Set(prev); n.delete(newId); return n; }), 2200);
-    showSuccess("Propiedad duplicada — copia completa incluidas fotos y videos");
+    setTimeout(() => {
+      setFlashIds(prev => { const n = new Set(prev); n.delete(newId); return n; });
+      // Clear _isNew flag after animation completes
+      setAllProps(prev => prev.map(p => p.id === newId ? { ...p, _isNew: false } : p));
+    }, 900);
+
+    showSuccess("Propiedad duplicada — copia exacta creada");
   };
 
   const handleBulkDelete = async () => {
@@ -817,14 +837,20 @@ export default function PropiedadesPage() {
           />
         </div>
 
-        {/* Filters — Tipo y Municipio con minWidth mayor para evitar wrapping */}
+        {/* Operación */}
         <StyledSelect value={filterOp} onChange={setFilterOp} placeholder="Operación" minWidth={104}
           options={[{value:"venta",label:"Venta"},{value:"alquiler",label:"Alquiler"},{value:"vacacional",label:"Vacacional"}]} />
+
+        {/* Estado */}
         <StyledSelect value={filterStatus} onChange={setFilterStatus} placeholder="Estado" minWidth={94}
           options={[{value:"activa",label:"Activa"},{value:"reservada",label:"Reservada"},{value:"vendida",label:"Vendida"},{value:"alquilada",label:"Alquilada"},{value:"cerrada",label:"Cerrada"}]} />
-        <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo de propiedad" minWidth={160}
+
+        {/* Tipo — ancho suficiente para que "Hacienda / Finca" y "Local comercial" no se partan */}
+        <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo de propiedad" minWidth={174}
           options={Object.entries(PROP_TYPE_LABEL).map(([v,l])=>({value:v,label:l}))} />
-        <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio" minWidth={120}
+
+        {/* Municipio — ancho suficiente para "Santos Marquina" */}
+        <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio" minWidth={134}
           options={MUNICIPIOS.map(m=>({value:m,label:MUNICIPIO_LABEL[m]}))} />
 
         {activeFilters.length > 0 && (
@@ -877,7 +903,10 @@ export default function PropiedadesPage() {
           <span />
           <button style={{ display:"flex",alignItems:"center",gap:4,fontSize:"11px",color:"var(--p-text-3)",background:"none",border:"none",cursor:"pointer",fontWeight:500 }} onClick={() => toggleSort("created_at")}>Propiedad <ArrowUpDown size={9}/></button>
           <button style={{ display:"flex",alignItems:"center",gap:4,fontSize:"11px",color:"var(--p-text-3)",background:"none",border:"none",cursor:"pointer",fontWeight:500 }} onClick={() => toggleSort("operation")}>Op. <ArrowUpDown size={9}/></button>
-          <button style={{ display:"flex",alignItems:"center",gap:4,fontSize:"11px",color:"var(--p-text-3)",background:"none",border:"none",cursor:"pointer",fontWeight:500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9}/></button>
+          {/* Estado — centrado */}
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"flex-start" }}>
+            <button style={{ display:"flex",alignItems:"center",gap:4,fontSize:"11px",color:"var(--p-text-3)",background:"none",border:"none",cursor:"pointer",fontWeight:500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9}/></button>
+          </div>
           <button style={{ display:"flex",alignItems:"center",gap:4,fontSize:"11px",color:"var(--p-text-3)",background:"none",border:"none",cursor:"pointer",fontWeight:500 }} onClick={() => toggleSort("price")}>Precio <ArrowUpDown size={9}/></button>
           <span style={{ fontSize:"11px",color:"var(--p-text-3)",fontWeight:500 }}>Datos</span>
           <span />
@@ -905,35 +934,39 @@ export default function PropiedadesPage() {
             <motion.div layout>
               <AnimatePresence mode="popLayout" initial={false}>
                 {visible.map(p => {
-                  const isExpanded   = quickEditId === p.id;
-                  const isFlash      = flashIds.has(p.id);
-                  const isSelected   = selected.has(p.id);
+                  const isExpanded    = quickEditId === p.id;
+                  const isFlash       = flashIds.has(p.id);
+                  const isSelected    = selected.has(p.id);
                   const isDuplicating = duplicatingIds.has(p.id);
-                  const dimmed       = quickEditId !== null && !isExpanded;
+                  const dimmed        = quickEditId !== null && !isExpanded;
 
                   return (
                     <div key={p.id}>
                       <motion.div
                         layout
                         layoutId={p.id}
-                        // Duplicate: slide in from slightly below the original
-                        initial={p._duplicating
-                          ? { opacity: 0, y: 6, scale: 0.99 }
+                        /**
+                         * _isNew=true  → fresh duplicate slides in from slightly below the row above it,
+                         *               as if it was pushed out from under the original.
+                         * otherwise    → default subtle fade+lift.
+                         */
+                        initial={p._isNew
+                          ? { opacity: 0, y: -8, scaleY: 0.97, transformOrigin: "top center" }
                           : { opacity: 0, y: -4 }}
                         animate={{
-                          opacity: dimmed ? 0.38 : isDuplicating ? 0.6 : 1,
+                          opacity: dimmed ? 0.38 : isDuplicating ? 0.55 : 1,
                           y: 0,
-                          scale: 1,
+                          scaleY: 1,
                           backgroundColor: isFlash
                             ? "rgba(74,222,128,0.07)"
                             : isSelected ? "var(--p-accent-soft)" : "rgba(0,0,0,0)",
                         }}
                         exit={{ opacity:0,scaleY:0.95 }}
                         transition={{
-                          layout:          { duration:0.28,ease:[0.16,1,0.3,1] },
-                          opacity:         { duration: dimmed ? 0.18 : 0.22,ease:[0.16,1,0.3,1] },
-                          y:               { duration:0.32,ease:[0.16,1,0.3,1] },
-                          scale:           { duration:0.32,ease:[0.16,1,0.3,1] },
+                          layout:          { duration:0.3,ease:[0.16,1,0.3,1] },
+                          opacity:         { duration: p._isNew ? 0.38 : (dimmed ? 0.18 : 0.22), ease:[0.16,1,0.3,1] },
+                          y:               { duration: p._isNew ? 0.42 : 0.28, ease:[0.16,1,0.3,1] },
+                          scaleY:          { duration: p._isNew ? 0.38 : 0.28, ease:[0.16,1,0.3,1] },
                           backgroundColor: { duration:0.6 },
                         }}
                         style={{
@@ -978,8 +1011,8 @@ export default function PropiedadesPage() {
                         {/* Operation */}
                         <span style={{ fontSize:"12px",color:"var(--p-text-2)" }}>{OP_LABEL[p.operation] ?? p.operation}</span>
 
-                        {/* Status — inline-flex centered */}
-                        <div style={{ display:"flex",alignItems:"center" }}>
+                        {/* Status — chip centered in its cell */}
+                        <div style={{ display:"flex",alignItems:"center",justifyContent:"flex-start" }}>
                           <StatusBadge status={p.status} />
                         </div>
 
@@ -1052,10 +1085,14 @@ export default function PropiedadesPage() {
               style={{ position:"fixed",zIndex:51,top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:320,padding:24,background:"var(--p-surface)",border:"1px solid var(--p-border)",borderRadius:"var(--p-radius)",boxShadow:"0 24px 64px rgba(0,0,0,0.8)" }}
             >
               <p style={{ fontSize:"15px",fontWeight:600,color:"var(--p-text)",marginBottom:8 }}>¿Eliminar propiedad?</p>
-              <p style={{ fontSize:"13px",color:"var(--p-text-2)",marginBottom:20 }}>Esta acción no se puede deshacer y eliminará la propiedad permanentemente.</p>
-              <div style={{ display:"flex",justifyContent:"flex-end",gap:8 }}>
-                <button onClick={() => setDeleteConfirm(null)} style={{ borderRadius:"var(--p-radius)",border:"1px solid var(--p-border)",color:"var(--p-text-2)",padding:"7px 16px",fontSize:"13px",background:"none",cursor:"pointer" }}>Cancelar</button>
-                <button onClick={() => handleDelete(deleteConfirm)} style={{ borderRadius:"var(--p-radius)",background:"var(--p-red)",color:"#fff",padding:"7px 16px",fontSize:"13px",fontWeight:500,border:"none",cursor:"pointer" }}>Eliminar</button>
+              <p style={{ fontSize:"13px",color:"var(--p-text-2)",marginBottom:20 }}>Esta acción no se puede deshacer. Se eliminarán también las fotos, videos y todos los datos asociados.</p>
+              <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
+                <button onClick={() => setDeleteConfirm(null)}
+                  style={{ borderRadius:"var(--p-radius)",border:"1px solid var(--p-border)",color:"var(--p-text-2)",padding:"7px 16px",fontSize:"13px",background:"none",cursor:"pointer" }}
+                >Cancelar</button>
+                <button onClick={() => handleDelete(deleteConfirm)}
+                  style={{ borderRadius:"var(--p-radius)",background:"var(--p-red)",color:"#fff",padding:"7px 16px",fontSize:"13px",fontWeight:600,border:"none",cursor:"pointer" }}
+                >Eliminar</button>
               </div>
             </motion.div>
           </>
