@@ -37,7 +37,6 @@ type SortField = "created_at" | "price" | "status" | "operation";
 type SortDir   = "asc" | "desc";
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  // FIX #2: "activa" tenía color verde muy tenue — aumentado contraste de bg y border
   activa:    { label: "Activa",    color: "#4ADE80", bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.35)" },
   reservada: { label: "Reservada", color: "#FBB040", bg: "rgba(251,176,64,0.12)",  border: "rgba(251,176,64,0.25)" },
   vendida:   { label: "Vendida",   color: "#A78BFA", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)" },
@@ -187,7 +186,6 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
   placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
-  // FIX #3: guardamos las coordenadas del botón para posicionar el dropdown con fixed
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const selected = options.find(o => o.value === value);
@@ -321,7 +319,8 @@ function DropdownItem({ label, active, muted, onClick }: {
 
 // ─── StatusBadge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_CFG[status] ?? STATUS_CFG.cerrada;
+  const cfg = STATUS_CFG[status] ?? STATUS_CFG["cerrada"];
+  if (!cfg) return null;
   return (
     <span style={{
       display: "inline-flex",
@@ -330,16 +329,16 @@ function StatusBadge({ status }: { status: string }) {
       width: "fit-content",
       maxWidth: "100%",
       borderRadius: "3px",
-      color: s.color,
-      background: s.bg,
-      border: `1px solid ${s.border}`,
+      color: cfg.color,
+      background: cfg.bg,
+      border: `1px solid ${cfg.border}`,
       fontSize: "11px",
       fontWeight: 600,
       padding: "3px 8px",
       whiteSpace: "nowrap",
       lineHeight: 1.4,
     }}>
-      {s.label}
+      {cfg.label}
     </span>
   );
 }
@@ -469,9 +468,6 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   };
 
   return (
-    // FIX #1: overflow:"visible" en todo momento para que los dropdowns fixed no queden cortados.
-    // La altura mínima garantiza que el área no colapse antes de que la animación termine.
-    // FIX #4 (parcial): zIndex elevado para que quede sobre las filas vecinas.
     <motion.div
       layout
       initial={{ opacity: 0, height: 0 }}
@@ -534,13 +530,13 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           <div>
             {label("Tipo de propiedad")}
             <StyledSelectFull value={propType} onChange={setPropType}
-              options={Object.entries(PROP_TYPE_LABEL).map(([v,l]) => ({ value: v, label: l }))}
+              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
             />
           </div>
           <div>
             {label("Municipio")}
             <StyledSelectFull value={municipio} onChange={setMunicipio} placeholder="Sin especificar"
-              options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] }))}
+              options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] ?? m }))}
             />
           </div>
         </div>
@@ -747,8 +743,6 @@ export default function PropiedadesPage() {
   const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
   const [quickEditId, setQuickEditId]     = useState<string | null>(null);
   const [flashIds, setFlashIds]           = useState<Set<string>>(new Set());
-
-  // FIX #4: IDs siendo eliminados — animación de salida (scaleY + fade) antes de quitar del estado
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
@@ -977,13 +971,13 @@ export default function PropiedadesPage() {
         </div>
 
         <StyledSelect value={filterOp}        onChange={setFilterOp}        placeholder="Operación"
-          options={[{ value:"venta",label:"Venta"},{value:"alquiler",label:"Alquiler"},{value:"vacacional",label:"Vacacional"}]} />
+          options={[{ value:"venta",label:"Venta"},{ value:"alquiler",label:"Alquiler"},{ value:"vacacional",label:"Vacacional"}]} />
         <StyledSelect value={filterStatus}    onChange={setFilterStatus}    placeholder="Estado"
           options={[{value:"activa",label:"Activa"},{value:"reservada",label:"Reservada"},{value:"vendida",label:"Vendida"},{value:"alquilada",label:"Alquilada"},{value:"cerrada",label:"Cerrada"}]} />
         <StyledSelect value={filterType}      onChange={setFilterType}      placeholder="Tipo"
-          options={Object.entries(PROP_TYPE_LABEL).map(([v,l]) => ({ value:v, label:l }))} />
+          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))} />
         <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio"
-          options={MUNICIPIOS.map(m => ({ value:m, label:MUNICIPIO_LABEL[m] }))} />
+          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] ?? m }))} />
 
         {activeFilters.length > 0 && (
           <button
@@ -1033,7 +1027,6 @@ export default function PropiedadesPage() {
       </AnimatePresence>
 
       {/* Table */}
-      {/* FIX #3 (contenedor): overflow:visible para que los dropdowns fixed del quick-edit no queden cortados */}
       <div style={{ ...cardStyle, overflow: "visible", position: "relative" }}>
         {/* Column headers */}
         <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "8px 14px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)", borderRadius: "var(--p-radius) var(--p-radius) 0 0" }}>
@@ -1096,11 +1089,10 @@ export default function PropiedadesPage() {
                       transition={{
                         layout: { duration: 0.28, ease: [0.16,1,0.3,1] },
                         opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
-                        // FIX #4: transformOrigin correcto para que el colapso parta desde arriba
                         scaleY: { duration: 0.22, ease: [0.16,1,0.3,1] },
                       }}
                       style={{
-                        transformOrigin: "top center",   // ← siempre en top, no bottom
+                        transformOrigin: "top center",
                         overflow: isExpanded ? "visible" : "hidden",
                         position: "relative",
                         zIndex: isExpanded ? 5 : 1,
