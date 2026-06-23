@@ -2,7 +2,6 @@
 
 import React, { use, useState, useEffect } from "react";
 import { usePanelRole } from "@/hooks/usePanelRole";
-import { ImageUploader } from "@/components/panel/ImageUploader";
 import { CircleUser, Save, AlertCircle, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -113,6 +112,39 @@ export default function PerfilPage({ params }: PageProps) {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${userId}-${Math.random().toString(36).substring(5)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("property-images")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("property-images")
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+    } catch (err: any) {
+      console.error("Avatar upload error:", err);
+      setError(err.message || "Error al subir la imagen.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading || roleLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-12 min-h-[300px]">
@@ -167,12 +199,15 @@ export default function PerfilPage({ params }: PageProps) {
               )}
             </div>
             <div className="flex-1 w-full">
-              <ImageUploader
-                images={avatarUrl ? [avatarUrl] : []}
-                onChange={(urls) => setAvatarUrl(urls[0] || "")}
-                locale={locale}
-                maxImages={1}
-              />
+              <label className="px-4 py-2 border border-dashed border-white/20 hover:border-white/40 rounded-sm cursor-pointer text-xs font-semibold text-white/70 hover:text-white flex items-center justify-center bg-white/5 transition-all w-full sm:w-auto inline-block text-center">
+                <span>{locale === "en" ? "Upload New Photo" : "Subir Nueva Foto"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </label>
             </div>
           </div>
         </div>

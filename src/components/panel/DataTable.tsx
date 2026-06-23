@@ -32,7 +32,7 @@ interface DataTableProps<T> {
   pageSize?: number;
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends object>({
   columns,
   data,
   loading = false,
@@ -65,7 +65,7 @@ export function DataTable<T extends Record<string, unknown>>({
     if (!q) return data;
     return data.filter((item) =>
       searchKeys.some((k) => {
-        const val = item[k];
+        const val = (item as any)[k];
         return val != null && String(val).toLowerCase().includes(q);
       })
     );
@@ -74,8 +74,8 @@ export function DataTable<T extends Record<string, unknown>>({
   const sorted = useMemo(() => {
     if (!sortField) return filtered;
     return [...filtered].sort((a, b) => {
-      const av = a[sortField];
-      const bv = b[sortField];
+      const av = (a as any)[sortField];
+      const bv = (b as any)[sortField];
       if (av == null) return 1;
       if (bv == null) return -1;
       if (typeof av === "number" && typeof bv === "number")
@@ -238,7 +238,7 @@ export function DataTable<T extends Record<string, unknown>>({
                         )}
                         {columns.map((col) => (
                           <td key={col.key} className="px-4 py-3 text-xs text-[var(--text-2)]">
-                            {col.render ? col.render(item) : String(item[col.key] ?? "")}
+                            {col.render ? col.render(item) : String((item as any)[col.key] ?? "")}
                           </td>
                         ))}
                       </motion.tr>

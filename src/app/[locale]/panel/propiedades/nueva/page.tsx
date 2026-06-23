@@ -440,7 +440,8 @@ export default function NuevaPropiedadPage() {
       const filtered = prev.filter((img) => img.id !== id);
       // Si se eliminó la portada, asignar la primera como portada
       if (filtered.length > 0 && !filtered.some((i) => i.isCover)) {
-        filtered[0].isCover = true;
+        const first = filtered[0];
+        if (first) first.isCover = true;
       }
       return filtered;
     });
@@ -540,10 +541,13 @@ export default function NuevaPropiedadPage() {
       if (images.length > 0) {
         for (let i = 0; i < images.length; i++) {
           const img = images[i];
-          if (!img.file) continue;
+          if (!img || !img.file) continue;
+
+          const currentId = img.id;
+          const currentIsCover = img.isCover;
 
           // Actualizar progress UI
-          setImages((prev) => prev.map((x) => x.id === img.id ? { ...x, uploading: true, progress: 10 } : x));
+          setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, uploading: true, progress: 10 } : x));
 
           const ext = img.file.name.split(".").pop();
           const path = `properties/${prop.id}/${Date.now()}-${i}.${ext}`;
@@ -552,7 +556,7 @@ export default function NuevaPropiedadPage() {
             .from("property-images")
             .upload(path, img.file, { upsert: false, cacheControl: "31536000" });
 
-          setImages((prev) => prev.map((x) => x.id === img.id ? { ...x, progress: 80 } : x));
+          setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, progress: 80 } : x));
 
           if (!upErr && uploaded) {
             const { data: { publicUrl } } = supabase.storage
@@ -562,14 +566,14 @@ export default function NuevaPropiedadPage() {
             await supabase.from("property_images").insert({
               property_id: prop.id,
               url: publicUrl,
-              is_cover: img.isCover,
+              is_cover: currentIsCover,
               sort_order: i,
               alt_es: form.title_es,
               alt_en: form.title_es,
             });
           }
 
-          setImages((prev) => prev.map((x) => x.id === img.id ? { ...x, uploading: false, progress: 100 } : x));
+          setImages((prev) => prev.map((x) => x.id === currentId ? { ...x, uploading: false, progress: 100 } : x));
         }
       }
 
@@ -903,9 +907,9 @@ export default function NuevaPropiedadPage() {
           ].map(([key, label]) => (
             <Toggle
               key={key}
-              checked={form[key as keyof FormData] as boolean}
+              checked={!!form[key as keyof FormData]}
               onChange={(v) => set(key as keyof FormData, v)}
-              label={label}
+              label={label as string}
             />
           ))}
         </div>

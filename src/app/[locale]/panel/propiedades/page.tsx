@@ -538,7 +538,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             ]} />
           </div>
           <div>
-            {label("Tipo de propiedad")}
+            <StyledSelectFull value={propType} onChange={setPropType}
               options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
             />
           </div>
@@ -985,9 +985,9 @@ export default function PropiedadesPage() {
         <StyledSelect value={filterStatus} onChange={setFilterStatus} placeholder="Estado"
           options={[{ value: "activa", label: "Activa" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "alquilada", label: "Alquilada" }, { value: "cerrada", label: "Cerrada" }]} />
         <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo"
-          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))} />
+          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l || v }))} />
         <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio"
-          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] }))} />
+          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] || m }))} />
 
         {activeFilters.length > 0 && (
           <button

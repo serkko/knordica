@@ -169,7 +169,7 @@ export default function BlogAdminPage({ params }: PageProps) {
       label_es: "Vistas",
       label_en: "Views",
       sortable: true,
-      render: (item) => <span className="font-mono text-emerald-400">{item.views.toLocaleString()}</span>,
+      render: (item) => <span className="font-mono text-emerald-400">{(item.views ?? 0).toLocaleString()}</span>,
     },
     {
       key: "published_at",
@@ -258,7 +258,7 @@ export default function BlogAdminPage({ params }: PageProps) {
       </div>
 
       {/* Articles list */}
-      <DataTable
+      <DataTable<BlogArticle>
         columns={columns}
         data={articles}
         loading={loading}

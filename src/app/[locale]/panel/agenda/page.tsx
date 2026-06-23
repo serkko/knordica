@@ -1,7 +1,7 @@
 "use client";
 
 import React, { use, useState } from "react";
-import { Plus, Calendar as CalendarIcon, Clock, Phone, MapPin, MessageSquare, AlertCircle, Check } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Phone, MapPin, MessageSquare, AlertCircle, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PageProps {
