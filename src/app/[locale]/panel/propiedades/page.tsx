@@ -75,11 +75,10 @@ const MUNICIPIO_LABEL: Record<string, string> = {
   rangel: "Rangel",
 };
 
-// Format number with thousand separators (dots)
 function fmtNum(n: number | string): string {
   const num = typeof n === "string" ? Number(n) : n;
   if (isNaN(num)) return "";
-  return Math.round(num).toLocaleString("es-VE"); // uses dots as thousands sep
+  return Math.round(num).toLocaleString("es-VE");
 }
 function fmtUSD(price: number) {
   return "$" + fmtNum(price);
@@ -179,7 +178,7 @@ function StyledSelect({ value, onChange, options, placeholder }: {
   );
 }
 
-// ─── StyledSelectFull (quick-edit, full width) ────────────────────────────────
+// ─── StyledSelectFull (quick-edit) — dropdown flota sobre el área ─────────────
 function StyledSelectFull({ value, onChange, options, placeholder }: {
   value: string;
   onChange: (v: string) => void;
@@ -233,16 +232,25 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
             exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
             transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
             style={{
-              position: "absolute",
-              top: "calc(100% + 4px)",
-              left: 0, right: 0,
-              zIndex: 200,
+              position: "fixed",        // ← fixed en lugar de absolute para salir del overflow:hidden
+              zIndex: 9999,
+              minWidth: 180,
               background: "var(--p-surface-2)",
               border: "1px solid var(--p-border)",
               borderRadius: "var(--p-radius)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
               padding: "4px 0",
               transformOrigin: "top center",
+            }}
+            // Posicionamos con JS al montar
+            ref={el => {
+              if (!el || !ref.current) return;
+              const btn = ref.current.querySelector("button");
+              if (!btn) return;
+              const r = btn.getBoundingClientRect();
+              el.style.top  = r.bottom + 4 + "px";
+              el.style.left = r.left + "px";
+              el.style.width = r.width + "px";
             }}
           >
             {placeholder && (
@@ -268,7 +276,7 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
   );
 }
 
-// ─── Shared dropdown item with hover ─────────────────────────────────────────
+// ─── Shared dropdown item ─────────────────────────────────────────────────────
 function DropdownItem({ label, active, muted, onClick }: {
   label: string;
   active: boolean;
@@ -309,7 +317,11 @@ function StatusBadge({ status }: { status: string }) {
   const s = STATUS_CFG[status] ?? STATUS_CFG.cerrada;
   return (
     <span style={{
-      display: "inline-block",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "fit-content",          // ← ancho justo al contenido
+      maxWidth: "100%",
       borderRadius: "3px",
       color: s.color,
       background: s.bg,
@@ -378,7 +390,6 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   const hasParking    = HAS_PARKING.has(propType);
   const isTerrain     = propType === "terreno_lote";
 
-  // Raw price for DB (strip dots)
   const rawPrice = () => Number(price.replace(/\./g, "").replace(/[^0-9]/g, "")) || 0;
 
   const inputS: React.CSSProperties = {
@@ -457,18 +468,25 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
       animate={{ opacity: 1, height: "auto" }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      style={{ overflow: "hidden", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}
+      style={{
+        overflow: "visible",          // ← visible para que dropdowns floaten
+        borderBottom: "1px solid var(--p-border)",
+        background: "var(--p-surface-2)",
+        minHeight: 180,               // ← altura mínima garantizada
+        position: "relative",
+        zIndex: 10,
+      }}
     >
       <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
 
-        {/* Fila 1: Título (ancho completo) */}
+        {/* Fila 1: Título */}
         <div>
           {label("Título")}
           <input value={title} onChange={e => setTitle(e.target.value)} style={inputS} placeholder="Sin título" />
         </div>
 
-        {/* Fila 2: Precio (más ancho) + Operación + Estado + Tipo + Municipio */}
-        <div style={{ display: "grid", gridTemplateColumns: "200px 140px 140px 180px 160px", gap: 10, flexWrap: "wrap" }}>
+        {/* Fila 2: Precio + Operación + Estado + Tipo + Municipio */}
+        <div style={{ display: "grid", gridTemplateColumns: "200px 140px 140px 180px 160px", gap: 10 }}>
           <div>
             {label("Precio (USD)")}
             <div style={{ position: "relative" }}>
@@ -517,7 +535,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           </div>
         </div>
 
-        {/* Campos dinámicos: residencial — Hab. Baños ½Baño Estac. Área construida Área total */}
+        {/* Campos dinámicos residencial */}
         <AnimatePresence>
           {isResidential && (
             <motion.div
@@ -538,7 +556,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           )}
         </AnimatePresence>
 
-        {/* Parking solo para no-residencial con parking */}
+        {/* Parking no-residencial */}
         <AnimatePresence>
           {!isResidential && hasParking && (
             <motion.div
@@ -558,7 +576,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           )}
         </AnimatePresence>
 
-        {/* Terreno: solo áreas */}
+        {/* Terreno */}
         <AnimatePresence>
           {isTerrain && (
             <motion.div
@@ -591,7 +609,6 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           onClick={onClose}
           style={{ borderRadius: "var(--p-radius)", border: "1px solid var(--p-border)", color: "var(--p-text-2)", padding: "7px 16px", fontSize: "13px", background: "none", cursor: "pointer" }}
         >Cancelar</button>
-        {/* Botón Editar completo */}
         <button
           onClick={onEdit}
           style={{
@@ -676,7 +693,7 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   );
 }
 
-// ─── FilterChip (blue, border-radius 3px) ────────────────────────────────────
+// ─── FilterChip ───────────────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span style={{
@@ -720,6 +737,9 @@ export default function PropiedadesPage() {
   const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
   const [quickEditId, setQuickEditId]     = useState<string | null>(null);
   const [flashIds, setFlashIds]           = useState<Set<string>>(new Set());
+
+  // IDs siendo eliminados — para animar su salida antes de quitarlos del estado
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
     setLoading(true); setDbError(null);
@@ -790,11 +810,17 @@ export default function PropiedadesPage() {
     setTimeout(() => setSuccessMsg(null), 2200);
   };
 
+  // Eliminar con animación: marca como "deleting" → espera animación → remueve del estado
   const handleDelete = async (id: string) => {
-    await createClient().from("properties").delete().eq("id", id);
-    setAllProps(prev => prev.filter(p => p.id !== id));
+    setDeletingIds(prev => new Set(prev).add(id));
     setDeleteConfirm(null);
-    setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+    // Lanzar delete en DB mientras la animación ocurre (220ms)
+    await createClient().from("properties").delete().eq("id", id);
+    setTimeout(() => {
+      setAllProps(prev => prev.filter(p => p.id !== id));
+      setDeletingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
+    }, 320);
   };
 
   const handleDuplicate = async (id: string) => {
@@ -833,9 +859,14 @@ export default function PropiedadesPage() {
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selected);
+    // Animar todas las seleccionadas
+    setDeletingIds(new Set(ids));
     await createClient().from("properties").delete().in("id", ids);
-    setAllProps(prev => prev.filter(p => !selected.has(p.id)));
-    setSelected(new Set());
+    setTimeout(() => {
+      setAllProps(prev => prev.filter(p => !ids.includes(p.id)));
+      setDeletingIds(new Set());
+      setSelected(new Set());
+    }, 320);
   };
 
   const handleBulkStatus = async (status: string) => {
@@ -924,7 +955,6 @@ export default function PropiedadesPage() {
 
       {/* Toolbar */}
       <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: 8 }}>
-        {/* Search */}
         <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 300 }}>
           <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--p-text-3)", pointerEvents: "none" }} />
           {search && (
@@ -959,7 +989,6 @@ export default function PropiedadesPage() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Bulk actions — right */}
         <AnimatePresence>
           {selected.size > 0 && (
             <motion.div
@@ -997,9 +1026,9 @@ export default function PropiedadesPage() {
       </AnimatePresence>
 
       {/* Table */}
-      <div style={{ ...cardStyle, overflow: "hidden" }}>
+      <div style={{ ...cardStyle, overflow: "visible", position: "relative" }}>
         {/* Column headers */}
-        <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "8px 14px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "8px 14px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)", borderRadius: "var(--p-radius) var(--p-radius) 0 0" }}>
           <button onClick={toggleAll} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
             {allSelected ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} /> : <Square size={14} style={{ color: "var(--p-text-3)" }} />}
           </button>
@@ -1034,20 +1063,44 @@ export default function PropiedadesPage() {
             <motion.div layout>
               <AnimatePresence mode="popLayout" initial={false}>
                 {visible.map(p => {
-                  const isExpanded = quickEditId === p.id;
-                  const isFlash    = flashIds.has(p.id);
-                  const isSelected = selected.has(p.id);
-                  const dimmed     = quickEditId !== null && !isExpanded;
+                  const isExpanded  = quickEditId === p.id;
+                  const isFlash     = flashIds.has(p.id);
+                  const isSelected  = selected.has(p.id);
+                  const isDeleting  = deletingIds.has(p.id);
+                  const dimmed      = quickEditId !== null && !isExpanded;
 
                   return (
-                    <div key={p.id}>
+                    <motion.div
+                      key={p.id}
+                      layout
+                      layoutId={p.id}
+                      // Animación de eliminación: colapsa en Y + fade
+                      initial={{ opacity: 0, scaleY: 0.95 }}
+                      animate={{
+                        opacity: isDeleting ? 0 : dimmed ? 0.38 : 1,
+                        scaleY: isDeleting ? 0 : 1,
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scaleY: 0,
+                        transition: { duration: 0.22, ease: [0.16,1,0.3,1] },
+                      }}
+                      transition={{
+                        layout: { duration: 0.28, ease: [0.16,1,0.3,1] },
+                        opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
+                        scaleY: { duration: 0.22, ease: [0.16,1,0.3,1] },
+                      }}
+                      style={{
+                        transformOrigin: "top",
+                        overflow: isExpanded ? "visible" : "hidden",
+                        position: "relative",
+                        zIndex: isExpanded ? 5 : 1,
+                      }}
+                    >
+                      {/* Row principal */}
                       <motion.div
-                        layout
-                        layoutId={p.id}
-                        initial={{ opacity: 0, y: -4 }}
                         animate={{
-                          opacity: dimmed ? 0.38 : 1,
-                          y: 0,
                           backgroundColor: isExpanded
                             ? "rgba(99,220,180,0.07)"
                             : isFlash
@@ -1056,12 +1109,7 @@ export default function PropiedadesPage() {
                                 ? "var(--p-accent-soft)"
                                 : "rgba(0,0,0,0)",
                         }}
-                        exit={{ opacity: 0, scaleY: 0.95 }}
-                        transition={{
-                          layout: { duration: 0.22, ease: [0.16,1,0.3,1] },
-                          opacity: { duration: dimmed ? 0.18 : 0.12 },
-                          backgroundColor: { duration: isFlash ? 0.6 : 0.22 },
-                        }}
+                        transition={{ backgroundColor: { duration: isFlash ? 0.6 : 0.22 } }}
                         style={{
                           display: "grid",
                           gridTemplateColumns: COLS,
@@ -1075,7 +1123,7 @@ export default function PropiedadesPage() {
                           borderLeft: isExpanded ? "3px solid var(--p-accent)" : "3px solid transparent",
                           boxShadow: isExpanded ? "0 2px 0 0 rgba(99,220,180,0.15) inset, 0 -1px 0 0 rgba(99,220,180,0.1) inset" : "none",
                         }}
-                        onClick={() => setQuickEditId(v => v === p.id ? null : p.id)}
+                        onClick={() => !isDeleting && setQuickEditId(v => v === p.id ? null : p.id)}
                       >
                         {/* Checkbox */}
                         <button onClick={e => { e.stopPropagation(); toggleSelect(p.id); }} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -1143,7 +1191,7 @@ export default function PropiedadesPage() {
                           />
                         )}
                       </AnimatePresence>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </AnimatePresence>
