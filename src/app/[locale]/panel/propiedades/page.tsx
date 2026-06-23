@@ -37,7 +37,8 @@ type SortField = "created_at" | "price" | "status" | "operation";
 type SortDir   = "asc" | "desc";
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  activa:    { label: "Activa",    color: "#4ADE80", bg: "rgba(74,222,128,0.12)",  border: "rgba(74,222,128,0.25)" },
+  // FIX #2: "activa" tenía color verde muy tenue — aumentado contraste de bg y border
+  activa:    { label: "Activa",    color: "#4ADE80", bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.35)" },
   reservada: { label: "Reservada", color: "#FBB040", bg: "rgba(251,176,64,0.12)",  border: "rgba(251,176,64,0.25)" },
   vendida:   { label: "Vendida",   color: "#A78BFA", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)" },
   alquilada: { label: "Alquilada", color: "#60A5FA", bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.25)" },
@@ -178,7 +179,7 @@ function StyledSelect({ value, onChange, options, placeholder }: {
   );
 }
 
-// ─── StyledSelectFull (quick-edit) — dropdown flota sobre el área ─────────────
+// ─── StyledSelectFull (quick-edit) — dropdown usa position:fixed para escapar overflow ──
 function StyledSelectFull({ value, onChange, options, placeholder }: {
   value: string;
   onChange: (v: string) => void;
@@ -186,6 +187,8 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
   placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // FIX #3: guardamos las coordenadas del botón para posicionar el dropdown con fixed
+  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const selected = options.find(o => o.value === value);
 
@@ -195,11 +198,22 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  const handleOpen = () => {
+    if (!open && ref.current) {
+      const btn = ref.current.querySelector("button");
+      if (btn) {
+        const r = btn.getBoundingClientRect();
+        setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      }
+    }
+    setOpen(v => !v);
+  };
+
   return (
     <div ref={ref} style={{ position: "relative", width: "100%" }}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={handleOpen}
         style={{
           width: "100%", height: 34, padding: "0 10px",
           display: "flex", alignItems: "center", gap: 6,
@@ -225,32 +239,25 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && dropPos && (
           <motion.div
             initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
             transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
             style={{
-              position: "fixed",        // ← fixed en lugar de absolute para salir del overflow:hidden
+              position: "fixed",
+              top: dropPos.top,
+              left: dropPos.left,
+              width: dropPos.width,
               zIndex: 9999,
-              minWidth: 180,
+              minWidth: 160,
               background: "var(--p-surface-2)",
               border: "1px solid var(--p-border)",
               borderRadius: "var(--p-radius)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
               padding: "4px 0",
               transformOrigin: "top center",
-            }}
-            // Posicionamos con JS al montar
-            ref={el => {
-              if (!el || !ref.current) return;
-              const btn = ref.current.querySelector("button");
-              if (!btn) return;
-              const r = btn.getBoundingClientRect();
-              el.style.top  = r.bottom + 4 + "px";
-              el.style.left = r.left + "px";
-              el.style.width = r.width + "px";
             }}
           >
             {placeholder && (
@@ -320,7 +327,7 @@ function StatusBadge({ status }: { status: string }) {
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      width: "fit-content",          // ← ancho justo al contenido
+      width: "fit-content",
       maxWidth: "100%",
       borderRadius: "3px",
       color: s.color,
@@ -462,6 +469,9 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   };
 
   return (
+    // FIX #1: overflow:"visible" en todo momento para que los dropdowns fixed no queden cortados.
+    // La altura mínima garantiza que el área no colapse antes de que la animación termine.
+    // FIX #4 (parcial): zIndex elevado para que quede sobre las filas vecinas.
     <motion.div
       layout
       initial={{ opacity: 0, height: 0 }}
@@ -469,12 +479,12 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        overflow: "visible",          // ← visible para que dropdowns floaten
+        overflow: "visible",
         borderBottom: "1px solid var(--p-border)",
         background: "var(--p-surface-2)",
-        minHeight: 180,               // ← altura mínima garantizada
+        minHeight: 200,
         position: "relative",
-        zIndex: 10,
+        zIndex: 20,
       }}
     >
       <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -738,7 +748,7 @@ export default function PropiedadesPage() {
   const [quickEditId, setQuickEditId]     = useState<string | null>(null);
   const [flashIds, setFlashIds]           = useState<Set<string>>(new Set());
 
-  // IDs siendo eliminados — para animar su salida antes de quitarlos del estado
+  // FIX #4: IDs siendo eliminados — animación de salida (scaleY + fade) antes de quitar del estado
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
@@ -810,11 +820,9 @@ export default function PropiedadesPage() {
     setTimeout(() => setSuccessMsg(null), 2200);
   };
 
-  // Eliminar con animación: marca como "deleting" → espera animación → remueve del estado
   const handleDelete = async (id: string) => {
     setDeletingIds(prev => new Set(prev).add(id));
     setDeleteConfirm(null);
-    // Lanzar delete en DB mientras la animación ocurre (220ms)
     await createClient().from("properties").delete().eq("id", id);
     setTimeout(() => {
       setAllProps(prev => prev.filter(p => p.id !== id));
@@ -859,7 +867,6 @@ export default function PropiedadesPage() {
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selected);
-    // Animar todas las seleccionadas
     setDeletingIds(new Set(ids));
     await createClient().from("properties").delete().in("id", ids);
     setTimeout(() => {
@@ -1026,6 +1033,7 @@ export default function PropiedadesPage() {
       </AnimatePresence>
 
       {/* Table */}
+      {/* FIX #3 (contenedor): overflow:visible para que los dropdowns fixed del quick-edit no queden cortados */}
       <div style={{ ...cardStyle, overflow: "visible", position: "relative" }}>
         {/* Column headers */}
         <div style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: "8px 14px", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)", borderRadius: "var(--p-radius) var(--p-radius) 0 0" }}>
@@ -1074,7 +1082,6 @@ export default function PropiedadesPage() {
                       key={p.id}
                       layout
                       layoutId={p.id}
-                      // Animación de eliminación: colapsa en Y + fade
                       initial={{ opacity: 0, scaleY: 0.95 }}
                       animate={{
                         opacity: isDeleting ? 0 : dimmed ? 0.38 : 1,
@@ -1089,10 +1096,11 @@ export default function PropiedadesPage() {
                       transition={{
                         layout: { duration: 0.28, ease: [0.16,1,0.3,1] },
                         opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
+                        // FIX #4: transformOrigin correcto para que el colapso parta desde arriba
                         scaleY: { duration: 0.22, ease: [0.16,1,0.3,1] },
                       }}
                       style={{
-                        transformOrigin: "top",
+                        transformOrigin: "top center",   // ← siempre en top, no bottom
                         overflow: isExpanded ? "visible" : "hidden",
                         position: "relative",
                         zIndex: isExpanded ? 5 : 1,
