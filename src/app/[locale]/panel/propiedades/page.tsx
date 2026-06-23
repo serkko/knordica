@@ -34,14 +34,14 @@ interface Property {
 }
 
 type SortField = "created_at" | "price" | "status" | "operation";
-type SortDir   = "asc" | "desc";
+type SortDir = "asc" | "desc";
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  activa:    { label: "Activa",    color: "#4ADE80", bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.35)" },
-  reservada: { label: "Reservada", color: "#FBB040", bg: "rgba(251,176,64,0.12)",  border: "rgba(251,176,64,0.25)" },
-  vendida:   { label: "Vendida",   color: "#A78BFA", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)" },
-  alquilada: { label: "Alquilada", color: "#60A5FA", bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.25)" },
-  cerrada:   { label: "Cerrada",   color: "#71717A", bg: "rgba(113,113,122,0.12)", border: "rgba(113,113,122,0.25)" },
+  activa: { label: "Activa", color: "#4ADE80", bg: "rgba(74,222,128,0.12)", border: "rgba(74,222,128,0.25)" },
+  reservada: { label: "Reservada", color: "#FBB040", bg: "rgba(251,176,64,0.12)", border: "rgba(251,176,64,0.25)" },
+  vendida: { label: "Vendida", color: "#A78BFA", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)" },
+  alquilada: { label: "Alquilada", color: "#60A5FA", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.25)" },
+  cerrada: { label: "Cerrada", color: "#71717A", bg: "rgba(113,113,122,0.12)", border: "rgba(113,113,122,0.25)" },
 };
 
 const OP_LABEL: Record<string, string> = {
@@ -62,11 +62,11 @@ const PROP_TYPE_LABEL: Record<string, string> = {
   terreno_lote: "Terreno / Lote",
 };
 
-const RESIDENTIAL_TYPES = new Set(["casa","apartamento","townhouse","anexo","habitacion","hacienda_finca","edificio"]);
-const HAS_AREA_BUILT    = new Set(["casa","apartamento","townhouse","anexo","habitacion","hacienda_finca","edificio","local","oficina","galpon"]);
-const HAS_PARKING       = new Set(["casa","apartamento","townhouse","edificio","local","oficina","galpon"]);
+const RESIDENTIAL_TYPES = new Set(["casa", "apartamento", "townhouse", "anexo", "habitacion", "hacienda_finca", "edificio"]);
+const HAS_AREA_BUILT = new Set(["casa", "apartamento", "townhouse", "anexo", "habitacion", "hacienda_finca", "edificio", "local", "oficina", "galpon"]);
+const HAS_PARKING = new Set(["casa", "apartamento", "townhouse", "edificio", "local", "oficina", "galpon"]);
 
-const MUNICIPIOS = ["libertador","campo_elias","santos_marquina","sucre","rangel"];
+const MUNICIPIOS = ["libertador", "campo_elias", "santos_marquina", "sucre", "rangel"];
 const MUNICIPIO_LABEL: Record<string, string> = {
   libertador: "Libertador",
   campo_elias: "Campo Elías",
@@ -127,7 +127,7 @@ function StyledSelect({ value, onChange, options, placeholder }: {
         <span>{selected ? selected.label : (placeholder ?? "Seleccionar")}</span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: "flex", alignItems: "center", opacity: 0.6 }}
         >
           <ChevronDown size={11} />
@@ -140,7 +140,7 @@ function StyledSelect({ value, onChange, options, placeholder }: {
             initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
-            transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "absolute",
               top: "calc(100% + 4px)",
@@ -229,7 +229,7 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
         </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
           style={{ display: "flex", alignItems: "center", opacity: 0.5, flexShrink: 0 }}
         >
           <ChevronDown size={12} />
@@ -242,7 +242,7 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
             initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
-            transition={{ duration: 0.16, ease: [0.16,1,0.3,1] }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: "fixed",
               top: dropPos.top,
@@ -256,6 +256,16 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
               boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
               padding: "4px 0",
               transformOrigin: "top center",
+            }}
+            // Posicionamos con JS al montar
+            ref={el => {
+              if (!el || !ref.current) return;
+              const btn = ref.current.querySelector("button");
+              if (!btn) return;
+              const r = btn.getBoundingClientRect();
+              el.style.top = r.bottom + 4 + "px";
+              el.style.left = r.left + "px";
+              el.style.width = r.width + "px";
             }}
           >
             {placeholder && (
@@ -374,27 +384,27 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   onSaved: (next: Partial<Property> & { id: string }) => void;
   onEdit: () => void;
 }) {
-  const [title, setTitle]         = useState(property.title);
-  const [price, setPrice]         = useState(fmtNum(property.price ?? 0));
-  const [status, setStatus]       = useState(property.status);
+  const [title, setTitle] = useState(property.title);
+  const [price, setPrice] = useState(fmtNum(property.price ?? 0));
+  const [status, setStatus] = useState(property.status);
   const [operation, setOperation] = useState(property.operation);
-  const [propType, setPropType]   = useState(property.property_type);
+  const [propType, setPropType] = useState(property.property_type);
   const [municipio, setMunicipio] = useState(property.municipio ?? "");
-  const [bedrooms, setBedrooms]   = useState(String(property.bedrooms ?? ""));
+  const [bedrooms, setBedrooms] = useState(String(property.bedrooms ?? ""));
   const [bathrooms, setBathrooms] = useState(String(property.bathrooms ?? ""));
-  const [halfBath, setHalfBath]   = useState(String(property.half_bathrooms ?? ""));
-  const [parking, setParking]     = useState(String(property.parking_spaces ?? ""));
+  const [halfBath, setHalfBath] = useState(String(property.half_bathrooms ?? ""));
+  const [parking, setParking] = useState(String(property.parking_spaces ?? ""));
   const [areaBuilt, setAreaBuilt] = useState(String(property.area_built ?? ""));
   const [areaTotal, setAreaTotal] = useState(String(property.area_total ?? ""));
-  const [featured, setFeatured]   = useState(property.featured);
+  const [featured, setFeatured] = useState(property.featured);
   const [exclusive, setExclusive] = useState(property.exclusive);
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const isResidential = RESIDENTIAL_TYPES.has(propType);
-  const hasAreaBuilt  = HAS_AREA_BUILT.has(propType);
-  const hasParking    = HAS_PARKING.has(propType);
-  const isTerrain     = propType === "terreno_lote";
+  const hasAreaBuilt = HAS_AREA_BUILT.has(propType);
+  const hasParking = HAS_PARKING.has(propType);
+  const isTerrain = propType === "terreno_lote";
 
   const rawPrice = () => Number(price.replace(/\./g, "").replace(/[^0-9]/g, "")) || 0;
 
@@ -424,17 +434,17 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
     const priceNum = rawPrice();
 
     const updates: Record<string, unknown> = {
-      price:          priceNum,
+      price: priceNum,
       price_currency: "USD",
       status, operation,
-      property_type:  propType,
-      municipio:      municipio || null,
-      bedrooms:       bedrooms  !== "" ? Number(bedrooms)  : null,
-      bathrooms:      bathrooms !== "" ? Number(bathrooms) : null,
-      half_bathrooms: halfBath  !== "" ? Number(halfBath)  : null,
-      parking_spaces: parking   !== "" ? Number(parking)   : null,
-      area_built:     areaBuilt !== "" ? Number(areaBuilt) : null,
-      area_total:     areaTotal !== "" ? Number(areaTotal) : null,
+      property_type: propType,
+      municipio: municipio || null,
+      bedrooms: bedrooms !== "" ? Number(bedrooms) : null,
+      bathrooms: bathrooms !== "" ? Number(bathrooms) : null,
+      half_bathrooms: halfBath !== "" ? Number(halfBath) : null,
+      parking_spaces: parking !== "" ? Number(parking) : null,
+      area_built: areaBuilt !== "" ? Number(areaBuilt) : null,
+      area_total: areaTotal !== "" ? Number(areaTotal) : null,
       featured, exclusive,
     };
 
@@ -450,14 +460,14 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
         price: priceNum,
         price_currency: "USD",
         status, operation,
-        property_type:  propType,
-        municipio:      municipio || null,
-        bedrooms:       bedrooms  !== "" ? Number(bedrooms)  : null,
-        bathrooms:      bathrooms !== "" ? Number(bathrooms) : null,
-        half_bathrooms: halfBath  !== "" ? Number(halfBath)  : null,
-        parking_spaces: parking   !== "" ? Number(parking)   : null,
-        area_built:     areaBuilt !== "" ? Number(areaBuilt) : null,
-        area_total:     areaTotal !== "" ? Number(areaTotal) : null,
+        property_type: propType,
+        municipio: municipio || null,
+        bedrooms: bedrooms !== "" ? Number(bedrooms) : null,
+        bathrooms: bathrooms !== "" ? Number(bathrooms) : null,
+        half_bathrooms: halfBath !== "" ? Number(halfBath) : null,
+        parking_spaces: parking !== "" ? Number(parking) : null,
+        area_built: areaBuilt !== "" ? Number(areaBuilt) : null,
+        area_total: areaTotal !== "" ? Number(areaTotal) : null,
         featured, exclusive, savedFlash: true,
       });
       setTimeout(() => { onClose(); }, 900);
@@ -520,17 +530,16 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
           <div>
             {label("Estado")}
             <StyledSelectFull value={status} onChange={setStatus} options={[
-              { value: "activa",    label: "Activa" },
+              { value: "activa", label: "Activa" },
               { value: "reservada", label: "Reservada" },
-              { value: "vendida",   label: "Vendida" },
+              { value: "vendida", label: "Vendida" },
               { value: "alquilada", label: "Alquilada" },
-              { value: "cerrada",   label: "Cerrada" },
+              { value: "cerrada", label: "Cerrada" },
             ]} />
           </div>
           <div>
             {label("Tipo de propiedad")}
-            <StyledSelectFull value={propType} onChange={setPropType}
-              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l as string }))}
+              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
             />
           </div>
           <div>
@@ -547,14 +556,14 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             <motion.div
               key="res"
               initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{ overflow: "hidden" }}
             >
               <div style={{ display: "grid", gridTemplateColumns: "90px 90px 90px 90px 1fr 1fr", gap: 10 }}>
-                <div>{label("Habitaciones")}<input value={bedrooms}  onChange={e => setBedrooms(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Habitaciones")}<input value={bedrooms} onChange={e => setBedrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
                 <div>{label("Baños")}<input value={bathrooms} onChange={e => setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-                <div>{label("Medio baño")}<input value={halfBath}  onChange={e => setHalfBath(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
-                <div>{label("Estacionam.")}<input value={parking}   onChange={e => setParking(e.target.value)}   type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Medio baño")}<input value={halfBath} onChange={e => setHalfBath(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Estacionam.")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
                 <div>{label("Área construida (m²)")}<input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
                 <div>{label("Área total (m²)")}<input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
               </div>
@@ -568,7 +577,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             <motion.div
               key="park"
               initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{ overflow: "hidden" }}
             >
               <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 10 }}>
@@ -588,7 +597,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             <motion.div
               key="terrain"
               initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{ overflow: "hidden" }}
             >
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 400 }}>
@@ -602,7 +611,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
         <div>
           {label("Etiquetas")}
           <div style={{ display: "flex", gap: 8 }}>
-            <ChipToggle active={featured}  onClick={() => setFeatured(v => !v)}  label="Destacada" />
+            <ChipToggle active={featured} onClick={() => setFeatured(v => !v)} label="Destacada" />
             <ChipToggle active={exclusive} onClick={() => setExclusive(v => !v)} label="Exclusiva" />
           </div>
         </div>
@@ -659,10 +668,10 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
 }) {
   const router = useRouter();
   const items: { icon: React.ElementType; label: string; action: () => void; danger?: boolean }[] = [
-    { icon: Eye,    label: "Ver en sitio",    action: () => window.open(`/${locale}/${slug}`, "_blank") },
+    { icon: Eye, label: "Ver en sitio", action: () => window.open(`/${locale}/${slug}`, "_blank") },
     { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/${id}/editar`) },
-    { icon: Copy,   label: "Duplicar",        action: () => onDuplicate(id) },
-    { icon: Trash2, label: "Eliminar",        action: () => onDelete(id), danger: true },
+    { icon: Copy, label: "Duplicar", action: () => onDuplicate(id) },
+    { icon: Trash2, label: "Eliminar", action: () => onDelete(id), danger: true },
   ];
   return (
     <div style={{ position: "relative" }}>
@@ -725,24 +734,26 @@ export default function PropiedadesPage() {
   const params = useParams();
   const locale = (params?.locale as string) ?? "es";
 
-  const [allProps, setAllProps]       = useState<Property[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [dbError, setDbError]         = useState<string | null>(null);
-  const [successMsg, setSuccessMsg]   = useState<string | null>(null);
+  const [allProps, setAllProps] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [search, setSearch]               = useState("");
-  const [filterOp, setFilterOp]           = useState("");
-  const [filterStatus, setFilterStatus]   = useState("");
-  const [filterType, setFilterType]       = useState("");
+  const [search, setSearch] = useState("");
+  const [filterOp, setFilterOp] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterType, setFilterType] = useState("");
   const [filterMunicipio, setFilterMunicipio] = useState("");
 
   const [sortField, setSortField] = useState<SortField>("created_at");
-  const [sortDir, setSortDir]     = useState<SortDir>("desc");
-  const [selected, setSelected]   = useState<Set<string>>(new Set());
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId]       = useState<string | null>(null);
-  const [quickEditId, setQuickEditId]     = useState<string | null>(null);
-  const [flashIds, setFlashIds]           = useState<Set<string>>(new Set());
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [quickEditId, setQuickEditId] = useState<string | null>(null);
+  const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
+
+  // IDs siendo eliminados — para animar su salida antes de quitarlos del estado
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   const fetchAll = useCallback(async () => {
@@ -791,9 +802,9 @@ export default function PropiedadesPage() {
         p.slug.includes(q)
       );
     }
-    if (filterOp)        list = list.filter(p => p.operation === filterOp);
-    if (filterStatus)    list = list.filter(p => p.status === filterStatus);
-    if (filterType)      list = list.filter(p => p.property_type === filterType);
+    if (filterOp) list = list.filter(p => p.operation === filterOp);
+    if (filterStatus) list = list.filter(p => p.status === filterStatus);
+    if (filterType) list = list.filter(p => p.property_type === filterType);
     if (filterMunicipio) list = list.filter(p => p.municipio === filterMunicipio);
     list.sort((a, b) => {
       let va: string | number = (a[sortField] ?? "") as string | number;
@@ -806,8 +817,8 @@ export default function PropiedadesPage() {
   }, [allProps, search, filterOp, filterStatus, filterType, filterMunicipio, sortField, sortDir]);
 
   const toggleSelect = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const allSelected  = visible.length > 0 && visible.every(p => selected.has(p.id));
-  const toggleAll    = () => setSelected(allSelected ? new Set() : new Set(visible.map(p => p.id)));
+  const allSelected = visible.length > 0 && visible.every(p => selected.has(p.id));
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(visible.map(p => p.id)));
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
@@ -894,8 +905,8 @@ export default function PropiedadesPage() {
 
   const renderDatos = (p: Property) => {
     const parts: string[] = [];
-    if (p.bedrooms   != null) parts.push(`${p.bedrooms}h`);
-    if (p.bathrooms  != null) parts.push(`${p.bathrooms}b`);
+    if (p.bedrooms != null) parts.push(`${p.bedrooms}h`);
+    if (p.bathrooms != null) parts.push(`${p.bathrooms}b`);
     if (p.area_built != null) parts.push(`${p.area_built}m²`);
     else if (p.area_total != null) parts.push(`${p.area_total}m²`);
     return <span style={{ fontSize: "12px", color: "var(--p-text-3)" }}>{parts.join(" · ") || "—"}</span>;
@@ -931,7 +942,7 @@ export default function PropiedadesPage() {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                 style={{ fontSize: "12px", color: "#4ADE80", fontWeight: 500, display: "flex", alignItems: "center", gap: 5 }}
               >
                 <Check size={12} /> {successMsg}
@@ -942,7 +953,7 @@ export default function PropiedadesPage() {
             <span style={{ fontSize: "13px", color: "var(--p-text-3)" }}>
               {loading ? "Cargando..."
                 : dbError ? ""
-                : `${visible.length} de ${allProps.length}`}
+                  : `${visible.length} de ${allProps.length}`}
             </span>
           )}
         </div>
@@ -969,15 +980,14 @@ export default function PropiedadesPage() {
             style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 28, fontSize: "13px", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", borderRadius: "var(--p-radius)", color: "var(--p-text)", outline: "none" }}
           />
         </div>
-
-        <StyledSelect value={filterOp}        onChange={setFilterOp}        placeholder="Operación"
-          options={[{ value:"venta",label:"Venta"},{ value:"alquiler",label:"Alquiler"},{ value:"vacacional",label:"Vacacional"}]} />
-        <StyledSelect value={filterStatus}    onChange={setFilterStatus}    placeholder="Estado"
-          options={[{value:"activa",label:"Activa"},{value:"reservada",label:"Reservada"},{value:"vendida",label:"Vendida"},{value:"alquilada",label:"Alquilada"},{value:"cerrada",label:"Cerrada"}]} />
-        <StyledSelect value={filterType}      onChange={setFilterType}      placeholder="Tipo"
-          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l as string }))} />
+        <StyledSelect value={filterOp} onChange={setFilterOp} placeholder="Operación"
+          options={[{ value: "venta", label: "Venta" }, { value: "alquiler", label: "Alquiler" }, { value: "vacacional", label: "Vacacional" }]} />
+        <StyledSelect value={filterStatus} onChange={setFilterStatus} placeholder="Estado"
+          options={[{ value: "activa", label: "Activa" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "alquilada", label: "Alquilada" }, { value: "cerrada", label: "Cerrada" }]} />
+        <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo"
+          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))} />
         <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio"
-          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] as string }))} />
+          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] }))} />
 
         {activeFilters.length > 0 && (
           <button
@@ -994,7 +1004,7 @@ export default function PropiedadesPage() {
           {selected.size > 0 && (
             <motion.div
               initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
               style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
               <span style={{ fontSize: "12px", color: "var(--p-text-3)", paddingRight: 2 }}>
@@ -1018,9 +1028,9 @@ export default function PropiedadesPage() {
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             style={{ display: "flex", flexWrap: "wrap", gap: 6, overflow: "hidden" }}
           >
-            {filterOp        && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`}              onRemove={() => setFilterOp("")} />}
-            {filterStatus    && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
-            {filterType      && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`}         onRemove={() => setFilterType("")} />}
+            {filterOp && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`} onRemove={() => setFilterOp("")} />}
+            {filterStatus && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
+            {filterType && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`} onRemove={() => setFilterType("")} />}
             {filterMunicipio && <FilterChip label={`Municipio: ${MUNICIPIO_LABEL[filterMunicipio] ?? filterMunicipio}`} onRemove={() => setFilterMunicipio("")} />}
           </motion.div>
         )}
@@ -1045,8 +1055,8 @@ export default function PropiedadesPage() {
         {/* Skeleton */}
         {loading && (
           <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 1 }}>
-            {[...Array(10)].map((_,i) => (
-              <div key={i} style={{ height: 50, display: "flex", alignItems: "center", gap: 10, opacity: 1 - i*0.08 }}>
+            {[...Array(10)].map((_, i) => (
+              <div key={i} style={{ height: 50, display: "flex", alignItems: "center", gap: 10, opacity: 1 - i * 0.08 }}>
                 <div style={{ width: 14, height: 14, borderRadius: 3, background: "var(--p-surface-3)" }} />
                 <div style={{ width: 40, height: 28, borderRadius: 3, background: "var(--p-surface-3)" }} />
                 <div style={{ flex: 1, height: 13, borderRadius: 3, background: "var(--p-surface-3)", maxWidth: 260 }} />
@@ -1064,11 +1074,11 @@ export default function PropiedadesPage() {
             <motion.div layout>
               <AnimatePresence mode="popLayout" initial={false}>
                 {visible.map(p => {
-                  const isExpanded  = quickEditId === p.id;
-                  const isFlash     = flashIds.has(p.id);
-                  const isSelected  = selected.has(p.id);
-                  const isDeleting  = deletingIds.has(p.id);
-                  const dimmed      = quickEditId !== null && !isExpanded;
+                  const isExpanded = quickEditId === p.id;
+                  const isFlash = flashIds.has(p.id);
+                  const isSelected = selected.has(p.id);
+                  const isDeleting = deletingIds.has(p.id);
+                  const dimmed = quickEditId !== null && !isExpanded;
 
                   return (
                     <motion.div
@@ -1084,12 +1094,12 @@ export default function PropiedadesPage() {
                       exit={{
                         opacity: 0,
                         scaleY: 0,
-                        transition: { duration: 0.22, ease: [0.16,1,0.3,1] },
+                        transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
                       }}
                       transition={{
-                        layout: { duration: 0.28, ease: [0.16,1,0.3,1] },
+                        layout: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
                         opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
-                        scaleY: { duration: 0.22, ease: [0.16,1,0.3,1] },
+                        scaleY: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
                       }}
                       style={{
                         transformOrigin: "top center",
@@ -1143,8 +1153,8 @@ export default function PropiedadesPage() {
                         <div style={{ minWidth: 0, paddingRight: 10 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                             <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--p-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</span>
-                            {p.featured  && <span style={{ borderRadius:"3px", background:"rgba(251,176,64,0.12)", color:"#FBB040", border:"1px solid rgba(251,176,64,0.2)", fontSize:"9px", fontWeight:700, padding:"2px 5px", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0, whiteSpace:"nowrap" }}>Destacada</span>}
-                            {p.exclusive && <span style={{ borderRadius:"3px", background:"rgba(74,222,128,0.1)",  color:"#4ADE80",  border:"1px solid rgba(74,222,128,0.2)",  fontSize:"9px", fontWeight:700, padding:"2px 5px", textTransform:"uppercase", letterSpacing:"0.06em", flexShrink:0, whiteSpace:"nowrap" }}>Exclusiva</span>}
+                            {p.featured && <span style={{ borderRadius: "3px", background: "rgba(251,176,64,0.12)", color: "#FBB040", border: "1px solid rgba(251,176,64,0.2)", fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, whiteSpace: "nowrap" }}>Destacada</span>}
+                            {p.exclusive && <span style={{ borderRadius: "3px", background: "rgba(74,222,128,0.1)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.2)", fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, whiteSpace: "nowrap" }}>Exclusiva</span>}
                           </div>
                           <p style={{ fontSize: "11px", color: "var(--p-text-3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {p.municipio ? MUNICIPIO_LABEL[p.municipio] ?? p.municipio : "Sin ubicación"} · {PROP_TYPE_LABEL[p.property_type] ?? p.property_type}
