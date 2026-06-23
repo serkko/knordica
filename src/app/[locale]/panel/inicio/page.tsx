@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react-hooks/immutability */
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { usePanelRole } from "@/hooks/usePanelRole";
 import { createClient } from "@/lib/supabase/client";
@@ -157,6 +160,8 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Componente principal ──
 export default function InicioPanelPage() {
+  const params = useParams();
+  const locale = params?.locale || "es";
   const { role, loading: roleLoading } = usePanelRole();
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [recent, setRecent] = useState<RecentProperty[]>([]);
@@ -418,8 +423,8 @@ export default function InicioPanelPage() {
           <p className="text-[12px] max-w-[260px]" style={{ color: "var(--p-text-2)" }}>
             Explora el catálogo y guarda las propiedades que te interesen
           </p>
-          <a
-            href="/"
+          <Link
+            href={`/${locale}`}
             className="mt-4 inline-flex items-center gap-1.5 text-[12px] px-4 py-2"
             style={{
               borderRadius: "var(--p-radius)",
@@ -429,7 +434,7 @@ export default function InicioPanelPage() {
             }}
           >
             Ver catálogo
-          </a>
+          </Link>
         </motion.div>
       )}
     </div>
