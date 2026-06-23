@@ -798,7 +798,6 @@ export default function PropiedadesPage() {
   };
 
   const handleDuplicate = async (id: string) => {
-    const supabase = createClient();
     const prop = allProps.find(p => p.id === id);
     if (!prop) return;
     const newSlug = `${prop.slug}-copia-${Date.now().toString(36)}`;
@@ -1040,15 +1039,6 @@ export default function PropiedadesPage() {
                   const isSelected = selected.has(p.id);
                   const dimmed     = quickEditId !== null && !isExpanded;
 
-                  // Row background: expanded row gets accent highlight, flash gets green, selected gets soft accent
-                  const rowBg = isExpanded
-                    ? "rgba(var(--p-accent-rgb, 99,255,196), 0.06)"
-                    : isFlash
-                      ? "rgba(74,222,128,0.07)"
-                      : isSelected
-                        ? "var(--p-accent-soft)"
-                        : "rgba(0,0,0,0)";
-
                   return (
                     <div key={p.id}>
                       <motion.div
@@ -1082,13 +1072,12 @@ export default function PropiedadesPage() {
                           outline: isFlash ? "1px solid rgba(74,222,128,0.2)" : "none",
                           outlineOffset: "-1px",
                           transition: "outline 0.6s",
-                          // Expanded row: left accent bar + subtle top/bottom shadow to "lift" it
                           borderLeft: isExpanded ? "3px solid var(--p-accent)" : "3px solid transparent",
                           boxShadow: isExpanded ? "0 2px 0 0 rgba(99,220,180,0.15) inset, 0 -1px 0 0 rgba(99,220,180,0.1) inset" : "none",
                         }}
                         onClick={() => setQuickEditId(v => v === p.id ? null : p.id)}
                       >
-                        {/* Checkbox — solo muestra filled si esta fila está seleccionada */}
+                        {/* Checkbox */}
                         <button onClick={e => { e.stopPropagation(); toggleSelect(p.id); }} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                           {isSelected
                             ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} />
@@ -1143,7 +1132,7 @@ export default function PropiedadesPage() {
                         </div>
                       </motion.div>
 
-                      {/* Quick edit — debajo de la misma fila, sin header propio */}
+                      {/* Quick edit */}
                       <AnimatePresence>
                         {isExpanded && (
                           <QuickEditRow
