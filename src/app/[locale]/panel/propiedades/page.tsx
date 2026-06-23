@@ -350,10 +350,11 @@ function ChipToggle({ active, onClick, label }: { active: boolean; onClick: () =
 }
 
 // ─── Quick Edit ───────────────────────────────────────────────────────────────
-function QuickEditRow({ property, onClose, onSaved }: {
+function QuickEditRow({ property, onClose, onSaved, onEdit }: {
   property: Property;
   onClose: () => void;
   onSaved: (next: Partial<Property> & { id: string }) => void;
+  onEdit: () => void;
 }) {
   const [title, setTitle]         = useState(property.title);
   const [price, setPrice]         = useState(fmtNum(property.price ?? 0));
@@ -460,14 +461,14 @@ function QuickEditRow({ property, onClose, onSaved }: {
     >
       <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
 
-        {/* Fila 1: Título */}
+        {/* Fila 1: Título (ancho completo) */}
         <div>
           {label("Título")}
           <input value={title} onChange={e => setTitle(e.target.value)} style={inputS} placeholder="Sin título" />
         </div>
 
-        {/* Fila 2: Precio + Operación + Estado */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 130px", gap: 10 }}>
+        {/* Fila 2: Precio (más ancho) + Operación + Estado + Tipo + Municipio */}
+        <div style={{ display: "grid", gridTemplateColumns: "200px 140px 140px 180px 160px", gap: 10, flexWrap: "wrap" }}>
           <div>
             {label("Precio (USD)")}
             <div style={{ position: "relative" }}>
@@ -475,7 +476,6 @@ function QuickEditRow({ property, onClose, onSaved }: {
               <input
                 value={price}
                 onChange={e => {
-                  // allow digits only, reformat with dots
                   const raw = e.target.value.replace(/[^0-9]/g, "");
                   setPrice(raw ? fmtNum(Number(raw)) : "");
                 }}
@@ -503,12 +503,8 @@ function QuickEditRow({ property, onClose, onSaved }: {
               { value: "cerrada",   label: "Cerrada" },
             ]} />
           </div>
-        </div>
-
-        {/* Fila 3: Tipo + Municipio */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div>
-            {label("Tipo")}
+            {label("Tipo de propiedad")}
             <StyledSelectFull value={propType} onChange={setPropType}
               options={Object.entries(PROP_TYPE_LABEL).map(([v,l]) => ({ value: v, label: l }))}
             />
@@ -521,7 +517,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
           </div>
         </div>
 
-        {/* Campos dinámicos: residencial */}
+        {/* Campos dinámicos: residencial — Hab. Baños ½Baño Estac. Área construida Área total */}
         <AnimatePresence>
           {isResidential && (
             <motion.div
@@ -530,17 +526,19 @@ function QuickEditRow({ property, onClose, onSaved }: {
               transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                <div>{label("Hab.")}<input value={bedrooms}  onChange={e => setBedrooms(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
+              <div style={{ display: "grid", gridTemplateColumns: "90px 90px 90px 90px 1fr 1fr", gap: 10 }}>
+                <div>{label("Habitaciones")}<input value={bedrooms}  onChange={e => setBedrooms(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
                 <div>{label("Baños")}<input value={bathrooms} onChange={e => setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
-                <div>{label("½ baño")}<input value={halfBath}  onChange={e => setHalfBath(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
-                <div>{label("Est.")}<input value={parking}   onChange={e => setParking(e.target.value)}   type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Medio baño")}<input value={halfBath}  onChange={e => setHalfBath(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Estacionam.")}<input value={parking}   onChange={e => setParking(e.target.value)}   type="number" min="0" style={numS} placeholder="—" /></div>
+                <div>{label("Área construida (m²)")}<input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
+                <div>{label("Área total (m²)")}<input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Parking solo para no-residencial */}
+        {/* Parking solo para no-residencial con parking */}
         <AnimatePresence>
           {!isResidential && hasParking && (
             <motion.div
@@ -549,26 +547,32 @@ function QuickEditRow({ property, onClose, onSaved }: {
               transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 10 }}>
-                <div>{label("Estacion.")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+              <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 10 }}>
+                <div>{label("Estacionam.")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
+                {hasAreaBuilt && !isTerrain && (
+                  <div>{label("Área construida (m²)")}<input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
+                )}
+                <div>{label("Área total (m²)")}<input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Área */}
-        <div style={{ display: "grid", gridTemplateColumns: hasAreaBuilt && !isTerrain ? "1fr 1fr" : "1fr", gap: 10 }}>
-          {hasAreaBuilt && !isTerrain && (
-            <div>
-              {label("Área construida (m²)")}
-              <input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
-            </div>
+        {/* Terreno: solo áreas */}
+        <AnimatePresence>
+          {isTerrain && (
+            <motion.div
+              key="terrain"
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 400 }}>
+                <div>{label("Área total (m²)")}<input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" /></div>
+              </div>
+            </motion.div>
           )}
-          <div>
-            {label("Área total (m²)")}
-            <input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
-          </div>
-        </div>
+        </AnimatePresence>
 
         {/* Chips Destacada / Exclusiva */}
         <div>
@@ -587,6 +591,22 @@ function QuickEditRow({ property, onClose, onSaved }: {
           onClick={onClose}
           style={{ borderRadius: "var(--p-radius)", border: "1px solid var(--p-border)", color: "var(--p-text-2)", padding: "7px 16px", fontSize: "13px", background: "none", cursor: "pointer" }}
         >Cancelar</button>
+        {/* Botón Editar completo */}
+        <button
+          onClick={onEdit}
+          style={{
+            borderRadius: "var(--p-radius)",
+            border: "1px solid var(--p-border)",
+            color: "var(--p-text-2)",
+            padding: "7px 14px",
+            fontSize: "13px",
+            background: "none",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          <Pencil size={12} /> Editar completo
+        </button>
         <button
           onClick={handleSave}
           disabled={saving || saved}
@@ -783,8 +803,6 @@ export default function PropiedadesPage() {
     if (!prop) return;
     const newSlug = `${prop.slug}-copia-${Date.now().toString(36)}`;
 
-    // Use a server action / API route to bypass client-side RLS on insert.
-    // Fallback: use supabase with service role via API endpoint.
     const res = await fetch("/api/panel/duplicate-property", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -950,7 +968,9 @@ export default function PropiedadesPage() {
               transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
               style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
-              <span style={{ fontSize: "12px", color: "var(--p-text-3)", paddingRight: 2 }}>{selected.size} sel.</span>
+              <span style={{ fontSize: "12px", color: "var(--p-text-3)", paddingRight: 2 }}>
+                {selected.size} {selected.size === 1 ? "seleccionado" : "seleccionados"}
+              </span>
               <button style={btnGhost} onClick={() => { Array.from(selected).forEach(handleDuplicate); setSelected(new Set()); }}><Copy size={11} />Duplicar</button>
               <button style={btnGhost} onClick={() => handleBulkStatus("activa")}>Activar</button>
               <button style={btnGhost} onClick={() => handleBulkStatus("reservada")}>Reservar</button>
@@ -1020,6 +1040,15 @@ export default function PropiedadesPage() {
                   const isSelected = selected.has(p.id);
                   const dimmed     = quickEditId !== null && !isExpanded;
 
+                  // Row background: expanded row gets accent highlight, flash gets green, selected gets soft accent
+                  const rowBg = isExpanded
+                    ? "rgba(var(--p-accent-rgb, 99,255,196), 0.06)"
+                    : isFlash
+                      ? "rgba(74,222,128,0.07)"
+                      : isSelected
+                        ? "var(--p-accent-soft)"
+                        : "rgba(0,0,0,0)";
+
                   return (
                     <div key={p.id}>
                       <motion.div
@@ -1029,15 +1058,19 @@ export default function PropiedadesPage() {
                         animate={{
                           opacity: dimmed ? 0.38 : 1,
                           y: 0,
-                          backgroundColor: isFlash
-                            ? "rgba(74,222,128,0.07)"
-                            : isSelected ? "var(--p-accent-soft)" : "rgba(0,0,0,0)",
+                          backgroundColor: isExpanded
+                            ? "rgba(99,220,180,0.07)"
+                            : isFlash
+                              ? "rgba(74,222,128,0.07)"
+                              : isSelected
+                                ? "var(--p-accent-soft)"
+                                : "rgba(0,0,0,0)",
                         }}
                         exit={{ opacity: 0, scaleY: 0.95 }}
                         transition={{
                           layout: { duration: 0.22, ease: [0.16,1,0.3,1] },
                           opacity: { duration: dimmed ? 0.18 : 0.12 },
-                          backgroundColor: { duration: 0.6 },
+                          backgroundColor: { duration: isFlash ? 0.6 : 0.22 },
                         }}
                         style={{
                           display: "grid",
@@ -1049,14 +1082,16 @@ export default function PropiedadesPage() {
                           outline: isFlash ? "1px solid rgba(74,222,128,0.2)" : "none",
                           outlineOffset: "-1px",
                           transition: "outline 0.6s",
-                          borderLeft: isExpanded ? "2px solid var(--p-accent)" : "2px solid transparent",
+                          // Expanded row: left accent bar + subtle top/bottom shadow to "lift" it
+                          borderLeft: isExpanded ? "3px solid var(--p-accent)" : "3px solid transparent",
+                          boxShadow: isExpanded ? "0 2px 0 0 rgba(99,220,180,0.15) inset, 0 -1px 0 0 rgba(99,220,180,0.1) inset" : "none",
                         }}
                         onClick={() => setQuickEditId(v => v === p.id ? null : p.id)}
                       >
-                        {/* Checkbox */}
+                        {/* Checkbox — solo muestra filled si esta fila está seleccionada */}
                         <button onClick={e => { e.stopPropagation(); toggleSelect(p.id); }} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          {isSelected || selected.size > 0
-                            ? <CheckSquare size={14} style={{ color: isSelected ? "var(--p-accent)" : "var(--p-text-3)" }} />
+                          {isSelected
+                            ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} />
                             : <Square size={14} style={{ color: "var(--p-text-3)" }} />}
                         </button>
 
@@ -1108,13 +1143,14 @@ export default function PropiedadesPage() {
                         </div>
                       </motion.div>
 
-                      {/* Quick edit */}
+                      {/* Quick edit — debajo de la misma fila, sin header propio */}
                       <AnimatePresence>
                         {isExpanded && (
                           <QuickEditRow
                             property={p}
                             onClose={() => setQuickEditId(null)}
                             onSaved={next => { handleSaved(next); setQuickEditId(null); }}
+                            onEdit={() => router.push(`/${locale}/panel/propiedades/${p.id}/editar`)}
                           />
                         )}
                       </AnimatePresence>
