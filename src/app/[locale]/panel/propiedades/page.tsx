@@ -75,11 +75,10 @@ const MUNICIPIO_LABEL: Record<string, string> = {
   rangel: "Rangel",
 };
 
-// Format number with thousand separators (dots)
 function fmtNum(n: number | string): string {
   const num = typeof n === "string" ? Number(n) : n;
   if (isNaN(num)) return "";
-  return Math.round(num).toLocaleString("es-VE"); // uses dots as thousands sep
+  return Math.round(num).toLocaleString("es-VE");
 }
 function fmtUSD(price: number) {
   return "$" + fmtNum(price);
@@ -284,7 +283,7 @@ function DropdownItem({ label, active, muted, onClick }: {
       onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%", textAlign: "left",
-        padding: "7px 12px",
+        padding: "8px 12px",
         fontSize: "13px",
         color: muted ? "var(--p-text-3)" : active ? "var(--p-accent)" : "var(--p-text)",
         background: active
@@ -304,7 +303,7 @@ function DropdownItem({ label, active, muted, onClick }: {
   );
 }
 
-// ─── StatusBadge ──────────────────────────────────────────────────────────────
+// ─── StatusBadge — inline-block, no ocupa ancho completo ─────────────────────
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_CFG[status] ?? STATUS_CFG.cerrada;
   return (
@@ -377,7 +376,6 @@ function QuickEditRow({ property, onClose, onSaved }: {
   const hasParking    = HAS_PARKING.has(propType);
   const isTerrain     = propType === "terreno_lote";
 
-  // Raw price for DB (strip dots)
   const rawPrice = () => Number(price.replace(/\./g, "").replace(/[^0-9]/g, "")) || 0;
 
   const inputS: React.CSSProperties = {
@@ -458,7 +456,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       style={{ overflow: "hidden", borderBottom: "1px solid var(--p-border)", background: "var(--p-surface-2)" }}
     >
-      <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "16px 20px", maxWidth: 760, display: "flex", flexDirection: "column", gap: 12 }}>
 
         {/* Fila 1: Título */}
         <div>
@@ -467,7 +465,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
         </div>
 
         {/* Fila 2: Precio + Operación + Estado */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 130px", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "160px 120px 120px", gap: 10 }}>
           <div>
             {label("Precio (USD)")}
             <div style={{ position: "relative" }}>
@@ -475,7 +473,6 @@ function QuickEditRow({ property, onClose, onSaved }: {
               <input
                 value={price}
                 onChange={e => {
-                  // allow digits only, reformat with dots
                   const raw = e.target.value.replace(/[^0-9]/g, "");
                   setPrice(raw ? fmtNum(Number(raw)) : "");
                 }}
@@ -506,7 +503,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
         </div>
 
         {/* Fila 3: Tipo + Municipio */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 400 }}>
           <div>
             {label("Tipo")}
             <StyledSelectFull value={propType} onChange={setPropType}
@@ -530,7 +527,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
               transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 72px)", gap: 10 }}>
                 <div>{label("Hab.")}<input value={bedrooms}  onChange={e => setBedrooms(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
                 <div>{label("Baños")}<input value={bathrooms} onChange={e => setBathrooms(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
                 <div>{label("½ baño")}<input value={halfBath}  onChange={e => setHalfBath(e.target.value)}  type="number" min="0" style={numS} placeholder="—" /></div>
@@ -549,7 +546,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
               transition={{ duration: 0.22, ease: [0.16,1,0.3,1] }}
               style={{ overflow: "hidden" }}
             >
-              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "72px", gap: 10 }}>
                 <div>{label("Estacion.")}<input value={parking} onChange={e => setParking(e.target.value)} type="number" min="0" style={numS} placeholder="—" /></div>
               </div>
             </motion.div>
@@ -557,15 +554,15 @@ function QuickEditRow({ property, onClose, onSaved }: {
         </AnimatePresence>
 
         {/* Área */}
-        <div style={{ display: "grid", gridTemplateColumns: hasAreaBuilt && !isTerrain ? "1fr 1fr" : "1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: hasAreaBuilt && !isTerrain ? "120px 120px" : "120px", gap: 10 }}>
           {hasAreaBuilt && !isTerrain && (
             <div>
-              {label("Área construida (m²)")}
+              {label("Construida (m²)")}
               <input value={areaBuilt} onChange={e => setAreaBuilt(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
             </div>
           )}
           <div>
-            {label("Área total (m²)")}
+            {label("Total (m²)")}
             <input value={areaTotal} onChange={e => setAreaTotal(e.target.value)} type="number" min="0" style={inputS} placeholder="—" />
           </div>
         </div>
@@ -582,7 +579,7 @@ function QuickEditRow({ property, onClose, onSaved }: {
       </div>
 
       {/* Footer */}
-      <div style={{ padding: "0 20px 16px", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+      <div style={{ padding: "0 20px 16px", display: "flex", justifyContent: "flex-end", gap: 8, maxWidth: 780 }}>
         <button
           onClick={onClose}
           style={{ borderRadius: "var(--p-radius)", border: "1px solid var(--p-border)", color: "var(--p-text-2)", padding: "7px 16px", fontSize: "13px", background: "none", cursor: "pointer" }}
@@ -615,6 +612,7 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   onDelete: (id: string) => void; onDuplicate: (id: string) => void;
 }) {
   const router = useRouter();
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const items: { icon: React.ElementType; label: string; action: () => void; danger?: boolean }[] = [
     { icon: Eye,    label: "Ver en sitio",    action: () => window.open(`/${locale}/${slug}`, "_blank") },
     { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/${id}/editar`) },
@@ -643,7 +641,15 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
               {items.map(({ icon: Icon, label, action, danger }) => (
                 <button key={label}
                   onClick={e => { e.stopPropagation(); action(); onClose(); }}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", fontSize: "13px", color: danger ? "var(--p-red)" : "var(--p-text-2)", background: "none", border: "none", cursor: "pointer" }}
+                  onMouseEnter={() => setHoveredItem(label)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", fontSize: "13px",
+                    color: danger ? "var(--p-red)" : hoveredItem === label ? "var(--p-text)" : "var(--p-text-2)",
+                    background: hoveredItem === label ? (danger ? "rgba(248,113,113,0.08)" : "var(--p-surface-3)") : "none",
+                    border: "none", cursor: "pointer",
+                    transition: "background 0.1s, color 0.1s",
+                  }}
                 >
                   <Icon size={13} />{label}
                 </button>
@@ -656,7 +662,7 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   );
 }
 
-// ─── FilterChip (blue, border-radius 3px) ────────────────────────────────────
+// ─── FilterChip ───────────────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span style={{
@@ -778,13 +784,10 @@ export default function PropiedadesPage() {
   };
 
   const handleDuplicate = async (id: string) => {
-    const supabase = createClient();
     const prop = allProps.find(p => p.id === id);
     if (!prop) return;
     const newSlug = `${prop.slug}-copia-${Date.now().toString(36)}`;
 
-    // Use a server action / API route to bypass client-side RLS on insert.
-    // Fallback: use supabase with service role via API endpoint.
     const res = await fetch("/api/panel/duplicate-property", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -811,6 +814,7 @@ export default function PropiedadesPage() {
       console.error("[Duplicar] Error:", err.error);
       return;
     }
+    showSuccess("Propiedad duplicada");
     fetchAll();
   };
 
@@ -876,9 +880,10 @@ export default function PropiedadesPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--p-text)", margin: 0 }}>Propiedades</h2>
-          <AnimatePresence>
-            {successMsg && (
+          <AnimatePresence mode="wait">
+            {successMsg ? (
               <motion.span
+                key="success"
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -6 }}
@@ -887,15 +892,20 @@ export default function PropiedadesPage() {
               >
                 <Check size={12} /> {successMsg}
               </motion.span>
+            ) : (
+              <motion.span
+                key="count"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ fontSize: "13px", color: "var(--p-text-3)" }}
+              >
+                {loading ? "Cargando..."
+                  : dbError ? ""
+                  : `${visible.length} de ${allProps.length}`}
+              </motion.span>
             )}
           </AnimatePresence>
-          {!successMsg && (
-            <span style={{ fontSize: "13px", color: "var(--p-text-3)" }}>
-              {loading ? "Cargando..."
-                : dbError ? ""
-                : `${visible.length} de ${allProps.length}`}
-            </span>
-          )}
         </div>
         <button
           onClick={() => router.push(`/${locale}/panel/propiedades/nueva`)}
@@ -907,7 +917,6 @@ export default function PropiedadesPage() {
 
       {/* Toolbar */}
       <div style={{ ...cardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: 8 }}>
-        {/* Search */}
         <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 300 }}>
           <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--p-text-3)", pointerEvents: "none" }} />
           {search && (
@@ -942,7 +951,6 @@ export default function PropiedadesPage() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Bulk actions — right */}
         <AnimatePresence>
           {selected.size > 0 && (
             <motion.div
@@ -987,7 +995,10 @@ export default function PropiedadesPage() {
           <span />
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("created_at")}>Propiedad <ArrowUpDown size={9} /></button>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("operation")}>Op. <ArrowUpDown size={9} /></button>
-          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9} /></button>
+          {/* Estado — centrado para que el badge quede centrado en la columna */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9} /></button>
+          </div>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("price")}>Precio <ArrowUpDown size={9} /></button>
           <span style={{ fontSize: "11px", color: "var(--p-text-3)", fontWeight: 500 }}>Datos</span>
           <span />
@@ -1082,8 +1093,10 @@ export default function PropiedadesPage() {
                         {/* Operation */}
                         <span style={{ fontSize: "12px", color: "var(--p-text-2)" }}>{OP_LABEL[p.operation] ?? p.operation}</span>
 
-                        {/* Status */}
-                        <StatusBadge status={p.status} />
+                        {/* Status — inline-block para que el badge no ocupe ancho completo */}
+                        <div>
+                          <StatusBadge status={p.status} />
+                        </div>
 
                         {/* Price */}
                         <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--p-text)", fontVariantNumeric: "tabular-nums" }}>

@@ -18,8 +18,6 @@ import {
   TrendingUp,
   LogOut,
   ExternalLink,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from "lucide-react";
 import { useState } from "react";
 import type { PanelRole } from "@/types/panel";
@@ -52,6 +50,21 @@ const ROLE_LABELS: Record<PanelRole, string> = {
   user: "Usuario", agent: "Agente", senior: "Senior", admin: "Administrador",
 };
 
+// Sidebar toggle icon — estilo panel AI (columna izquierda + flecha)
+function SidebarToggleIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="1.4"/>
+      <line x1="5.5" y1="1" x2="5.5" y2="16" stroke="currentColor" strokeWidth="1.4"/>
+      {collapsed ? (
+        <path d="M8.5 5.5L11 8.5L8.5 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      ) : (
+        <path d="M10.5 5.5L8 8.5L10.5 11.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      )}
+    </svg>
+  );
+}
+
 interface PanelSidebarProps {
   role: PanelRole;
   userName: string;
@@ -83,7 +96,7 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 64 : 228 }}
+      animate={{ width: collapsed ? 64 : 232 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col flex-shrink-0"
       style={{
@@ -131,7 +144,7 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2" style={{ scrollbarWidth: "none" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {visibleItems.map(item => {
             const active = isActive(item.href);
             const Icon   = item.icon;
@@ -140,9 +153,9 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
                 <motion.div
                   className="relative flex items-center cursor-pointer select-none"
                   style={{
-                    height: 38,
-                    padding: "0 10px",
-                    gap: 11,
+                    height: 42,
+                    padding: "0 12px",
+                    gap: 12,
                     borderRadius: "6px",
                     color: active ? "var(--p-text)" : "var(--p-text-2)",
                     background: active ? "var(--p-surface-3)" : "transparent",
@@ -168,7 +181,7 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
                   )}
 
                   <Icon
-                    size={17}
+                    size={18}
                     style={{ color: active ? "var(--p-accent)" : "inherit", flexShrink: 0 }}
                     strokeWidth={active ? 2.5 : 1.75}
                   />
@@ -180,7 +193,7 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -6 }}
                         transition={{ duration: 0.18 }}
-                        style={{ fontSize: "13.5px", fontWeight: active ? 500 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                        style={{ fontSize: "14px", fontWeight: active ? 500 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                       >
                         {item.label}
                       </motion.span>
@@ -207,15 +220,15 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
         <Link href={`/${locale}`}>
           <motion.div
             className="flex items-center cursor-pointer mb-0.5"
-            style={{ height: 36, padding: "0 10px", gap: 10, borderRadius: "6px", color: "var(--p-text-3)" }}
+            style={{ height: 40, padding: "0 12px", gap: 10, borderRadius: "6px", color: "var(--p-text-3)" }}
             whileHover={{ background: "var(--p-surface-2)", color: "var(--p-text-2)" }}
             transition={{ duration: 0.15 }}
           >
-            <ExternalLink size={15} strokeWidth={1.75} style={{ flexShrink: 0 }} />
+            <ExternalLink size={16} strokeWidth={1.75} style={{ flexShrink: 0 }} />
             <AnimatePresence>
               {!collapsed && (
                 <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  style={{ fontSize: "13px", whiteSpace: "nowrap" }}
+                  style={{ fontSize: "14px", whiteSpace: "nowrap" }}
                 >
                   Ir al sitio
                 </motion.span>
@@ -229,15 +242,15 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
           onClick={handleSignOut}
           disabled={signingOut}
           className="w-full flex items-center cursor-pointer mb-2"
-          style={{ height: 36, padding: "0 10px", gap: 10, borderRadius: "6px", color: "var(--p-text-3)", background: "none", border: "none" }}
+          style={{ height: 40, padding: "0 12px", gap: 10, borderRadius: "6px", color: "var(--p-text-3)", background: "none", border: "none" }}
           whileHover={{ background: "rgba(192,96,90,0.12)", color: "#C0605A" }}
           transition={{ duration: 0.15 }}
         >
-          <LogOut size={15} strokeWidth={1.75} style={{ flexShrink: 0 }} />
+          <LogOut size={16} strokeWidth={1.75} style={{ flexShrink: 0 }} />
           <AnimatePresence>
             {!collapsed && (
               <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ fontSize: "13px", whiteSpace: "nowrap" }}
+                style={{ fontSize: "14px", whiteSpace: "nowrap" }}
               >
                 {signingOut ? "Saliendo..." : "Cerrar sesión"}
               </motion.span>
@@ -248,10 +261,10 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
         {/* Avatar */}
         <div
           className="flex items-center"
-          style={{ gap: 10, padding: "8px 10px", borderRadius: "6px", background: "var(--p-surface-2)" }}
+          style={{ gap: 10, padding: "8px 12px", borderRadius: "6px", background: "var(--p-surface-2)" }}
         >
           <div
-            style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, overflow: "hidden", background: "var(--p-surface-3)", color: "var(--p-accent)" }}
+            style={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, overflow: "hidden", background: "var(--p-surface-3)", color: "var(--p-accent)" }}
           >
             {avatarUrl
               ? <img src={avatarUrl} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -263,23 +276,23 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
                 initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                 style={{ minWidth: 0, flex: 1 }}
               >
-                <p style={{ fontSize: "12px", fontWeight: 500, color: "var(--p-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</p>
-                <p style={{ fontSize: "10px", color: "var(--p-text-3)", margin: 0 }}>{ROLE_LABELS[role]}</p>
+                <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--p-text)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</p>
+                <p style={{ fontSize: "11px", color: "var(--p-text-3)", margin: 0 }}>{ROLE_LABELS[role]}</p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Collapse toggle — estilo sidebar AI */}
+      {/* Collapse toggle — sidebar panel icon */}
       <motion.button
         onClick={() => setCollapsed(v => !v)}
         style={{
           position: "absolute",
           top: 14,
-          right: -14,
-          width: 28,
-          height: 28,
+          right: -15,
+          width: 30,
+          height: 30,
           borderRadius: "6px",
           background: "var(--p-surface-2)",
           border: "1px solid var(--p-border)",
@@ -296,9 +309,7 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
         transition={{ duration: 0.15 }}
         title={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
       >
-        {collapsed
-          ? <PanelLeftOpen  size={15} strokeWidth={1.75} />
-          : <PanelLeftClose size={15} strokeWidth={1.75} />}
+        <SidebarToggleIcon collapsed={collapsed} />
       </motion.button>
     </motion.aside>
   );
