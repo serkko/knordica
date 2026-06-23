@@ -668,6 +668,18 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   onDelete: (id: string) => void; onDuplicate: (id: string) => void;
 }) {
   const router = useRouter();
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [dropPos, setDropPos] = useState<{ top: number; right: number } | null>(null);
+
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOpen && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    }
+    isOpen ? onClose() : onOpen(id);
+  };
+
   const items: { icon: React.ElementType; label: string; action: () => void; danger?: boolean }[] = [
     { icon: Eye, label: "Ver en sitio", action: () => window.open(`/${locale}/${slug}`, "_blank") },
     { icon: Pencil, label: "Editar completo", action: () => router.push(`/${locale}/panel/propiedades/editar/${id}`) },
@@ -677,21 +689,33 @@ function RowMenu({ id, slug, locale, isOpen, onOpen, onClose, onDelete, onDuplic
   return (
     <div style={{ position: "relative" }}>
       <button
-        onClick={e => { e.stopPropagation(); isOpen ? onClose() : onOpen(id); }}
+        ref={btnRef}
+        onClick={handleOpen}
         style={{ width: 28, height: 28, borderRadius: "var(--p-radius)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--p-text-3)", background: isOpen ? "var(--p-surface-3)" : "transparent", border: "none", cursor: "pointer" }}
       >
         <MoreHorizontal size={15} />
       </button>
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && dropPos && (
           <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={onClose} />
+            <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={e => { e.stopPropagation(); onClose(); }} />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -4 }}
               transition={{ duration: 0.1 }}
-              style={{ position: "absolute", right: 0, top: 32, zIndex: 50, minWidth: 180, background: "var(--p-surface-2)", border: "1px solid var(--p-border)", borderRadius: "var(--p-radius)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", padding: "4px 0" }}
+              style={{
+                position: "fixed",
+                top: dropPos.top,
+                right: dropPos.right,
+                zIndex: 9999,
+                minWidth: 190,
+                background: "var(--p-surface-2)",
+                border: "1px solid var(--p-border)",
+                borderRadius: "var(--p-radius)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
+                padding: "4px 0",
+              }}
             >
               {items.map(({ icon: Icon, label, action, danger }) => (
                 <button key={label}
@@ -902,7 +926,7 @@ export default function PropiedadesPage() {
   };
 
   const activeFilters = [filterOp, filterStatus, filterType, filterMunicipio].filter(Boolean);
-  const COLS = "28px 44px 1.5fr 80px 100px 116px 96px 34px";
+  const COLS = "28px 44px 1.5fr 80px 100px 116px 96px 62px";
 
   const renderDatos = (p: Property) => {
     const parts: string[] = [];
@@ -1136,12 +1160,15 @@ export default function PropiedadesPage() {
                         }}
                         onClick={() => !isDeleting && setQuickEditId(v => v === p.id ? null : p.id)}
                       >
-                        {/* Checkbox */}
-                        <button onClick={e => { e.stopPropagation(); toggleSelect(p.id); }} style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        {/* Checkbox — zona dedicada: solo selecciona, no abre quick-edit */}
+                        <div
+                          onClick={e => { e.stopPropagation(); if (!isDeleting) toggleSelect(p.id); }}
+                          style={{ display: "flex", alignItems: "center", cursor: "pointer", height: "100%" }}
+                        >
                           {isSelected
                             ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} />
                             : <Square size={14} style={{ color: "var(--p-text-3)" }} />}
-                        </button>
+                        </div>
 
                         {/* Thumbnail */}
                         <div style={{ width: 40, height: 28, borderRadius: "3px", overflow: "hidden", background: "var(--p-surface-3)", flexShrink: 0 }}>
@@ -1178,8 +1205,17 @@ export default function PropiedadesPage() {
                         {/* Data */}
                         {renderDatos(p)}
 
-                        {/* Menu */}
-                        <div style={{ display: "flex", justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
+                        {/* Acciones: botón editar completo + menú 3 puntos */}
+                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }} onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={e => { e.stopPropagation(); router.push(`/${locale}/panel/propiedades/editar/${p.id}`); }}
+                            title="Editar completo"
+                            style={{ width: 28, height: 28, borderRadius: "var(--p-radius)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--p-text-3)", background: "transparent", border: "none", cursor: "pointer", transition: "color 0.15s, background 0.15s" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--p-accent)"; (e.currentTarget as HTMLButtonElement).style.background = "var(--p-accent-soft)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--p-text-3)"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                          >
+                            <Pencil size={13} />
+                          </button>
                           <RowMenu
                             id={p.id} slug={p.slug} locale={locale}
                             isOpen={openMenuId === p.id}
