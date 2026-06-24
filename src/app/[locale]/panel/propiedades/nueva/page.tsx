@@ -164,7 +164,7 @@ const INPUT = {
     outline: "none",
     width: "100%",
     resize: "vertical" as const,
-    minHeight: "120px",
+    minHeight: "160px",
   } as React.CSSProperties,
 };
 
@@ -1408,6 +1408,7 @@ export default function NuevaPropiedadPage() {
               onChange={(e) => set("description_es", e.target.value)}
               placeholder="Describe la propiedad con detalle: características, entorno, accesos..."
               style={INPUT.textarea}
+              rows={6}
             />
           </div>
         </div>

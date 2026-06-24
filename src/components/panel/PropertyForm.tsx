@@ -250,7 +250,7 @@ const INPUT = {
     outline: "none",
     width: "100%",
     resize: "vertical" as const,
-    minHeight: "100px",
+    minHeight: "160px",
   } as React.CSSProperties,
 };
 
@@ -528,7 +528,7 @@ function FormSelect({ value, onChange, options, placeholder, disabled }: {
                   key={opt.value}
                   type="button"
                   disabled={isOptionDisabled}
-                  onClick={() => { onChange(opt.value); setOpen(false); }}
+                  onClick={() => { onChange(isActive ? "" : opt.value); setOpen(false); }}
                   style={{
                     width: "100%",
                     textAlign: "left",
@@ -695,7 +695,7 @@ function SearchableFormSelect({ value, onChange, options, placeholder, disabled 
                       key={opt.value}
                       type="button"
                       disabled={isOptionDisabled}
-                      onClick={() => { onChange(opt.value); setOpen(false); }}
+                      onClick={() => { onChange(isActive ? "" : opt.value); setOpen(false); }}
                       style={{
                         width: "100%",
                         textAlign: "left",
@@ -1598,10 +1598,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // ─── SECTION COMPONENTS ───────────────────────────────────────────────────
 
-  // Clasificación — full width at top, always visible
+  // Clasificación — always in left column now
   const sectionClasificacion = (
     <SectionCard title="Clasificación y Publicación" layoutId="sec-clasificacion">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
         <div>
           <Label>Operación</Label>
           <FormSelect
@@ -1640,26 +1640,24 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             ].sort((a, b) => a.label.localeCompare(b.label))}
           />
         </div>
-        <div>
-          <Label>Insignia (Badge)</Label>
-          <FormSelect
-            value={form.listing_badge}
-            onChange={(val) => set("listing_badge", val)}
-            options={[
-              { value: "basico", label: "Básico" },
-              { value: "destacado", label: "Destacado" },
-              { value: "oportunidad", label: "Oportunidad" },
-              { value: "ultima_unidad", label: "Última Unidad" },
-              { value: "exclusivo", label: "Exclusivo" },
-            ].sort((a, b) => a.label.localeCompare(b.label))}
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--p-border)", marginTop: "16px", paddingTop: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px 16px" }}>
+          <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
+          <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
+          <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
+          <Toggle 
+            checked={form.listing_badge === "oportunidad"} 
+            onChange={(v) => set("listing_badge", v ? "oportunidad" : "basico")} 
+            label="Oportunidad" 
+          />
+          <Toggle 
+            checked={form.listing_badge === "ultima_unidad"} 
+            onChange={(v) => set("listing_badge", v ? "ultima_unidad" : "basico")} 
+            label="Última Unidad" 
           />
         </div>
-      </div>
-      <div className="flex flex-wrap gap-x-6 gap-y-3 mt-4 pt-4" style={{ borderTop: "1px solid var(--p-border)" }}>
-        <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
-        <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
-        <Toggle checked={form.new_listing} onChange={(v) => set("new_listing", v)} label="Nueva publicación" />
-        <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
       </div>
     </SectionCard>
   );
@@ -1667,25 +1665,29 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   // Contenido multi-idioma — always left
   const sectionContenido = (
     <SectionCard title="Contenido de la publicación" layoutId="sec-contenido">
-      <div className="space-y-4">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+      <div className="space-y-6">
+        {/* Sección en Español */}
+        <div className="space-y-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Español</div>
           <div>
             <Label>Título (Español)</Label>
             <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
           </div>
           <div>
+            <Label>Descripción (Español)</Label>
+            <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} rows={6} />
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--p-border)", paddingTop: "16px" }} className="space-y-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Inglés (Opcional)</div>
+          <div>
             <Label>Título (Inglés)</Label>
             <input value={form.title_en} onChange={(e) => set("title_en", e.target.value)} placeholder="Ej: Duplex apartment in La Pedregosa" style={INPUT.base} />
           </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div>
-            <Label>Descripción (Español)</Label>
-            <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} />
-          </div>
           <div>
             <Label>Descripción (Inglés)</Label>
-            <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} />
+            <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} rows={6} />
           </div>
         </div>
       </div>
@@ -2058,13 +2060,18 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             <Label>Ocupantes actuales</Label>
             <NumberStepper value={form.occupants_count} onChange={(val) => set("occupants_count", val)} min={0} />
           </div>
-          <div>
-            <Label>Monto depósito (USD)</Label>
-            <FormattedNumberInput value={form.deposit_amount} onChange={(val) => set("deposit_amount", val)} style={INPUT.base} />
-          </div>
+          {form.deposit_required && (
+            <div>
+              <Label>Monto depósito (USD)</Label>
+              <FormattedNumberInput value={form.deposit_amount} onChange={(val) => set("deposit_amount", val)} style={INPUT.base} />
+            </div>
+          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px 16px", borderTop: "1px solid var(--p-border)", paddingTop: "12px" }}>
-          <Toggle checked={form.deposit_required} onChange={(v) => set("deposit_required", v)} label="Requiere depósito" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px 16px", borderTop: "1px solid var(--p-border)", paddingTop: "12px" }}>
+          <Toggle checked={form.deposit_required} onChange={(v) => {
+            set("deposit_required", v);
+            if (!v) set("deposit_amount", "");
+          }} label="Requiere depósito" />
           <YesNoSelector value={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
           <YesNoSelector value={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
           <YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
@@ -2222,15 +2229,12 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       )}
 
       <LayoutGroup id={`prop-form-${propertyId}`}>
-        {/* Clasificación — Full width at top */}
-        <motion.div layout className="mb-4">
-          {sectionClasificacion}
-        </motion.div>
 
         {/* Two column main layout */}
         <div className="prop-form-two-col">
           {/* ─── LEFT COLUMN ─── */}
           <motion.div layout className="space-y-4">
+            {sectionClasificacion}
             {sectionContenido}
             {sectionPrecio}
             {sectionDimensiones}

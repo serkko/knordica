@@ -270,7 +270,7 @@ const INPUT = {
     outline: "none",
     width: "100%",
     resize: "vertical" as const,
-    minHeight: "100px",
+    minHeight: "160px",
   } as React.CSSProperties,
 };
 
@@ -795,7 +795,7 @@ export function PropertyFormAudit({ locale, propertyId }: PropertyFormAuditProps
 
       {/* SECCIÓN: Clasificación y Gamificación */}
       <SectionCard title="Clasificación y Gamificación">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Operación</Label>
             <select
@@ -826,6 +826,9 @@ export function PropertyFormAudit({ locale, propertyId }: PropertyFormAuditProps
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div>
             <Label>Estado de publicación</Label>
             <select value={form.status} onChange={(e) => set("status", e.target.value)} style={INPUT.base}>
@@ -837,49 +840,59 @@ export function PropertyFormAudit({ locale, propertyId }: PropertyFormAuditProps
             </select>
           </div>
           <div>
-            <Label>Insignia (Badge)</Label>
-            <select value={form.listing_badge} onChange={(e) => set("listing_badge", e.target.value)} style={INPUT.base}>
-              <option value="basico">Básico</option>
-              <option value="destacado">Destacado</option>
-              <option value="oportunidad">Oportunidad</option>
-              <option value="ultima_unidad">Última Unidad</option>
-              <option value="exclusivo">Exclusivo</option>
-            </select>
-          </div>
-          <div>
             <Label>Puntaje de Completitud (0-100)</Label>
             <input type="number" value={form.completeness_score} onChange={(e) => set("completeness_score", e.target.value)} style={INPUT.base} />
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 mt-4">
-          <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
-          <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
-          <Toggle checked={form.new_listing} onChange={(v) => set("new_listing", v)} label="Nueva publicación" />
-          <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
+
+        <div style={{ borderTop: "1px solid var(--p-border)", marginTop: "16px", paddingTop: "12px" }} className="space-y-3">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px 16px" }}>
+            <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
+            <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px 16px" }}>
+            <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
+            <Toggle 
+              checked={form.listing_badge === "oportunidad"} 
+              onChange={(v) => set("listing_badge", v ? "oportunidad" : "basico")} 
+              label="Insignia: Oportunidad" 
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px 16px" }}>
+            <Toggle 
+              checked={form.listing_badge === "ultima_unidad"} 
+              onChange={(v) => set("listing_badge", v ? "ultima_unidad" : "basico")} 
+              label="Insignia: Última Unidad" 
+            />
+          </div>
         </div>
       </SectionCard>
 
       {/* SECCIÓN: Contenido Multi-idioma */}
-      <SectionCard title="Contenido de la publicación (Español e Inglés)">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <SectionCard title="Contenido de la publicación">
+        <div className="space-y-6">
+          {/* Sección en Español */}
+          <div className="space-y-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Español</div>
             <div>
               <Label>Título (Español) *</Label>
               <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} />
             </div>
             <div>
+              <Label>Descripción (Español)</Label>
+              <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} rows={6} />
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--p-border)", paddingTop: "16px" }} className="space-y-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Inglés (Opcional)</div>
+            <div>
               <Label>Título (Inglés)</Label>
               <input value={form.title_en} onChange={(e) => set("title_en", e.target.value)} placeholder="Ej: Duplex apartment in La Pedregosa" style={INPUT.base} />
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Descripción (Español)</Label>
-              <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} />
-            </div>
             <div>
               <Label>Descripción (Inglés)</Label>
-              <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} />
+              <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} rows={6} />
             </div>
           </div>
         </div>
@@ -1188,13 +1201,18 @@ export function PropertyFormAudit({ locale, propertyId }: PropertyFormAuditProps
               <option value="solo_hombres">Solo hombres</option>
             </select>
           </div>
-          <div>
-            <Label>Monto de depósito (USD)</Label>
-            <input type="number" value={form.deposit_amount} onChange={(e) => set("deposit_amount", e.target.value)} style={INPUT.base} />
-          </div>
+          {form.deposit_required && (
+            <div>
+              <Label>Monto de depósito (USD)</Label>
+              <input type="number" value={form.deposit_amount} onChange={(e) => set("deposit_amount", e.target.value)} style={INPUT.base} />
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-          <Toggle checked={form.deposit_required} onChange={(v) => set("deposit_required", v)} label="Requiere depósito" />
+          <Toggle checked={form.deposit_required} onChange={(v) => {
+            set("deposit_required", v);
+            if (!v) set("deposit_amount", "");
+          }} label="Requiere depósito" />
           <Toggle checked={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
           <Toggle checked={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
         </div>

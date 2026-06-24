@@ -16,12 +16,13 @@ export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string
       return type !== "terreno_lote";
     case "furnished":
       return !["terreno_lote", "galpon", "edificio"].includes(type);
-    case "parking":
-      return !["habitacion", "anexo", "terreno_lote"].includes(type);
-    case "vertical":
-      return ["apartamento", "oficina", "local", "edificio"].includes(type);
+    case "has_elevator":
     case "elevator":
       return ["apartamento", "edificio", "local", "oficina"].includes(type);
+    case "parking_spaces":
+    case "parking":
+      return !["anexo", "terreno_lote"].includes(type);
+
     case "floors":
       return ["apartamento", "oficina", "local", "edificio"].includes(type);
     case "maintenance":
@@ -34,7 +35,7 @@ export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string
     case "shared_section":
       return ["habitacion", "anexo"].includes(type) && op === "alquiler";
     case "has_independent_entrance":
-      return ["habitacion", "anexo"].includes(type) && op !== "venta";
+      return ["habitacion", "anexo"].includes(type);
     case "land_section":
       return ["terreno_lote", "hacienda_finca"].includes(type);
     case "services_section":

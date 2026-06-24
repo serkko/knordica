@@ -156,12 +156,12 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
                     height: 42,
                     padding: "0 12px",
                     gap: 12,
-                    borderRadius: "6px",
+                    borderRadius: "3px",
                     color: active ? "var(--p-text)" : "var(--p-text-2)",
-                    background: active ? "var(--p-surface-3)" : "transparent",
+                    background: active ? "var(--p-surface-3)" : "rgba(26, 26, 26, 0)",
                   }}
                   whileHover={{
-                    background: active ? "var(--p-surface-3)" : "var(--p-surface-2)",
+                    background: active ? "var(--p-surface-3)" : "rgba(26, 26, 26, 1)",
                     color: "var(--p-text)",
                   }}
                   transition={{ duration: 0.15 }}

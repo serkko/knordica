@@ -1254,7 +1254,7 @@ export default function PropiedadesPage() {
                             ? "rgba(74, 222, 128, 0.06)"
                             : isExpanded
                               ? "rgba(24, 24, 27, 0.72)"
-                              : "transparent",
+                              : "rgba(24, 24, 27, 0)",
                       }}
                       exit={{
                         opacity: 0,

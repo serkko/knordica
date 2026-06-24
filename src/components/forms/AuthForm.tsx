@@ -82,19 +82,7 @@ export function AuthForm() {
       } else {
         // Query user info and check if they are an active agent/admin
         const { data: { user } } = await supabase.auth.getUser();
-        let targetPath = `/${locale}/cliente`;
-
-        if (user) {
-          const { data: agent } = await supabase
-            .from("agents")
-            .select("role, active")
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          if (agent && agent.active) {
-            targetPath = `/${locale}/admin`;
-          }
-        }
+        let targetPath = `/${locale}/panel`;
 
         setSuccessMsg(locale === "es" ? "¡Sesión iniciada! Redirigiendo..." : "Login successful! Redirecting...");
         resetLogin();

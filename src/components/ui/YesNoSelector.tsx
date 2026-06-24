@@ -19,7 +19,7 @@ export function YesNoSelector({ value, onChange, label, disabled }: YesNoSelecto
 
   return (
     <div className="flex items-center justify-between py-1.5 w-full select-none" style={{ minHeight: "36px" }}>
-      <span className="text-[12px] font-medium leading-none truncate" style={{ color: "var(--p-text-2)", maxWidth: "70%" }}>
+      <span className="text-[12px] font-medium leading-none" style={{ color: "var(--p-text-2)", whiteSpace: "nowrap" }}>
         {label}
       </span>
       <div className="flex items-center gap-1.5">
@@ -28,10 +28,10 @@ export function YesNoSelector({ value, onChange, label, disabled }: YesNoSelecto
           disabled={disabled}
           onClick={() => handleSelect(true)}
           style={{
-            height: "28px",
-            padding: "0 14px",
-            borderRadius: "6px",
-            fontSize: "11px",
+            height: "22px",
+            padding: "0 10px",
+            borderRadius: "3px",
+            fontSize: "10.5px",
             fontWeight: 600,
             cursor: disabled ? "not-allowed" : "pointer",
             transition: "all 0.15s ease",
@@ -60,10 +60,10 @@ export function YesNoSelector({ value, onChange, label, disabled }: YesNoSelecto
           disabled={disabled}
           onClick={() => handleSelect(false)}
           style={{
-            height: "28px",
-            padding: "0 14px",
-            borderRadius: "6px",
-            fontSize: "11px",
+            height: "22px",
+            padding: "0 10px",
+            borderRadius: "3px",
+            fontSize: "10.5px",
             fontWeight: 600,
             cursor: disabled ? "not-allowed" : "pointer",
             transition: "all 0.15s ease",

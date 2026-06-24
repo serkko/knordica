@@ -282,8 +282,8 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 
 ### COMBINACIÓN 10: ANEXO × VENTA
 *(Venta de estructura catastrada independientemente)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, área construida, habitaciones/baños básicos, antigüedad, conservación, amoblado, ubicación, confort básico.
-* **Campos Excluidos (Sombreado Rojo):** Cuotas de condominio formal, vacacionales, pisos verticales (`floor_number`, `total_floors`, `has_elevator`), campos de cohabitación (no hay convivencia en una venta), **`has_independent_entrance`** (la regla de campo independiente aplica solo cuando `op ≠ 'venta'`; en venta del anexo, el comprador define sus propios accesos) y terrenos.
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, área construida, habitaciones/baños básicos, antigüedad, conservación, amoblado, ubicación, confort básico, y entrada independiente (`has_independent_entrance`).
+* **Campos Excluidos (Sombreado Rojo):** Cuotas de condominio formal, vacacionales, pisos verticales (`floor_number`, `total_floors`, `has_elevator`), campos de cohabitación (no hay convivencia en una venta) y terrenos.
 
 ---
 
@@ -297,7 +297,7 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 5. **`bedrooms`, `bathrooms`**: Habitáculos para inquilinos.
 6. **`year_built`, `condition`, `furnished`**: Estado y nivel de amoblado.
 7. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación.
-8. **`gas_type`, `kitchen_type`, `has_water_tank`, `has_hot_water`, `has_internet`, `has_ac`**: Confort básico.
+8. **`gas_type`, `kitchen_type`, `has_water_tank`, `has_hot_water`, `has_generator`, `has_internet`, `has_ac`**: Confort básico.
 9. **`bathroom_type`, `host_housing_type`, `cohabitation`, `occupants_count`, `gender_policy`, `allows_pets`, `allows_cooking`, `deposit_required`, `deposit_amount`**: Parámetros de cohabitación críticos. Se requiere regular la convivencia con el anfitrión principal de la casa.
 10. **`has_independent_entrance`**: Indicado fuera del bloque de cohabitación (sección Servicios). Relevante tanto en alquiler como en vacacional: el inquilino debe saber si accede a su unidad directamente desde la calle o pasando por zonas comunes de la vivienda principal.
 
@@ -314,16 +314,16 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 #### Campos Aplicables y Justificaciones:
 1. **`operation`, `property_type`, `status`, `featured`, `exclusive`, `new_listing`, `price_reduced`, `listing_badge`, `completeness_score`**: Clasificación turística.
 2. **`title_es`/`title_en`, `description_es`/`description_en`**: Textos promocionales.
-3. **`price_per_night`, `price_weekend`, `min_nights`, `max_guests`, `checkin_time`, `checkout_time`, `house_rules`, `includes_breakfast`**: Tarifas y normas de hospedaje vacacional.
+3. **`price_per_night`, `price_weekend`, `min_nights`, `max_guests`, `checkin_time`, `checkout_time`, `house_rules`, `includes_breakfast`, `price_currency`**: Tarifas, normas y moneda específica de cobro de alojamiento turístico.
 4. **`area_built`**: Área de la unidad.
 5. **`bedrooms`, `bathrooms`**: Distribución para huéspedes.
 6. **`year_built`, `condition`, `furnished`**: Conservación y amoblado completo (obligatorio).
 7. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación exacta.
-8. **`gas_type`, `kitchen_type`, `has_water_tank`, `has_hot_water`, `has_internet`, `has_ac`**: Confort vacacional.
+8. **`gas_type`, `kitchen_type`, `has_water_tank`, `has_hot_water`, `has_generator`, `has_internet`, `has_ac`**: Confort vacacional.
 9. **`has_independent_entrance`**: **Crítico.** El huésped vacacional debe saber si cuenta con puerta directa a la calle o si debe pasar por la casa principal (accesibilidad y privacidad).
 
 #### Campos Excluidos (Sombreado Rojo) y Motivo:
-* **`price`, `price_currency`, `price_negotiable`**: Reemplazado por tarifas de noche vacacionales.
+* **`price`, `price_negotiable`**: Reemplazado por tarifas de noche vacacionales (el canon mensual no aplica).
 * **`maintenance_fee`, `maintenance_included`**: El huésped no paga condominio.
 * **`floor_number`, `total_floors`, `has_elevator`**: Estructura vertical no aplica.
 * **Campos de Co-habitación (`gender_policy`, `bathroom_type`, `cohabitation` etc.)**: Excluidos. Al ser estadías turísticas de la unidad completa, las políticas de cohabitación de largo plazo no aplican.

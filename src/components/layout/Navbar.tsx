@@ -301,35 +301,16 @@ function MobileDrawer({
                     transition={{ delay: (links.length + 1) * 0.05, duration: 0.3 }}
                   >
                     <Link
-                      href={`/${locale}/cliente`}
+                      href={`/${locale}/panel`}
                       onClick={onClose}
                       className={cn(
                         "block px-4 py-3 rounded-sm text-sm font-semibold",
                         "text-[var(--accent)] hover:bg-[var(--surface-2)] transition-all duration-150"
                       )}
                     >
-                      {locale === "es" ? "Mi Portal" : "My Portal"}
+                      {locale === "es" ? "Mi Panel" : "My Panel"}
                     </Link>
                   </motion.div>
-
-                  {isAgent && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 16 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: (links.length + 1.5) * 0.05, duration: 0.3 }}
-                    >
-                      <Link
-                        href="/admin"
-                        onClick={onClose}
-                        className={cn(
-                          "block px-4 py-3 rounded-sm text-sm font-semibold",
-                          "text-[var(--gold)] hover:bg-[var(--surface-2)] transition-all duration-150"
-                        )}
-                      >
-                        {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
-                      </Link>
-                    </motion.div>
-                  )}
                 </>
               )}
 
@@ -481,25 +462,14 @@ function PrivateAccessDropdown({ isOverHero }: { isOverHero?: boolean }) {
                   </p>
                 </div>
 
-                {/* Mi Portal — visible para cualquier usuario logueado */}
+                {/* Mi Panel — visible para cualquier usuario logueado */}
                 <Link
-                  href={`/${locale}/cliente`}
+                  href={`/${locale}/panel`}
                   onClick={() => setIsOpen(false)}
                   className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
                 >
-                  {locale === "es" ? "Mi Portal" : "My Portal"}
+                  {locale === "es" ? "Mi Panel" : "My Panel"}
                 </Link>
-
-                {/* Panel CRM — solo agentes/admin */}
-                {authState.isAgent && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsOpen(false)}
-                    className="block px-4 py-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors"
-                  >
-                    {locale === "es" ? "Panel CRM" : "CRM Dashboard"}
-                  </Link>
-                )}
 
                 {/* Cerrar sesión */}
                 <div className="border-t border-[var(--border)] mt-1 pt-1">

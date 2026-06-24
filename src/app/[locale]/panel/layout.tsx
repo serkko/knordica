@@ -47,8 +47,7 @@ const PANEL_STYLES = `
     --p-font-display: 'Inter', 'Helvetica Neue', sans-serif;
 
     /* Radio */
-    --p-radius: 6px;
-
+    --p-radius: 3px;
     /* Transición estándar */
     --p-ease: cubic-bezier(0.16, 1, 0.3, 1);
     --p-duration: 200ms;
