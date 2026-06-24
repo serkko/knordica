@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +8,7 @@ import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDi
 import {
   Upload,
   X,
+  Minus,
   GripVertical,
   Star,
   Plus,
@@ -179,7 +180,7 @@ function SectionCard({ title, children, defaultOpen = true }: { title: string; c
         background: "var(--p-surface)",
         border: "1px solid var(--p-border)",
         borderRadius: "var(--p-radius)",
-        overflow: "hidden",
+        overflow: open ? "visible" : "hidden",
       }}
     >
       <button
@@ -209,30 +210,522 @@ function SectionCard({ title, children, defaultOpen = true }: { title: string; c
   );
 }
 
+const capitalize = (str: string) => {
+  if (!str) return "";
+  if (str === "hacienda_finca") return "Hacienda / Finca";
+  if (str === "terreno_lote") return "Terreno / Lote";
+  return str
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+// ── FormattedNumberInput for thousands separator ──
+function FormattedNumberInput({
+  value,
+  onChange,
+  style,
+  placeholder,
+  required,
+  ...props
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  required?: boolean;
+  [key: string]: any;
+}) {
+  const getDisplayValue = (val: string) => {
+    if (!val) return "";
+    const parts = val.split(".");
+    const integerPart = parts[0] || "";
+    const decimalPart = parts[1];
+    
+    const cleanInt = integerPart.replace(/[^\d-]/g, "");
+    if (cleanInt === "" || cleanInt === "-") return cleanInt;
+    
+    const formattedInt = Number(cleanInt).toLocaleString("es-ES", { useGrouping: true, maximumFractionDigits: 0 });
+    
+    if (decimalPart !== undefined) {
+      return `${formattedInt},${decimalPart}`;
+    }
+    return formattedInt;
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    const normalized = text.replace(/\./g, "").replace(/,/g, ".");
+    
+    if (normalized === "" || normalized === "-" || /^-?\d*\.?\d*$/.test(normalized)) {
+      onChange(normalized);
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={getDisplayValue(value)}
+      onChange={handleTextChange}
+      style={style}
+      placeholder={placeholder}
+      required={required}
+      {...props}
+    />
+  );
+}
+
+function NumberStepper({ value, onChange, min = 0, max }: {
+  value: string;
+  onChange: (val: string) => void;
+  min?: number;
+  max?: number;
+}) {
+  const numVal = parseInt(value) || 0;
+
+  const adjust = (delta: number) => {
+    let next = numVal + delta;
+    if (next < min) next = min;
+    if (max !== undefined && next > max) next = max;
+    onChange(next.toString());
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === "" || /^\d+$/.test(val)) {
+      onChange(val);
+    }
+  };
+
+  const handleBlur = () => {
+    if (value === "") return;
+    let next = parseInt(value) || 0;
+    if (next < min) next = min;
+    if (max !== undefined && next > max) next = max;
+    onChange(next.toString());
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        background: "var(--p-surface-2)",
+        border: "1px solid var(--p-border)",
+        borderRadius: "var(--p-radius)",
+        padding: "3px",
+        height: "38px",
+        width: "120px",
+        boxSizing: "border-box",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => adjust(-1)}
+        style={{
+          height: "100%",
+          aspectRatio: "1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--p-surface-3)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "4px",
+          color: "var(--p-text-2)",
+          cursor: "pointer",
+          outline: "none",
+          transition: "all 0.1s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--p-text)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--p-surface-3)"; e.currentTarget.style.color = "var(--p-text-2)"; }}
+      >
+        <Minus size={13} strokeWidth={2.5} />
+      </button>
+
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          background: "transparent",
+          textAlign: "center",
+          color: "var(--p-text)",
+          fontSize: "13px",
+          fontWeight: 600,
+          border: "none",
+          outline: "none",
+          height: "100%",
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={() => adjust(1)}
+        style={{
+          height: "100%",
+          aspectRatio: "1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--p-surface-3)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "4px",
+          color: "var(--p-text-2)",
+          cursor: "pointer",
+          outline: "none",
+          transition: "all 0.1s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--p-text)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--p-surface-3)"; e.currentTarget.style.color = "var(--p-text-2)"; }}
+      >
+        <Plus size={13} strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+}
+
+function FormSelect({ value, onChange, options, placeholder, disabled }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string; disabled?: boolean }[];
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const handleOpen = () => {
+    if (!disabled) setOpen(v => !v);
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={handleOpen}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          height: 38,
+          padding: "0 12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "13px",
+          background: "var(--p-surface-2)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "var(--p-radius)",
+          color: selected ? "var(--p-text)" : "var(--p-text-3)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          transition: "border-color 0.15s, background 0.15s",
+          textAlign: "left",
+        }}
+      >
+        <span>{selected ? selected.label : (placeholder ?? "Seleccionar...")}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          style={{ display: "flex", alignItems: "center", opacity: 0.5 }}
+        >
+          <ChevronDown size={14} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              zIndex: 100,
+              width: "100%",
+              background: "rgba(24, 24, 27, 0.98)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid var(--p-border)",
+              borderRadius: "var(--p-radius)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              padding: "4px 0",
+              transformOrigin: "top center",
+            }}
+          >
+            {options.map(opt => {
+              const isActive = opt.value === value;
+              const isOptionDisabled = !!opt.disabled;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={isOptionDisabled}
+                  onClick={() => { onChange(opt.value); setOpen(false); }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    color: isOptionDisabled ? "var(--p-text-3)" : isActive ? "var(--p-accent)" : "var(--p-text)",
+                    background: isActive ? "var(--p-accent-soft)" : "transparent",
+                    border: "none",
+                    cursor: isOptionDisabled ? "not-allowed" : "pointer",
+                    opacity: isOptionDisabled ? 0.4 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    transition: "background 0.1s, color 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isOptionDisabled && !isActive) {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isOptionDisabled && !isActive) {
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
+                >
+                  {isActive ? <span style={{ color: "var(--p-accent)", marginRight: 4 }}>✓</span> : <span style={{ width: 10 }} />}
+                  {opt.label}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── SearchableFormSelect — custom dropdown with search input and Framer ──
+function SearchableFormSelect({ value, onChange, options, placeholder, disabled }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string; disabled?: boolean }[];
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setSearch("");
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [open]);
+
+  const handleOpen = () => {
+    if (!disabled) setOpen(v => !v);
+  };
+
+  const filtered = options.filter(opt =>
+    opt.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={handleOpen}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          height: 38,
+          padding: "0 12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "13px",
+          background: "var(--p-surface-2)",
+          border: "1px solid var(--p-border)",
+          borderRadius: "var(--p-radius)",
+          color: selected ? "var(--p-text)" : "var(--p-text-3)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          transition: "border-color 0.15s, background 0.15s",
+          textAlign: "left",
+        }}
+      >
+        <span>{selected ? selected.label : (placeholder ?? "Seleccionar...")}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          style={{ display: "flex", alignItems: "center", opacity: 0.5 }}
+        >
+          <ChevronDown size={14} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              zIndex: 100,
+              width: "100%",
+              background: "rgba(24, 24, 27, 0.98)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid var(--p-border)",
+              borderRadius: "var(--p-radius)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              padding: "4px 0",
+              transformOrigin: "top center",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ padding: "6px 8px", borderBottom: "1px solid var(--p-border)" }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar..."
+                style={{
+                  width: "100%",
+                  height: "30px",
+                  padding: "0 8px",
+                  fontSize: "12px",
+                  background: "var(--p-surface-3)",
+                  border: "1px solid var(--p-border)",
+                  borderRadius: "4px",
+                  color: "var(--p-text)",
+                  outline: "none",
+                }}
+              />
+            </div>
+            
+            <div style={{ maxHeight: "220px", overflowY: "auto", padding: "4px 0" }}>
+              {filtered.length === 0 ? (
+                <div style={{ padding: "8px 12px", fontSize: "12px", color: "var(--p-text-3)" }}>
+                  No se encontraron resultados
+                </div>
+              ) : (
+                filtered.map(opt => {
+                  const isActive = opt.value === value;
+                  const isOptionDisabled = !!opt.disabled;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={isOptionDisabled}
+                      onClick={() => { onChange(opt.value); setOpen(false); }}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "8px 12px",
+                        fontSize: "13px",
+                        color: isOptionDisabled ? "var(--p-text-3)" : isActive ? "var(--p-accent)" : "var(--p-text)",
+                        background: isActive ? "var(--p-accent-soft)" : "transparent",
+                        border: "none",
+                        cursor: isOptionDisabled ? "not-allowed" : "pointer",
+                        opacity: isOptionDisabled ? 0.4 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        transition: "background 0.1s, color 0.1s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isOptionDisabled && !isActive) {
+                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isOptionDisabled && !isActive) {
+                          e.currentTarget.style.background = "transparent";
+                        }
+                      }}
+                    >
+                      {isActive ? <span style={{ color: "var(--p-accent)", marginRight: 4 }}>✓</span> : <span style={{ width: 10 }} />}
+                      {opt.label}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Glowing premium toggle component
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex items-center gap-2 text-[12px] select-none"
+      className="flex items-center gap-3 text-[12px] select-none cursor-pointer text-left w-fit max-w-full"
       style={{ color: checked ? "var(--p-text)" : "var(--p-text-2)" }}
     >
-      <motion.div
-        className="relative w-8 h-[18px] flex-shrink-0"
+      <div
         style={{
-          borderRadius: "9px",
-          background: checked ? "var(--p-accent)" : "var(--p-surface-3)",
+          position: "relative",
+          width: "38px",
+          height: "22px",
+          borderRadius: "11px",
+          border: "1px solid",
+          borderColor: checked ? "rgba(99, 220, 180, 0.4)" : "var(--p-border)",
+          background: checked ? "linear-gradient(135deg, var(--p-accent-soft), rgba(99, 220, 180, 0.2))" : "var(--p-surface-3)",
+          boxShadow: checked ? "0 0 10px rgba(99, 220, 180, 0.15)" : "none",
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
         }}
-        animate={{ background: checked ? "var(--p-accent)" : "var(--p-surface-3)" }}
-        transition={{ duration: 0.2 }}
       >
         <motion.div
-          className="absolute top-[3px] w-3 h-3 bg-white rounded-full"
-          animate={{ left: checked ? "17px" : "3px" }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            width: "14px",
+            height: "14px",
+            borderRadius: "50%",
+            backgroundColor: checked ? "var(--p-accent)" : "#888888",
+            boxShadow: checked ? "0 0 6px var(--p-accent)" : "none",
+            transition: "background-color 0.2s, box-shadow 0.2s",
+          }}
+          animate={{
+            x: checked ? 20 : 3,
+            scale: checked ? 1.05 : 1,
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
         />
-      </motion.div>
-      {label}
+      </div>
+      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }} title={label}>
+        {label}
+      </span>
     </button>
   );
 }
@@ -266,20 +759,18 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
   return (
     <div className="space-y-3">
       {/* Zona de drop */}
-      <motion.div
+      <div
         onDragOver={(e) => { e.preventDefault(); setDraggingOver(true); }}
         onDragLeave={() => setDraggingOver(false)}
         onDrop={handleDrop}
         onClick={() => canAdd && fileInputRef.current?.click()}
-        animate={{
-          borderColor: draggingOver ? "var(--p-accent)" : "rgba(255,255,255,0.12)",
-          background: draggingOver ? "var(--p-accent-soft)" : "var(--p-surface-2)",
-        }}
-        transition={{ duration: 0.15 }}
         className="flex flex-col items-center justify-center gap-3 py-10 cursor-pointer"
         style={{
-          border: "2px dashed rgba(255,255,255,0.12)",
+          border: "2px dashed",
+          borderColor: draggingOver ? "var(--p-accent)" : "rgba(255,255,255,0.12)",
+          background: draggingOver ? "var(--p-accent-soft)" : "var(--p-surface-2)",
           borderRadius: "var(--p-radius)",
+          transition: "border-color 0.15s, background 0.15s",
         }}
       >
         <div
@@ -305,7 +796,7 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
             Límite de 20 fotos alcanzado
           </p>
         )}
-      </motion.div>
+      </div>
       <input
         ref={fileInputRef}
         type="file"
@@ -407,6 +898,70 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
   );
 }
 
+// ── Segmented Progress Bar (Framer Motion) ──
+function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number }[] }) {
+  const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
+  const statusLabel = score < 35 ? "Borrador" : score < 80 ? "Incompleto" : "Excelente";
+
+  return (
+    <div className="relative group flex flex-col justify-center select-none" style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--p-text-3)", letterSpacing: "0.02em" }}>
+          Progreso de la Publicación
+        </span>
+        <span style={{ fontSize: "10px", fontWeight: 600, color: activeColor }}>
+          {score}%
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <span style={{ fontSize: "9px", color: "var(--p-text-3)", fontWeight: 500 }}>0%</span>
+        <div style={{ flex: 1, height: "4px", background: "var(--p-surface-3)", borderRadius: "100px", overflow: "hidden", position: "relative" }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${score}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            style={{
+              height: "100%",
+              background: activeColor,
+              borderRadius: "100px",
+              boxShadow: `0 0 8px ${activeColor}60`,
+            }}
+          />
+        </div>
+        <span style={{ fontSize: "9px", color: "var(--p-text-3)", fontWeight: 500 }}>100%</span>
+      </div>
+
+      {/* Tooltip on Hover */}
+      <div 
+        className="absolute top-full mt-2 right-0 p-3 bg-black/95 backdrop-blur-md border border-white/10 rounded shadow-xl text-[11px] w-64 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 text-white leading-normal"
+        style={{
+          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.7)",
+          transformOrigin: "top right",
+        }}
+      >
+        <p className="font-semibold mb-1" style={{ color: activeColor }}>
+          Progreso de la Publicación: {score}% ({statusLabel})
+        </p>
+        <p className="text-white/70 mb-2">
+          Este indicador mide la calidad de la información completada. Llena todos los parámetros recomendados para lograr el 100% y aumentar el alcance de tu publicación.
+        </p>
+        {recommendations.length > 0 && (
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "6px", marginTop: "6px" }}>
+            <p style={{ fontWeight: 600, color: "var(--p-accent)", marginBottom: "4px" }}>Recomendado para completar:</p>
+            <ul style={{ paddingLeft: "12px", listStyleType: "disc", color: "rgba(255,255,255,0.85)" }}>
+              {recommendations.slice(0, 3).map((rec, i) => (
+                <li key={i} style={{ marginBottom: "2px" }}>
+                  {rec.label} <span style={{ color: "var(--p-text-3)", fontSize: "9px" }}>(+{rec.weight}%)</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Página principal ──
 export default function NuevaPropiedadPage() {
   const router = useRouter();
@@ -415,11 +970,84 @@ export default function NuevaPropiedadPage() {
 
   const [form, setForm] = useState<FormData>(INIT);
   const [images, setImages] = useState<ImageFile[]>([]);
+  const [zonesList, setZonesList] = useState<{ value: string; label: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const set = (key: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  // Load Zones list
+  useEffect(() => {
+    async function loadZones() {
+      const supabase = createClient();
+      const { data } = await supabase.from("zones").select("id, name_es").order("name_es", { ascending: true });
+      if (data) {
+        setZonesList(data.map(z => ({ value: z.id, label: z.name_es })));
+      }
+    }
+    loadZones();
+  }, []);
+
+  const calculateProgress = (f: FormData, imgs: ImageFile[]): { score: number; recommendations: { label: string; weight: number }[] } => {
+    let totalWeight = 0;
+    let filledWeight = 0;
+    const recommendations: { label: string; weight: number }[] = [];
+
+    const checkField = (field: keyof FormData, weight: number, applies: boolean, label: string) => {
+      if (!applies) return;
+      totalWeight += weight;
+      const val = f[field];
+      const isFilled = typeof val === "boolean" ? true : (val && val.toString().trim() !== "");
+      if (isFilled) {
+        filledWeight += weight;
+      } else {
+        recommendations.push({ label, weight });
+      }
+    };
+
+    // 1. Contenido
+    checkField("title_es", 15, true, "Título (Español)");
+    checkField("description_es", 10, true, "Descripción (Español)");
+
+    // 2. Precio
+    checkField("price", 15, true, "Precio");
+    checkField("maintenance_fee", 5, checkFieldApplies("maintenance", f.property_type, f.operation), "Monto de Condominio");
+
+    // 3. Dimensiones
+    checkField("area_built", 10, true, "Área de Construcción");
+    checkField("area_total", 10, true, "Área Total");
+    checkField("bedrooms", 5, checkFieldApplies("bedrooms", f.property_type, f.operation), "Número de Habitaciones");
+    checkField("bathrooms", 5, checkFieldApplies("bathrooms", f.property_type, f.operation), "Número de Baños");
+    checkField("half_bathrooms", 5, checkFieldApplies("half_bathrooms", f.property_type, f.operation), "Medios Baños");
+    checkField("parking_spaces", 5, checkFieldApplies("parking", f.property_type, f.operation), "Puestos de Estacionamiento");
+    checkField("floors", 5, checkFieldApplies("floors", f.property_type, f.operation), "Pisos Totales");
+    checkField("floor_number", 5, checkFieldApplies("floor_number", f.property_type, f.operation), "Número de Piso");
+    checkField("year_built", 5, checkFieldApplies("year_built", f.property_type, f.operation), "Año de Construcción");
+
+    // 4. Ubicación
+    checkField("municipio", 10, true, "Municipio");
+    checkField("zone_id", 10, true, "Zona / Sector");
+    checkField("address_es", 5, true, "Dirección");
+    checkField("lat", 5, true, "Latitud (Mapa)");
+    checkField("lng", 5, true, "Longitud (Mapa)");
+
+    // 5. Media
+    checkField("video_url", 5, true, "Enlace de Video");
+    checkField("virtual_tour_url", 5, true, "Enlace de Tour Virtual");
+
+    // 6. Imágenes
+    totalWeight += 15;
+    if (imgs.length > 0) {
+      filledWeight += 15;
+    } else {
+      recommendations.push({ label: "Fotos de la propiedad", weight: 15 });
+    }
+
+    const score = totalWeight === 0 ? 0 : Math.round((filledWeight / totalWeight) * 100);
+    recommendations.sort((a, b) => b.weight - a.weight);
+    return { score, recommendations };
+  };
 
   // ── Imágenes: agregar ──
   const handleAddImages = useCallback((files: File[]) => {
@@ -458,7 +1086,7 @@ export default function NuevaPropiedadPage() {
     setError("");
 
     if (!form.title_es.trim()) { setError("El título es obligatorio."); return; }
-    if (!form.price) { setError("El precio es obligatorio."); return; }
+    const { score: currentProgress } = calculateProgress(form, images);
 
     setSaving(true);
     try {
@@ -508,6 +1136,7 @@ export default function NuevaPropiedadPage() {
           exclusive: form.exclusive,
           new_listing: form.new_listing,
           price_reduced: form.price_reduced,
+          completeness_score: currentProgress,
           has_pool: form.has_pool,
           has_garden: form.has_garden,
           has_ac: form.has_ac,
@@ -587,6 +1216,9 @@ export default function NuevaPropiedadPage() {
     }
   };
 
+  const progressData = calculateProgress(form, images);
+  const progressScore = progressData.score;
+
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-4">
       {/* Header */}
@@ -605,30 +1237,46 @@ export default function NuevaPropiedadPage() {
           >
             <ArrowLeft size={14} />
           </button>
-          <div>
-            <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-              Nueva propiedad
-            </h2>
-            <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-              Completa la información para publicar
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
+                Nueva propiedad
+              </h2>
+              <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                Completa la información para publicar
+              </p>
+            </div>
           </div>
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
-          style={{
-            borderRadius: "var(--p-radius)",
-            background: saving ? "var(--p-surface-3)" : "var(--p-accent)",
-            color: saving ? "var(--p-text-2)" : "#0E0D0C",
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          <Save size={14} />
-          {saving ? "Guardando..." : "Publicar propiedad"}
-        </button>
+        <div className="flex items-center gap-3">
+          <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
+          <button
+            type="button"
+            onClick={() => router.push(`/${locale}/panel/propiedades`)}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+          >
+            <X size={14} />
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium"
+            style={{
+              borderRadius: "var(--p-radius)",
+              background: saving ? "var(--p-surface-3)" : "var(--p-accent)",
+              color: saving ? "var(--p-text-2)" : "#0E0D0C",
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            <Save size={14} />
+            {saving ? "Publicando..." : "Publicar"}
+          </button>
+        </div>
       </div>
+
+
 
       {/* Error */}
       {error && (
@@ -652,41 +1300,41 @@ export default function NuevaPropiedadPage() {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <Label>Operación</Label>
-            <select
+            <FormSelect
               value={form.operation}
-              onChange={(e) => set("operation", e.target.value)}
-              style={INPUT.base}
-            >
-              <option value="venta" disabled={isCombinationInconsistent(form.property_type, "venta")}>Venta</option>
-              <option value="alquiler" disabled={isCombinationInconsistent(form.property_type, "alquiler")}>Alquiler</option>
-              <option value="vacacional" disabled={isCombinationInconsistent(form.property_type, "vacacional")}>Vacacional</option>
-            </select>
+              onChange={(val) => set("operation", val)}
+              options={[
+                { value: "venta", label: "Venta", disabled: isCombinationInconsistent(form.property_type, "venta") },
+                { value: "alquiler", label: "Alquiler", disabled: isCombinationInconsistent(form.property_type, "alquiler") },
+                { value: "vacacional", label: "Vacacional", disabled: isCombinationInconsistent(form.property_type, "vacacional") }
+              ].sort((a, b) => a.label.localeCompare(b.label))}
+            />
           </div>
           <div>
             <Label>Tipo de inmueble</Label>
-            <select
+            <FormSelect
               value={form.property_type}
-              onChange={(e) => set("property_type", e.target.value)}
-              style={INPUT.base}
-            >
-              {["apartamento","casa","townhouse","anexo","edificio","galpon","habitacion","hacienda_finca","local","oficina","terreno_lote"].map((t) => (
-                <option key={t} value={t} disabled={isCombinationInconsistent(t, form.operation)}>{t.replace(/_/g, " ")}</option>
-              ))}
-            </select>
+              onChange={(val) => set("property_type", val)}
+              options={["apartamento","casa","townhouse","anexo","edificio","galpon","habitacion","hacienda_finca","local","oficina","terreno_lote"].map((t) => ({
+                value: t,
+                label: capitalize(t),
+                disabled: isCombinationInconsistent(t, form.operation)
+              })).sort((a, b) => a.label.localeCompare(b.label))}
+            />
           </div>
           <div>
             <Label>Estado</Label>
-            <select
+            <FormSelect
               value={form.status}
-              onChange={(e) => set("status", e.target.value)}
-              style={INPUT.base}
-            >
-              <option value="activa">Activa</option>
-              <option value="reservada">Reservada</option>
-              <option value="vendida">Vendida</option>
-              <option value="alquilada">Alquilada</option>
-              <option value="cerrada">Cerrada</option>
-            </select>
+              onChange={(val) => set("status", val)}
+              options={[
+                { value: "activa", label: "Activa" },
+                { value: "reservada", label: "Reservada" },
+                { value: "vendida", label: "Vendida" },
+                { value: "alquilada", label: "Alquilada" },
+                { value: "cerrada", label: "Cerrada" }
+              ].sort((a, b) => a.label.localeCompare(b.label))}
+            />
           </div>
         </div>
         {/* Badges */}
@@ -702,7 +1350,7 @@ export default function NuevaPropiedadPage() {
       <SectionCard title="Título y descripción">
         <div className="space-y-4">
           <div>
-            <Label>Título (Español) *</Label>
+            <Label>Título (Español)</Label>
             <input
               value={form.title_es}
               onChange={(e) => set("title_es", e.target.value)}
@@ -727,11 +1375,10 @@ export default function NuevaPropiedadPage() {
       <SectionCard title="Precio">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label>Precio *</Label>
-            <input
-              type="number"
+            <Label>Precio</Label>
+            <FormattedNumberInput
               value={form.price}
-              onChange={(e) => set("price", e.target.value)}
+              onChange={(val) => set("price", val)}
               placeholder="0"
               style={INPUT.base}
               required
@@ -739,23 +1386,22 @@ export default function NuevaPropiedadPage() {
           </div>
           <div>
             <Label>Moneda</Label>
-            <select
+            <FormSelect
               value={form.price_currency}
-              onChange={(e) => set("price_currency", e.target.value)}
-              style={INPUT.base}
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="VES">VES</option>
-            </select>
+              onChange={(val) => set("price_currency", val)}
+              options={[
+                { value: "USD", label: "USD ($)" },
+                { value: "EUR", label: "EUR (€)" },
+                { value: "VES", label: "VES (Bs.)" }
+              ].sort((a, b) => a.label.localeCompare(b.label))}
+            />
           </div>
           {checkFieldApplies("maintenance", form.property_type, form.operation) && (
             <div>
               <Label>Mantenimiento</Label>
-              <input
-                type="number"
+              <FormattedNumberInput
                 value={form.maintenance_fee}
-                onChange={(e) => set("maintenance_fee", e.target.value)}
+                onChange={(val) => set("maintenance_fee", val)}
                 placeholder="0"
                 style={INPUT.base}
               />
@@ -789,18 +1435,36 @@ export default function NuevaPropiedadPage() {
             if (key === "floor_number") return checkFieldApplies("floor_number", form.property_type, form.operation);
             if (key === "year_built") return checkFieldApplies("year_built", form.property_type, form.operation);
             return true;
-          }).map(({ key, label }) => (
-            <div key={key}>
-              <Label>{label}</Label>
-              <input
-                type="number"
-                value={form[key as keyof FormData] as string}
-                onChange={(e) => set(key as keyof FormData, e.target.value)}
-                placeholder="-"
-                style={INPUT.base}
-              />
-            </div>
-          ))}
+          }).map(({ key, label }) => {
+            const isStepper = ["bedrooms", "bathrooms", "half_bathrooms", "parking_spaces", "floors", "floor_number"].includes(key);
+            return (
+              <div key={key}>
+                <Label>{label}</Label>
+                {isStepper ? (
+                  <NumberStepper
+                    value={form[key as keyof FormData] as string}
+                    onChange={(val) => set(key as keyof FormData, val)}
+                    min={0}
+                  />
+                ) : key === "year_built" ? (
+                  <input
+                    type="number"
+                    value={form[key as keyof FormData] as string}
+                    onChange={(e) => set(key as keyof FormData, e.target.value)}
+                    placeholder="-"
+                    style={INPUT.base}
+                  />
+                ) : (
+                  <FormattedNumberInput
+                    value={form[key as keyof FormData] as string}
+                    onChange={(val) => set(key as keyof FormData, val)}
+                    placeholder="-"
+                    style={INPUT.base}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </SectionCard>
 
@@ -809,20 +1473,29 @@ export default function NuevaPropiedadPage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Municipio</Label>
-            <select
+            <FormSelect
               value={form.municipio}
-              onChange={(e) => set("municipio", e.target.value)}
-              style={INPUT.base}
-            >
-              <option value="">Seleccionar...</option>
-              <option value="libertador">Libertador</option>
-              <option value="campo_elias">Campo Elías</option>
-              <option value="santos_marquina">Santos Marquina</option>
-              <option value="sucre">Sucre</option>
-              <option value="rangel">Rangel</option>
-            </select>
+              onChange={(val) => set("municipio", val)}
+              placeholder="Seleccionar..."
+              options={[
+                { value: "libertador", label: "Libertador" },
+                { value: "campo_elias", label: "Campo Elías" },
+                { value: "santos_marquina", label: "Santos Marquina" },
+                { value: "sucre", label: "Sucre" },
+                { value: "rangel", label: "Rangel" }
+              ].sort((a, b) => a.label.localeCompare(b.label))}
+            />
           </div>
           <div>
+            <Label>Zona / Sector</Label>
+            <SearchableFormSelect
+              value={form.zone_id}
+              onChange={(val) => set("zone_id", val)}
+              placeholder="Seleccionar zona..."
+              options={zonesList}
+            />
+          </div>
+          <div className="col-span-2">
             <Label>Dirección</Label>
             <input
               value={form.address_es}

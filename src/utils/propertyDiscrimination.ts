@@ -42,6 +42,8 @@ export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string
       return type !== "terreno_lote";
     case "has_electric_fence":
       return ["casa", "townhouse", "edificio", "galpon", "hacienda_finca", "terreno_lote"].includes(type);
+    case "floor_number":
+      return ["apartamento", "oficina", "local"].includes(type);
     default:
       return true;
   }

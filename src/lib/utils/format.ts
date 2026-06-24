@@ -6,11 +6,20 @@
  * Formats a numeric price into a currency string (e.g. $280.000)
  */
 export function formatPrice(price: number, currency: string = "USD", locale: "es" | "en" = "es"): string {
-  return new Intl.NumberFormat(locale === "es" ? "es-VE" : "en-US", {
+  if (currency === "VES") {
+    const formattedNum = new Intl.NumberFormat(locale === "es" ? "es-VE" : "en-US", {
+      maximumFractionDigits: 0,
+    }).format(price);
+    return `Bs. ${formattedNum}`;
+  }
+
+  let formatted = new Intl.NumberFormat(locale === "es" ? "es-VE" : "en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
   }).format(price);
+
+  return formatted;
 }
 
 /**

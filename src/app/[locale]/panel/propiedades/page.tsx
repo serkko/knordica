@@ -86,6 +86,14 @@ function fmtUSD(price: number) {
   return "$" + fmtNum(price);
 }
 
+function capitalize(str: string): string {
+  if (!str) return "";
+  return str
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 // ─── Animated StyledSelect (toolbar) ─────────────────────────────────────────
 interface SelectOption { value: string; label: string }
 
@@ -185,7 +193,6 @@ function StyledSelect({ value, onChange, options, placeholder, resetLabel, width
   );
 }
 
-// ─── StyledSelectFull (quick-edit) — dropdown usa position:fixed para escapar overflow ──
 function StyledSelectFull({ value, onChange, options, placeholder }: {
   value: string;
   onChange: (v: string) => void;
@@ -193,7 +200,6 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
   placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const selected = options.find(o => o.value === value);
 
@@ -203,22 +209,11 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const handleOpen = () => {
-    if (!open && ref.current) {
-      const btn = ref.current.querySelector("button");
-      if (btn) {
-        const r = btn.getBoundingClientRect();
-        setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
-      }
-    }
-    setOpen(v => !v);
-  };
-
   return (
     <div ref={ref} style={{ position: "relative", width: "100%" }}>
       <button
         type="button"
-        onClick={handleOpen}
+        onClick={() => setOpen(v => !v)}
         style={{
           width: "100%", height: 34, padding: "0 10px",
           display: "flex", alignItems: "center", gap: 6,
@@ -244,18 +239,18 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
       </button>
 
       <AnimatePresence>
-        {open && dropPos && (
+        {open && (
           <motion.div
             initial={{ opacity: 0, y: -6, scaleY: 0.94 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{ opacity: 0, y: -4, scaleY: 0.96 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              position: "fixed",
-              top: dropPos.top,
-              left: dropPos.left,
-              width: dropPos.width,
-              zIndex: 9999,
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              zIndex: 100,
+              width: "100%",
               minWidth: 160,
               background: "rgba(24, 24, 27, 0.98)",
               backdropFilter: "blur(12px)",
@@ -264,16 +259,6 @@ function StyledSelectFull({ value, onChange, options, placeholder }: {
               boxShadow: "0 8px 32px rgba(0,0,0,0.65)",
               padding: "4px 0",
               transformOrigin: "top center",
-            }}
-            // Posicionamos con JS al montar
-            ref={el => {
-              if (!el || !ref.current) return;
-              const btn = ref.current.querySelector("button");
-              if (!btn) return;
-              const r = btn.getBoundingClientRect();
-              el.style.top = r.bottom + 4 + "px";
-              el.style.left = r.left + "px";
-              el.style.width = r.width + "px";
             }}
           >
             {placeholder && (
@@ -533,7 +518,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
               { value: "venta", label: "Venta" },
               { value: "alquiler", label: "Alquiler" },
               { value: "vacacional", label: "Vacacional" },
-            ]} />
+            ].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
           <div>
             {label("Estado")}
@@ -543,18 +528,18 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
               { value: "vendida", label: "Vendida" },
               { value: "alquilada", label: "Alquilada" },
               { value: "cerrada", label: "Cerrada" },
-            ]} />
+            ].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
           <div>
             {label("Tipo de propiedad")}
             <StyledSelectFull value={propType} onChange={setPropType}
-              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))}
+              options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l as string })).sort((a, b) => a.label.localeCompare(b.label))}
             />
           </div>
           <div>
             {label("Municipio")}
             <StyledSelectFull value={municipio} onChange={setMunicipio} placeholder="Sin especificar"
-              options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] as string }))}
+              options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] as string })).sort((a, b) => a.label.localeCompare(b.label))}
             />
           </div>
         </div>
@@ -902,6 +887,8 @@ export default function PropiedadesPage() {
     }
   }, [visible, selected]);
 
+
+
   const toggleSelect = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allSelected = visible.length > 0 && visible.every(p => selected.has(p.id));
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(visible.map(p => p.id)));
@@ -1122,14 +1109,14 @@ export default function PropiedadesPage() {
             style={{ width: "100%", height: 34, paddingLeft: 32, paddingRight: 28, fontSize: "13px", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", borderRadius: "var(--p-radius)", color: "var(--p-text)", outline: "none" }}
           />
         </div>
-        <StyledSelect value={filterOp} onChange={setFilterOp} placeholder="Operación" resetLabel="Todas" width={110}
-          options={[{ value: "venta", label: "Venta" }, { value: "alquiler", label: "Alquiler" }, { value: "vacacional", label: "Vacacional" }]} />
+         <StyledSelect value={filterOp} onChange={setFilterOp} placeholder="Operación" resetLabel="Todas" width={110}
+          options={[{ value: "venta", label: "Venta" }, { value: "alquiler", label: "Alquiler" }, { value: "vacacional", label: "Vacacional" }].sort((a, b) => a.label.localeCompare(b.label))} />
         <StyledSelect value={filterStatus} onChange={setFilterStatus} placeholder="Estado" resetLabel="Todos" width={120}
-          options={[{ value: "activa", label: "Activa" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "alquilada", label: "Alquilada" }, { value: "cerrada", label: "Cerrada" }]} />
+          options={[{ value: "activa", label: "Activa" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "alquilada", label: "Alquilada" }, { value: "cerrada", label: "Cerrada" }].sort((a, b) => a.label.localeCompare(b.label))} />
         <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo" resetLabel="Todos" width={150}
-          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: l || v }))} />
+          options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: (l || v) as string })).sort((a, b) => a.label.localeCompare(b.label))} />
         <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio" resetLabel="Todos" width={165}
-          options={MUNICIPIOS.map(m => ({ value: m, label: MUNICIPIO_LABEL[m] || m }))} />
+          options={MUNICIPIOS.map(m => ({ value: m, label: (MUNICIPIO_LABEL[m] || m) as string })).sort((a, b) => a.label.localeCompare(b.label))} />
 
       </div>
 
@@ -1149,7 +1136,7 @@ export default function PropiedadesPage() {
               >
                 {filterOp && <FilterChip label={`Operación: ${OP_LABEL[filterOp] ?? filterOp}`} onRemove={() => setFilterOp("")} />}
                 {filterStatus && <FilterChip label={`Estado: ${STATUS_CFG[filterStatus]?.label ?? filterStatus}`} onRemove={() => setFilterStatus("")} />}
-                {filterType && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? filterType}`} onRemove={() => setFilterType("")} />}
+                {filterType && <FilterChip label={`Tipo: ${PROP_TYPE_LABEL[filterType] ?? capitalize(filterType)}`} onRemove={() => setFilterType("")} />}
                 {filterMunicipio && <FilterChip label={`Municipio: ${MUNICIPIO_LABEL[filterMunicipio] ?? filterMunicipio}`} onRemove={() => setFilterMunicipio("")} />}
                 
                 {/* Clean filter chip */}
@@ -1235,7 +1222,7 @@ export default function PropiedadesPage() {
         {!loading && visible.length > 0 && (
           <LayoutGroup>
             <motion.div layout>
-              <AnimatePresence mode="popLayout" initial={false}>
+              <AnimatePresence initial={false}>
                 {visible.map(p => {
                   const isExpanded = quickEditId === p.id;
                   const isFlash = flashIds.has(p.id);
@@ -1248,14 +1235,14 @@ export default function PropiedadesPage() {
                       key={p.reactKey || p.id}
                       layout
                       layoutId={p.reactKey || p.id}
-                      initial={{ opacity: 0, scaleY: 0.9, height: 0 }}
+                      initial={{ opacity: 0, scale: 0.92, height: 0 }}
                       animate={{
                         opacity: isDeleting ? 0 : dimmed ? 0.38 : 1,
-                        scaleY: isDeleting ? 0.9 : 1,
+                        scale: isDeleting ? 0.92 : 1,
                         y: 0,
                         height: isDeleting ? 0 : "auto",
-                        marginTop: isExpanded ? 14 : 0,
-                        marginBottom: isExpanded ? 14 : 0,
+                        marginTop: 0,
+                        marginBottom: isExpanded ? 24 : 0,
                         boxShadow: isDeleting
                           ? "0 0 25px rgba(239, 68, 68, 0.3), inset 0 0 8px rgba(239, 68, 68, 0.15)"
                           : isExpanded
@@ -1271,18 +1258,20 @@ export default function PropiedadesPage() {
                       }}
                       exit={{
                         opacity: 0,
-                        x: "100%",
+                        x: isDeleting ? "100%" : 0,
+                        scale: isDeleting ? 1 : 0.92,
                         height: 0,
                         transition: {
                           x: { duration: 0.35, ease: "easeIn" },
                           opacity: { duration: 0.25 },
-                          height: { duration: 0.3, delay: 0.1, ease: [0.16, 1, 0.3, 1] }
+                          scale: { duration: 0.25 },
+                          height: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
                         }
                       }}
                       transition={{
-                        layout: { type: "spring", stiffness: 300, damping: 30 },
+                        layout: { type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.35 },
                         opacity: { duration: isDeleting ? 0.22 : dimmed ? 0.18 : 0.12 },
-                        scaleY: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                        scale: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
                         boxShadow: { duration: isFlash ? 0.8 : 0.22 },
                         backgroundColor: { duration: isFlash ? 0.8 : 0.22 },
                         height: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
@@ -1353,7 +1342,7 @@ export default function PropiedadesPage() {
                             {p.exclusive && <span style={{ borderRadius: "3px", background: "rgba(74,222,128,0.1)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.2)", fontSize: "9px", fontWeight: 700, padding: "2px 5px", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, whiteSpace: "nowrap" }}>Exclusiva</span>}
                           </div>
                           <p style={{ fontSize: "11px", color: "var(--p-text-3)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {p.municipio ? MUNICIPIO_LABEL[p.municipio] ?? p.municipio : "Sin ubicación"} · {PROP_TYPE_LABEL[p.property_type] ?? p.property_type}
+                            {p.municipio ? MUNICIPIO_LABEL[p.municipio] ?? p.municipio : "Sin ubicación"} · {PROP_TYPE_LABEL[p.property_type] ?? capitalize(p.property_type)}
                           </p>
                         </div>
 

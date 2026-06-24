@@ -447,6 +447,21 @@ a {
   letter-spacing: -0.01em;
 }
 
+/* ─── Panel: PropertyForm two-column adaptive layout ───────── */
+.prop-form-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Tablet breakpoint: colapsa a 1 col antes de que el contenido se apriete */
+@media (max-width: 1099px) {
+  .prop-form-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── Reduced motion ───────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -456,3 +471,22 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Custom Selection Contrast ────────────────────────────── */
+::selection {
+  background-color: #C9962A !important; /* Gold */
+  color: #141210 !important; /* Dark text */
+}
+::-moz-selection {
+  background-color: #C9962A !important;
+  color: #141210 !important;
+}
+input::selection, textarea::selection, [contenteditable]::selection {
+  background-color: #C9962A !important;
+  color: #141210 !important;
+}
+input::-moz-selection, textarea::-moz-selection, [contenteditable]::-moz-selection {
+  background-color: #C9962A !important;
+  color: #141210 !important;
+}
+
