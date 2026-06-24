@@ -130,6 +130,7 @@ const FIELD_LABELS: Record<string, string> = {
   municipio: "Municipio",
   zone_id: "Zona / Sector",
   address_es: "Dirección",
+  address_en: "Dirección en Inglés",
   lat: "Ubicación en mapa (Lat/Lng)",
   gas_type: "Tipo de suministro de gas",
   kitchen_type: "Tipo de cocina",
@@ -163,6 +164,13 @@ const FIELD_LABELS: Record<string, string> = {
   has_independent_entrance: "Entrada independiente",
   status: "Estado del anuncio",
   unit_count: "Número de unidades del edificio",
+  show_exact_location: "Mostrar ubicación exacta",
+  parking_covered: "Estacionamiento techado",
+  price_negotiable: "Precio negociable",
+  maintenance_included: "Mantenimiento incluido",
+  house_rules: "Normas de la casa",
+  includes_breakfast: "Incluye desayuno",
+  deposit_required: "Requiere depósito",
 };
 
 export function isAnswered(value: unknown): boolean {
@@ -261,7 +269,13 @@ export function computeCompletenessScore(
     }
 
     // Caso general de campos normales
-    const val = data[field];
+    let val = data[field];
+    
+    // Mapeo cruzado de campos de interfaz visual y base de datos
+    if (field === "total_floors" && val === undefined) {
+      val = data.floors;
+    }
+    
     if (isAnswered(val)) {
       earnedWeight += weight;
     } else {
