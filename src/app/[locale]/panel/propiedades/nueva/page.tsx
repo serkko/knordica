@@ -20,6 +20,10 @@ import {
   Save,
   Eye,
   Image as ImageIcon,
+  Info,
+  Sparkles,
+  ArrowUpRight,
+  Check,
 } from "lucide-react";
 
 // ── Tipos ──
@@ -900,11 +904,17 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
 
 // ── Segmented Progress Bar (Framer Motion) ──
 function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number }[] }) {
+  const [isOpen, setIsOpen] = useState(false);
   const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
   const statusLabel = score < 35 ? "Borrador" : score < 80 ? "Incompleto" : "Excelente";
 
   return (
-    <div className="relative group flex flex-col justify-center select-none" style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}>
+    <div 
+      className="relative flex flex-col justify-center select-none" 
+      style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--p-text-3)", letterSpacing: "0.02em" }}>
           Progreso de la Publicación
@@ -931,33 +941,65 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         <span style={{ fontSize: "9px", color: "var(--p-text-3)", fontWeight: 500 }}>100%</span>
       </div>
 
-      {/* Tooltip on Hover */}
-      <div 
-        className="absolute top-full mt-2 right-0 p-3 bg-black/95 backdrop-blur-md border border-white/10 rounded shadow-xl text-[11px] w-64 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 text-white leading-normal"
-        style={{
-          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.7)",
-          transformOrigin: "top right",
-        }}
-      >
-        <p className="font-semibold mb-1" style={{ color: activeColor }}>
-          Progreso de la Publicación: {score}% ({statusLabel})
-        </p>
-        <p className="text-white/70 mb-2">
-          Este indicador mide la calidad de la información completada. Llena todos los parámetros recomendados para lograr el 100% y aumentar el alcance de tu publicación.
-        </p>
-        {recommendations.length > 0 && (
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "6px", marginTop: "6px" }}>
-            <p style={{ fontWeight: 600, color: "var(--p-accent)", marginBottom: "4px" }}>Recomendado para completar:</p>
-            <ul style={{ paddingLeft: "12px", listStyleType: "disc", color: "rgba(255,255,255,0.85)" }}>
-              {recommendations.slice(0, 3).map((rec, i) => (
-                <li key={i} style={{ marginBottom: "2px" }}>
-                  {rec.label} <span style={{ color: "var(--p-text-3)", fontSize: "9px" }}>(+{rec.weight}%)</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute top-full mt-2 right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-50 text-white leading-normal"
+            style={{
+              background: "rgba(15, 15, 15, 0.96)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.8)",
+              transformOrigin: "top right",
+              pointerEvents: "none",
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <Sparkles size={13} className="text-yellow-400" />
+                <span>Calidad del Anuncio</span>
+              </div>
+              <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase" style={{ background: `${activeColor}20`, color: activeColor, border: `1px solid ${activeColor}40` }}>
+                {statusLabel} • {score}%
+              </span>
+            </div>
+            
+            <p className="text-white/60 mb-4 text-[10px] leading-relaxed">
+              Completa los campos recomendados para mejorar el posicionamiento de tu propiedad en las búsquedas.
+            </p>
+
+            {recommendations.length > 0 && score < 100 ? (
+              <div className="border-t border-white/5 pt-3.5">
+                <p className="font-semibold text-white/80 mb-2.5 flex items-center gap-1">
+                  <Info size={11} className="text-blue-400" />
+                  <span>Sugerencias para subir el puntaje:</span>
+                </p>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                  {recommendations.slice(0, 4).map((rec, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/[0.03]">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
+                        <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
+                        +{rec.weight}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="border-t border-white/5 pt-3.5 flex items-center gap-1.5 text-emerald-400">
+                <Check size={12} />
+                <span className="font-semibold">¡Publicación al 100% completada!</span>
+              </div>
+            )}
+          </motion.div>
+        )}      </AnimatePresence>
     </div>
   );
 }

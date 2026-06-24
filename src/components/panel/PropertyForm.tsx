@@ -6,6 +6,8 @@ import { motion, AnimatePresence, Reorder, LayoutGroup } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
+import { YesNoSelector } from "@/components/ui/YesNoSelector";
+import { computeCompletenessScore } from "@/utils/propertyCompleteness";
 import {
   Upload,
   X,
@@ -20,6 +22,10 @@ import {
   ArrowLeft,
   Save,
   Image as ImageIcon,
+  Info,
+  Sparkles,
+  ArrowUpRight,
+  Check,
 } from "lucide-react";
 
 // ── Tipos ──
@@ -95,24 +101,24 @@ interface FormData {
   show_exact_location: boolean;
 
   // Servicios Básicos
-  has_elevator: boolean;
-  has_water_tank: boolean;
-  has_hot_water: boolean;
-  has_generator: boolean;
+  has_elevator: boolean | null;
+  has_water_tank: boolean | null;
+  has_hot_water: boolean | null;
+  has_generator: boolean | null;
   gas_type: string;
-  has_internet: boolean;
+  has_internet: boolean | null;
 
   // Seguridad
-  has_security_24h: boolean;
-  has_electric_gate: boolean;
-  has_cctv: boolean;
-  has_electric_fence: boolean;
-  has_intercom: boolean;
-  has_armored_door: boolean;
+  has_security_24h: boolean | null;
+  has_electric_gate: boolean | null;
+  has_cctv: boolean | null;
+  has_electric_fence: boolean | null;
+  has_intercom: boolean | null;
+  has_armored_door: boolean | null;
 
   // Climatización
-  has_ac: boolean;
-  has_heating: boolean;
+  has_ac: boolean | null;
+  has_heating: boolean | null;
   kitchen_type: string;
 
   // Habitación y Anexo
@@ -123,16 +129,16 @@ interface FormData {
   gender_policy: string;
   deposit_required: boolean;
   deposit_amount: string;
-  allows_pets: boolean;
-  allows_cooking: boolean;
-  has_independent_entrance: boolean;
+  allows_pets: boolean | null;
+  allows_cooking: boolean | null;
+  has_independent_entrance: boolean | null;
 
   // Terreno y Finca
   topography: string;
   land_use: string;
   access_type: string;
   current_use: string;
-  has_own_water: boolean;
+  has_own_water: boolean | null;
 
   // Media
   video_url: string;
@@ -188,20 +194,20 @@ const INIT: FormData = {
   lat: "",
   lng: "",
   show_exact_location: true,
-  has_elevator: false,
-  has_water_tank: false,
-  has_hot_water: false,
-  has_generator: false,
+  has_elevator: null,
+  has_water_tank: null,
+  has_hot_water: null,
+  has_generator: null,
   gas_type: "",
-  has_internet: false,
-  has_security_24h: false,
-  has_electric_gate: false,
-  has_cctv: false,
-  has_electric_fence: false,
-  has_intercom: false,
-  has_armored_door: false,
-  has_ac: false,
-  has_heating: false,
+  has_internet: null,
+  has_security_24h: null,
+  has_electric_gate: null,
+  has_cctv: null,
+  has_electric_fence: null,
+  has_intercom: null,
+  has_armored_door: null,
+  has_ac: null,
+  has_heating: null,
   kitchen_type: "",
   bathroom_type: "",
   host_housing_type: "",
@@ -210,14 +216,14 @@ const INIT: FormData = {
   gender_policy: "",
   deposit_required: false,
   deposit_amount: "",
-  allows_pets: false,
-  allows_cooking: true,
-  has_independent_entrance: false,
+  allows_pets: null,
+  allows_cooking: null,
+  has_independent_entrance: null,
   topography: "",
   land_use: "",
   access_type: "",
   current_use: "",
-  has_own_water: false,
+  has_own_water: null,
   video_url: "",
   virtual_tour_url: "",
 };
@@ -973,11 +979,17 @@ const _ImageIcon = ImageIcon;
 
 // ── Segmented Progress Bar (Framer Motion) ──
 function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number }[] }) {
+  const [isOpen, setIsOpen] = useState(false);
   const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
   const statusLabel = score < 35 ? "Borrador" : score < 80 ? "Incompleto" : "Excelente";
 
   return (
-    <div className="relative group flex flex-col justify-center select-none" style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}>
+    <div 
+      className="relative flex flex-col justify-center select-none" 
+      style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--p-text-3)", letterSpacing: "0.02em" }}>
           Progreso de la Publicación
@@ -1004,33 +1016,65 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         <span style={{ fontSize: "9px", color: "var(--p-text-3)", fontWeight: 500 }}>100%</span>
       </div>
 
-      {/* Tooltip on Hover */}
-      <div 
-        className="absolute top-full mt-2 right-0 p-3 bg-black/95 backdrop-blur-md border border-white/10 rounded shadow-xl text-[11px] w-64 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 text-white leading-normal"
-        style={{
-          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.7)",
-          transformOrigin: "top right",
-        }}
-      >
-        <p className="font-semibold mb-1" style={{ color: activeColor }}>
-          Progreso de la Publicación: {score}% ({statusLabel})
-        </p>
-        <p className="text-white/70 mb-2">
-          Este indicador mide la calidad de la información completada. Llena todos los parámetros recomendados para lograr el 100% y aumentar el alcance de tu publicación.
-        </p>
-        {recommendations.length > 0 && (
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "6px", marginTop: "6px" }}>
-            <p style={{ fontWeight: 600, color: "var(--p-accent)", marginBottom: "4px" }}>Recomendado para completar:</p>
-            <ul style={{ paddingLeft: "12px", listStyleType: "disc", color: "rgba(255,255,255,0.85)" }}>
-              {recommendations.slice(0, 3).map((rec, i) => (
-                <li key={i} style={{ marginBottom: "2px" }}>
-                  {rec.label} <span style={{ color: "var(--p-text-3)", fontSize: "9px" }}>(+{rec.weight}%)</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute top-full mt-2 right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-50 text-white leading-normal"
+            style={{
+              background: "rgba(15, 15, 15, 0.96)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.8)",
+              transformOrigin: "top right",
+              pointerEvents: "none",
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <Sparkles size={13} className="text-yellow-400" />
+                <span>Calidad del Anuncio</span>
+              </div>
+              <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wide uppercase" style={{ background: `${activeColor}20`, color: activeColor, border: `1px solid ${activeColor}40` }}>
+                {statusLabel} • {score}%
+              </span>
+            </div>
+            
+            <p className="text-white/60 mb-4 text-[10px] leading-relaxed">
+              Completa los campos recomendados para mejorar el posicionamiento de tu propiedad en las búsquedas.
+            </p>
+
+            {recommendations.length > 0 && score < 100 ? (
+              <div className="border-t border-white/5 pt-3.5">
+                <p className="font-semibold text-white/80 mb-2.5 flex items-center gap-1">
+                  <Info size={11} className="text-blue-400" />
+                  <span>Sugerencias para subir el puntaje:</span>
+                </p>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                  {recommendations.slice(0, 4).map((rec, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/[0.03]">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
+                        <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
+                        +{rec.weight}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="border-t border-white/5 pt-3.5 flex items-center gap-1.5 text-emerald-400">
+                <Check size={12} />
+                <span className="font-semibold">¡Publicación al 100% completada!</span>
+              </div>
+            )}
+          </motion.div>
+        )}      </AnimatePresence>
     </div>
   );
 }
@@ -1052,6 +1096,16 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // ── Autosave state ──
+  const [autosaving, setAutosaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [secondsSinceSave, setSecondsSinceSave] = useState(0);
+  const savedSnapshotRef = useRef<{ form: FormData; imageIds: string[] } | null>(null);
+  const formRef = useRef(form);
+  const imagesRef = useRef(images);
+  formRef.current = form;
+  imagesRef.current = images;
+
   const set = (key: keyof FormData, val: any) => {
     setForm((prev) => ({ ...prev, [key]: val }));
   };
@@ -1061,91 +1115,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   };
 
   const calculateProgress = (f: FormData, imgs: any[]): { score: number; recommendations: { label: string; weight: number }[] } => {
-    let totalWeight = 0;
-    let filledWeight = 0;
-    const recommendations: { label: string; weight: number }[] = [];
-
-    const checkField = (field: keyof FormData, weight: number, applies: boolean, label: string) => {
-      if (!applies) return;
-      totalWeight += weight;
-      const val = f[field];
-      const isFilled = typeof val === "boolean" ? true : (val && val.toString().trim() !== "");
-      if (isFilled) {
-        filledWeight += weight;
-      } else {
-        recommendations.push({ label, weight });
-      }
-    };
-
-    // 1. Contenido
-    checkField("title_es", 15, true, "Título (Español)");
-    checkField("description_es", 10, true, "Descripción (Español)");
-
-    // 2. Precio
-    if (isVacacional) {
-      checkField("price_per_night", 10, true, "Precio por Noche");
-      checkField("price_weekend", 5, true, "Precio Fin de Semana");
-      checkField("min_nights", 5, true, "Noches Mínimas");
-      checkField("max_guests", 5, true, "Huéspedes Máximos");
-    } else {
-      checkField("price", 15, true, "Precio");
-      checkField("maintenance_fee", 5, checkApplies("maintenance"), "Monto de Condominio");
-    }
-
-    // 3. Dimensiones
-    checkField("area_built", 10, checkApplies("area_built"), "Área de Construcción");
-    checkField("area_total", 10, true, "Área Total");
-    checkField("area_hectares", 10, checkApplies("area_hectares"), "Área en Hectáreas");
-    checkField("bedrooms", 5, checkApplies("bedrooms"), "Número de Habitaciones");
-    checkField("bathrooms", 5, checkApplies("bathrooms"), "Número de Baños");
-    checkField("half_bathrooms", 5, checkApplies("half_bathrooms"), "Medios Baños");
-    checkField("parking_spaces", 5, checkApplies("parking"), "Puestos de Estacionamiento");
-    checkField("floor_number", 5, checkApplies("floor_number"), "Número de Piso");
-    checkField("floors", 5, checkApplies("floors"), "Pisos Totales");
-    checkField("year_built", 5, checkApplies("year_built"), "Año de Construcción");
-    checkField("condition", 5, checkApplies("condition"), "Estado de Conservación");
-    checkField("furnished", 5, checkApplies("furnished"), "Amoblado");
-
-    // 4. Ubicación
-    checkField("municipio", 10, true, "Municipio");
-    checkField("zone_id", 10, true, "Zona / Sector");
-    checkField("address_es", 5, true, "Dirección");
-    checkField("lat", 5, true, "Latitud (Mapa)");
-    checkField("lng", 5, true, "Longitud (Mapa)");
-
-    // 5. Compartido
-    if (hasShared) {
-      checkField("bathroom_type", 5, true, "Tipo de Baño");
-      checkField("host_housing_type", 5, true, "Vivienda del Anfitrión");
-      checkField("cohabitation", 5, true, "Cohabitación");
-      checkField("gender_policy", 5, true, "Política de Género");
-      checkField("occupants_count", 5, true, "Cantidad de Ocupantes");
-      checkField("deposit_amount", 5, true, "Monto de Depósito");
-    }
-
-    // 6. Terreno
-    if (hasLandSection) {
-      checkField("topography", 5, true, "Topografía");
-      checkField("access_type", 5, true, "Tipo de Acceso");
-      checkField("land_use", 5, true, "Uso de Suelo");
-      checkField("current_use", 5, true, "Uso Actual");
-    }
-
-    // 7. Media
-    checkField("video_url", 5, true, "Enlace de Video");
-    checkField("virtual_tour_url", 5, true, "Enlace de Tour Virtual");
-
-    // 8. Imágenes
-    totalWeight += 15;
-    if (imgs.length > 0) {
-      filledWeight += 15;
-    } else {
-      recommendations.push({ label: "Fotos de la propiedad", weight: 15 });
-    }
-
-    const score = totalWeight === 0 ? 0 : Math.round((filledWeight / totalWeight) * 100);
-    recommendations.sort((a, b) => b.weight - a.weight);
-    return { score, recommendations };
+    return computeCompletenessScore(f, f.property_type, f.operation, imgs.length, checkApplies);
   };
 
   const variant = getLayoutVariant(form.property_type, form.operation);
@@ -1229,20 +1199,20 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           lat: prop.lat?.toString() || "",
           lng: prop.lng?.toString() || "",
           show_exact_location: !!prop.show_exact_location,
-          has_elevator: !!prop.has_elevator,
-          has_water_tank: !!prop.has_water_tank,
-          has_hot_water: !!prop.has_hot_water,
-          has_generator: !!prop.has_generator,
+          has_elevator: prop.has_elevator === null ? null : !!prop.has_elevator,
+          has_water_tank: prop.has_water_tank === null ? null : !!prop.has_water_tank,
+          has_hot_water: prop.has_hot_water === null ? null : !!prop.has_hot_water,
+          has_generator: prop.has_generator === null ? null : !!prop.has_generator,
           gas_type: prop.gas_type || "",
-          has_internet: !!prop.has_internet,
-          has_security_24h: !!prop.has_security_24h,
-          has_electric_gate: !!prop.has_electric_gate,
-          has_cctv: !!prop.has_cctv,
-          has_electric_fence: !!prop.has_electric_fence,
-          has_intercom: !!prop.has_intercom,
-          has_armored_door: !!prop.has_armored_door,
-          has_ac: !!prop.has_ac,
-          has_heating: !!prop.has_heating,
+          has_internet: prop.has_internet === null ? null : !!prop.has_internet,
+          has_security_24h: prop.has_security_24h === null ? null : !!prop.has_security_24h,
+          has_electric_gate: prop.has_electric_gate === null ? null : !!prop.has_electric_gate,
+          has_cctv: prop.has_cctv === null ? null : !!prop.has_cctv,
+          has_electric_fence: prop.has_electric_fence === null ? null : !!prop.has_electric_fence,
+          has_intercom: prop.has_intercom === null ? null : !!prop.has_intercom,
+          has_armored_door: prop.has_armored_door === null ? null : !!prop.has_armored_door,
+          has_ac: prop.has_ac === null ? null : !!prop.has_ac,
+          has_heating: prop.has_heating === null ? null : !!prop.has_heating,
           kitchen_type: prop.kitchen_type || "",
           bathroom_type: prop.bathroom_type || "",
           host_housing_type: prop.host_housing_type || "",
@@ -1251,14 +1221,14 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           gender_policy: prop.gender_policy || "",
           deposit_required: !!prop.deposit_required,
           deposit_amount: prop.deposit_amount?.toString() || "",
-          allows_pets: !!prop.allows_pets,
-          allows_cooking: !!prop.allows_cooking,
-          has_independent_entrance: !!prop.has_independent_entrance,
+          allows_pets: prop.allows_pets === null ? null : !!prop.allows_pets,
+          allows_cooking: prop.allows_cooking === null ? null : !!prop.allows_cooking,
+          has_independent_entrance: prop.has_independent_entrance === null ? null : !!prop.has_independent_entrance,
           topography: prop.topography || "",
           land_use: prop.land_use || "",
           access_type: prop.access_type || "",
           current_use: prop.current_use || "",
-          has_own_water: !!prop.has_own_water,
+          has_own_water: prop.has_own_water === null ? null : !!prop.has_own_water,
           video_url: prop.video_url || "",
           virtual_tour_url: prop.virtual_tour_url || "",
         });
@@ -1321,6 +1291,146 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     setImages((prev) => prev.map((img) => ({ ...img, isCover: img.id === id })));
   };
 
+  // ── Autosave handler (silent) ──
+  const handleAutosave = useCallback(async () => {
+    const currentForm = formRef.current;
+    const currentImages = imagesRef.current;
+    const snapshot = savedSnapshotRef.current;
+
+    // Check if dirty by comparing JSON of form fields and image IDs
+    const currentImageIds = currentImages.map(i => i.id).join(",");
+    const isDirty = !snapshot ||
+      JSON.stringify(currentForm) !== JSON.stringify(snapshot.form) ||
+      currentImageIds !== snapshot.imageIds.join(",");
+
+    if (!isDirty) return;
+
+    setAutosaving(true);
+    try {
+      const supabase = createClient();
+      const { score: currentProgress } = computeCompletenessScore(
+        currentForm,
+        currentForm.property_type,
+        currentForm.operation,
+        currentImages.length,
+        (f) => checkFieldApplies(f, currentForm.property_type, currentForm.operation)
+      );
+      const { error: propErr } = await supabase
+        .from("properties")
+        .update({
+          operation: currentForm.operation,
+          property_type: currentForm.property_type,
+          status: currentForm.status,
+          price: parseFloat(currentForm.price) || 0,
+          price_currency: currentForm.price_currency,
+          price_negotiable: currentForm.price_negotiable,
+          price_usd: currentForm.price_usd ? parseFloat(currentForm.price_usd) : null,
+          maintenance_fee: currentForm.maintenance_fee ? parseFloat(currentForm.maintenance_fee) : null,
+          maintenance_included: currentForm.maintenance_included,
+          price_per_night: currentForm.price_per_night ? parseFloat(currentForm.price_per_night) : null,
+          price_weekend: currentForm.price_weekend ? parseFloat(currentForm.price_weekend) : null,
+          min_nights: currentForm.min_nights ? parseInt(currentForm.min_nights) : 1,
+          max_guests: currentForm.max_guests ? parseInt(currentForm.max_guests) : null,
+          checkin_time: currentForm.checkin_time || null,
+          checkout_time: currentForm.checkout_time || null,
+          house_rules: currentForm.house_rules || null,
+          includes_breakfast: currentForm.includes_breakfast,
+          area_built: currentForm.area_built ? parseFloat(currentForm.area_built) : null,
+          area_total: currentForm.area_total ? parseFloat(currentForm.area_total) : null,
+          area_hectares: currentForm.area_hectares ? parseFloat(currentForm.area_hectares) : null,
+          bedrooms: currentForm.bedrooms ? parseInt(currentForm.bedrooms) : null,
+          bathrooms: currentForm.bathrooms ? parseInt(currentForm.bathrooms) : null,
+          half_bathrooms: currentForm.half_bathrooms ? parseInt(currentForm.half_bathrooms) : null,
+          parking_spaces: currentForm.parking_spaces ? parseInt(currentForm.parking_spaces) : null,
+          parking_covered: currentForm.parking_covered,
+          total_floors: currentForm.floors ? parseInt(currentForm.floors) : null,
+          floor_number: currentForm.floor_number ? parseInt(currentForm.floor_number) : null,
+          year_built: currentForm.year_built ? parseInt(currentForm.year_built) : null,
+          property_age: currentForm.year_built ? (new Date().getFullYear() - parseInt(currentForm.year_built)) : null,
+          condition: currentForm.condition || null,
+          furnished: currentForm.furnished || "sin_muebles",
+          municipio: currentForm.municipio || null,
+          zone_id: currentForm.zone_id || null,
+          address_es: currentForm.address_es || null,
+          address_en: currentForm.address_en || null,
+          lat: currentForm.lat ? parseFloat(currentForm.lat) : null,
+          lng: currentForm.lng ? parseFloat(currentForm.lng) : null,
+          show_exact_location: currentForm.show_exact_location,
+          has_elevator: currentForm.has_elevator,
+          has_water_tank: currentForm.has_water_tank,
+          has_hot_water: currentForm.has_hot_water,
+          has_generator: currentForm.has_generator,
+          gas_type: currentForm.gas_type || null,
+          has_internet: currentForm.has_internet,
+          has_security_24h: currentForm.has_security_24h,
+          has_electric_gate: currentForm.has_electric_gate,
+          has_cctv: currentForm.has_cctv,
+          has_electric_fence: currentForm.has_electric_fence,
+          has_intercom: currentForm.has_intercom,
+          has_armored_door: currentForm.has_armored_door,
+          has_ac: currentForm.has_ac,
+          has_heating: currentForm.has_heating,
+          kitchen_type: currentForm.kitchen_type || null,
+          bathroom_type: currentForm.bathroom_type || null,
+          host_housing_type: currentForm.host_housing_type || null,
+          cohabitation: currentForm.cohabitation || null,
+          occupants_count: currentForm.occupants_count ? parseInt(currentForm.occupants_count) : null,
+          gender_policy: currentForm.gender_policy || null,
+          deposit_required: currentForm.deposit_required,
+          deposit_amount: currentForm.deposit_amount ? parseFloat(currentForm.deposit_amount) : null,
+          allows_pets: currentForm.allows_pets,
+          allows_cooking: currentForm.allows_cooking,
+          has_independent_entrance: currentForm.has_independent_entrance,
+          topography: currentForm.topography || null,
+          land_use: currentForm.land_use || null,
+          access_type: currentForm.access_type || null,
+          current_use: currentForm.current_use || null,
+          has_own_water: currentForm.has_own_water,
+          video_url: currentForm.video_url || null,
+          virtual_tour_url: currentForm.virtual_tour_url || null,
+          listing_badge: currentForm.listing_badge || "basico",
+          completeness_score: currentProgress,
+        })
+        .eq("id", propertyId);
+
+      if (!propErr) {
+        // Upsert translations
+        await supabase.from("property_translations").upsert([
+          { property_id: propertyId, locale: "es", title: currentForm.title_es, description: currentForm.description_es || null },
+          { property_id: propertyId, locale: "en", title: currentForm.title_en || currentForm.title_es, description: currentForm.description_en || null },
+        ], { onConflict: "property_id,locale" });
+
+        // Update snapshot
+        savedSnapshotRef.current = {
+          form: { ...currentForm },
+          imageIds: currentImages.map(i => i.id),
+        };
+        setLastSavedAt(new Date());
+        setSecondsSinceSave(0);
+      }
+    } catch {
+      // Silent fail — autosave errors don't block the user
+    } finally {
+      setAutosaving(false);
+    }
+  }, [propertyId]);
+
+  // ── Autosave timer: trigger every 15 seconds after initial load ──
+  useEffect(() => {
+    if (loading) return;
+    const interval = setInterval(handleAutosave, 15000);
+    return () => clearInterval(interval);
+  }, [loading, handleAutosave]);
+
+  // ── Tick counter: update "X seconds ago" every second ──
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const tick = setInterval(() => {
+      setSecondsSinceSave(Math.floor((Date.now() - lastSavedAt.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lastSavedAt]);
+
   // ── Submit ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1371,6 +1481,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           lat: form.lat ? parseFloat(form.lat) : null,
           lng: form.lng ? parseFloat(form.lng) : null,
           show_exact_location: form.show_exact_location,
+          has_elevator: form.has_elevator,
           has_water_tank: form.has_water_tank,
           has_hot_water: form.has_hot_water,
           has_generator: form.has_generator,
@@ -1447,6 +1558,13 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           }
         }
       }
+      // After explicit save, update the snapshot so autosave doesn't re-save immediately
+      savedSnapshotRef.current = {
+        form: { ...form },
+        imageIds: images.map(i => i.id),
+      };
+      setLastSavedAt(new Date());
+      setSecondsSinceSave(0);
       setSuccess("Propiedad guardada correctamente");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
@@ -1879,17 +1997,17 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-              <Toggle checked={form.has_water_tank} onChange={(v) => set("has_water_tank", v)} label="Tanque de agua" />
-              <Toggle checked={form.has_hot_water} onChange={(v) => set("has_hot_water", v)} label="Agua caliente" />
-              <Toggle checked={form.has_generator} onChange={(v) => set("has_generator", v)} label="Generador" />
-              <Toggle checked={form.has_internet} onChange={(v) => set("has_internet", v)} label="Internet" />
-              <Toggle checked={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" />
-              <Toggle checked={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" />
+              <YesNoSelector value={form.has_water_tank} onChange={(v) => set("has_water_tank", v)} label="Tanque de agua" />
+              <YesNoSelector value={form.has_hot_water} onChange={(v) => set("has_hot_water", v)} label="Agua caliente" />
+              <YesNoSelector value={form.has_generator} onChange={(v) => set("has_generator", v)} label="Generador" />
+              <YesNoSelector value={form.has_internet} onChange={(v) => set("has_internet", v)} label="Internet" />
+              <YesNoSelector value={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" />
+              <YesNoSelector value={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" />
               {checkApplies("elevator") && (
-                <Toggle checked={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" />
+                <YesNoSelector value={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" />
               )}
               {checkApplies("has_independent_entrance") && !hasShared && (
-                <Toggle checked={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
+                <YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
               )}
             </div>
           </>
@@ -1900,14 +2018,14 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <div style={{ height: 1, background: "var(--p-border)", margin: "4px 0" }} />
             )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-              <Toggle checked={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24h" />
-              <Toggle checked={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" />
-              <Toggle checked={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" />
+              <YesNoSelector value={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24h" />
+              <YesNoSelector value={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" />
+              <YesNoSelector value={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" />
               {checkApplies("has_electric_fence") && (
-                <Toggle checked={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" />
+                <YesNoSelector value={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" />
               )}
-              <Toggle checked={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" />
-              <Toggle checked={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" />
+              <YesNoSelector value={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" />
+              <YesNoSelector value={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" />
             </div>
           </>
         )}
@@ -1947,9 +2065,9 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px 16px", borderTop: "1px solid var(--p-border)", paddingTop: "12px" }}>
           <Toggle checked={form.deposit_required} onChange={(v) => set("deposit_required", v)} label="Requiere depósito" />
-          <Toggle checked={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
-          <Toggle checked={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
-          <Toggle checked={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
+          <YesNoSelector value={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
+          <YesNoSelector value={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
+          <YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
         </div>
       </div>
     </SectionCard>
@@ -1982,7 +2100,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", minHeight: "38px", paddingTop: "14px" }}>
-          <Toggle checked={form.has_own_water} onChange={(v) => set("has_own_water", v)} label="Agua propia (Manantial / Pozo)" />
+          <YesNoSelector value={form.has_own_water} onChange={(v) => set("has_own_water", v)} label="Agua propia (Manantial / Pozo)" />
         </div>
       </div>
     </SectionCard>
@@ -2033,9 +2151,20 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
                 <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
                   Editar propiedad
                 </h2>
-                <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-                  Modifica la información y fotos de la publicación
-                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                    Modifica la información y fotos de la publicación
+                  </p>
+                  {!loading && (autosaving || lastSavedAt) && (
+                    <span className="text-[11px] italic font-normal text-[var(--p-text-3)]" style={{ color: "var(--p-text-3)", fontStyle: "italic" }}>
+                      {autosaving ? (
+                        "• Guardando..."
+                      ) : lastSavedAt ? (
+                        `• Guardado hace ${secondsSinceSave < 60 ? "<1min" : `${Math.floor(secondsSinceSave / 60)}min`}`
+                      ) : null}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
