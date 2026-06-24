@@ -96,7 +96,7 @@ A continuación se describen los campos del formulario, su tipo de datos, su cam
 * **`gender_policy`** (`TEXT`): Política de género del espacio (`'mixto'`, `'solo_mujeres'`, `'solo_hombres'`).
 * **`allows_pets`** (`BOOLEAN`): Permiso para tener mascotas en la habitación/anexo.
 * **`allows_cooking`** (`BOOLEAN`): Permiso para hacer uso de la cocina de la vivienda.
-* **`has_independent_entrance`** (`BOOLEAN`): Si el anexo o habitación cuenta con puerta directa a la calle (Aplicable en alquiler y vacacional).
+* **`has_independent_entrance`** (`BOOLEAN`): Si el anexo o habitación cuenta con puerta directa a la calle (Aplicable en venta, alquiler y vacacional).
 * **`deposit_required`** (`BOOLEAN`): Requiere un depósito de garantía previo.
 * **`deposit_amount`** (`DECIMAL`): Monto de dinero solicitado como depósito.
 
@@ -261,28 +261,28 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 
 ### COMBINACIÓN 7: TOWNHOUSE × VENTA
 *(Misma lógica que Casa en Venta)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, mantenimiento/condominio (opcional para conjuntos privados), área construida/total, distribución familiar, puestos de estacionamiento, antigüedad, conservación, amoblado, ubicación, servicios de confort y seguridad física (incluye cerco eléctrico perimetral).
-* **Campos Excluidos (Sombreado Rojo):** Condominio incluido, campos vacacionales, campos de pisos verticales (`floor_number`, `total_floors`, `has_elevator`), parámetros compartidos y parámetros rústicos.
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, mantenimiento/condominio (opcional para conjuntos privados), área construida/total, distribución familiar, puestos de estacionamiento, antigüedad, conservación, amoblado, ubicación, servicios de confort, ascensor (`has_elevator` - opcional para complejos dúplex apilados) y seguridad física (incluye cerco eléctrico perimetral).
+* **Campos Excluidos (Sombreado Rojo):** Condominio incluido, campos vacacionales, campos de pisos verticales (salvo `has_elevator`), parámetros compartidos y parámetros rústicos.
 
 ---
 
 ### COMBINACIÓN 8: TOWNHOUSE × ALQUILER
 *(Misma lógica que Casa en Alquiler)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, arriendo mensual base, condominio mensual/condominio incluido (opcional), dimensiones, habitáculos, estacionamiento, conservación, amoblado, ubicación, confort y seguridad (incluye cerco eléctrico).
-* **Campos Excluidos (Sombreado Rojo):** Vacacionales, pisos verticales, compartidos y rústicos.
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, arriendo mensual base, condominio mensual/condominio incluido (opcional), dimensiones, habitáculos, estacionamiento, conservación, amoblado, ubicación, confort, ascensor (`has_elevator` - opcional) y seguridad (incluye cerco eléctrico).
+* **Campos Excluidos (Sombreado Rojo):** Vacacionales, pisos verticales (salvo `has_elevator`), compartidos y rústicos.
 
 ---
 
 ### COMBINACIÓN 9: TOWNHOUSE × VACACIONAL
 *(Misma lógica que Casa Vacacional)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, tarifas vacacionales, dimensiones, habitáculos, estacionamientos, amoblado completo, ubicación, servicios de confort y seguridad.
-* **Campos Excluidos (Sombreado Rojo):** Precios de venta/arriendo base, condominios, pisos verticales, compartidos y rústicos.
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, tarifas vacacionales, dimensiones, habitáculos, estacionamientos, amoblado completo, ubicación, servicios de confort, ascensor (`has_elevator` - opcional) y seguridad.
+* **Campos Excluidos (Sombreado Rojo):** Precios de venta/arriendo base, condominios, pisos verticales (salvo `has_elevator`), compartidos y rústicos.
 
 ---
 
 ### COMBINACIÓN 10: ANEXO × VENTA
 *(Venta de estructura catastrada independientemente)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, área construida, habitaciones/baños básicos, antigüedad, conservación, amoblado, ubicación, confort básico, y entrada independiente (`has_independent_entrance`).
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, venta estándar, área construida, habitaciones/baños básicos, puestos de estacionamiento (`parking_spaces`, `parking_covered` - opcionales), antigüedad, conservación, amoblado, ubicación, confort básico, y entrada independiente (`has_independent_entrance`).
 * **Campos Excluidos (Sombreado Rojo):** Cuotas de condominio formal, vacacionales, pisos verticales (`floor_number`, `total_floors`, `has_elevator`), campos de cohabitación (no hay convivencia en una venta) y terrenos.
 
 ---
@@ -339,11 +339,11 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 3. **`price`, `price_currency`, `price_negotiable`**: Precio de venta del edificio completo.
 4. **`area_built`, `area_total`**: Área total construida y tamaño de parcela (tasación corporativa).
 5. **`parking_spaces`**: Capacidad total del estacionamiento.
-6. **`total_floors`, `has_elevator`**: Altura y presencia de ascensores.
+6. **`total_floors`, `has_elevator`, `unit_count`**: Altura, presencia de ascensores y número de unidades en la estructura completa.
 7. **`year_built`, `condition`**: Antigüedad e integridad estructural.
 8. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación.
 9. **`has_water_tank`, `has_generator`, `has_internet`**: Infraestructura centralizada.
-10. **`has_security_24h`, `has_electric_gate`, `has_cctv`, `has_electric_fence`**: Seguridad física del perímetro.
+10. **`has_security_24h`, `has_electric_gate`, `has_cctv`, `has_electric_fence`, `has_intercom`, `has_armored_door`**: Seguridad física del perímetro y accesos centrales.
 
 #### Campos Excluidos (Sombreado Rojo) y Motivo:
 * **`maintenance_fee`, `maintenance_included`**: Al vender el edificio completo no hay condominio mensual preexistente.
@@ -365,11 +365,11 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 4. **`maintenance_fee`, `maintenance_included`**: Opcional. Gastos de administración y si están incluidos en el canon total.
 5. **`area_built`, `area_total`**: Dimensiones estructurales.
 6. **`parking_spaces`**: Capacidad del garaje comercial.
-7. **`total_floors`, `has_elevator`**: Pisos y ascensores.
+7. **`total_floors`, `has_elevator`, `unit_count`**: Pisos, ascensores y número total de unidades.
 8. **`year_built`, `condition`**: Integridad física.
 9. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación.
 10. **`has_water_tank`, `has_generator`, `has_internet`**: Servicios comerciales.
-11. **`has_security_24h`, `has_electric_gate`, `has_cctv`, `has_electric_fence`**: Seguridad del perímetro del edificio.
+11. **`has_security_24h`, `has_electric_gate`, `has_cctv`, `has_electric_fence`, `has_intercom`, `has_armored_door`**: Seguridad del perímetro y accesos del edificio.
 
 #### Campos Excluidos (Sombreado Rojo) y Motivo:
 * Same as Edificio × Venta.
@@ -439,7 +439,7 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 2. **`title_es`/`title_en`, `description_es`/`description_en`**: Textos de alquiler compartido (ej. estudiantes).
 3. **`price`, `price_currency`, `price_negotiable`**: Canon mensual de la habitación.
 4. **`area_built`**: Área de la habitación privada.
-5. **`bedrooms`, `bathrooms`**: Dormitorio privado (1) y si el baño es privado o común.
+5. **`bedrooms`, `bathrooms`, `half_bathrooms`**: Dormitorio privado (1), baño disponible (privado/compartido) y medio baño de visitas/común.
 6. **`year_built`, `condition`, `furnished`**: Estado y nivel de amoblado de la habitación (normalmente se arriendan amobladas).
 7. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación.
 8. **`gas_type`, `kitchen_type`, `has_water_tank`, `has_hot_water`, `has_internet`, `has_ac`**: Confort de la vivienda común.
@@ -459,7 +459,7 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 #### Campos Aplicables y Justificaciones:
 1. **`operation`, `property_type`, `status`, `featured`, `exclusive`, `new_listing`, `price_reduced`, `listing_badge`, `completeness_score`**: Clasificación turística.
 2. **`title_es`/`title_en`, `description_es`/`description_en`**: Textos de promoción turística.
-3. **`price_per_night`, `price_weekend`, `min_nights`, `max_guests`, `checkin_time`, `checkout_time`, `house_rules`, `includes_breakfast`**: Tarifas y normas de hospedaje vacacional por noches.
+3. **`price_per_night`, `price_weekend`, `min_nights`, `max_guests`, `checkin_time`, `checkout_time`, `house_rules`, `includes_breakfast`, `price_currency`**: Tarifas, normas y moneda específica de hospedaje vacacional por noches.
 4. **`area_built`**: Área de la habitación.
 5. **`bedrooms`, `bathrooms`**: Habitación (1) y baño disponible.
 6. **`year_built`, `condition`, `furnished`**: Conservación y amoblado completo (obligatorio).
@@ -483,11 +483,12 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 2. **`title_es`/`title_en`, `description_es`/`description_en`**: Textos promocionales agrícolas/pecuarios.
 3. **`price`, `price_currency`, `price_negotiable`**: Precio de venta de la finca.
 4. **`area_built`, `area_total`, `area_hectares`**: Área construida (casa patronal, establos), m² totales y tamaño total en Hectáreas (dato crítico de producción).
-5. **`bedrooms`, `bathrooms`**: Distribución de la casa patronal o de obreros.
+5. **`bedrooms`, `bathrooms`, `parking_spaces`**: Distribución de la casa patronal o de obreros y puestos para vehículos/maquinaria de trabajo.
 6. **`year_built`, `condition`**: Antigüedad y conservación estructural.
 7. **`municipio`, `zone_id`, `address_es`/`address_en`, `lat`, `lng`, `show_exact_location`**: Ubicación.
 8. **`has_water_tank`, `has_generator`, `has_internet`**: Servicios de confort rural.
 9. **`topography`, `land_use`, `access_type`, `current_use`, `has_own_water`**: Parámetros rústicos y relieve (clave para viabilidad de siembra, ganadería y acceso de maquinaria).
+10. **`has_security_24h`, `has_electric_gate`, `has_cctv`, `has_electric_fence`**: Seguridad perimetral rural.
 
 #### Campos Excluidos (Sombreado Rojo) y Motivo:
 * **`maintenance_fee`, `maintenance_included`**: Las fincas rústicas no pagan condominio.
@@ -501,8 +502,9 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 ### COMBINACIÓN 23: HACIENDA_FINCA × ALQUILER
 
 #### Campos Aplicables y Justificaciones:
-* **Mismo relieve que Hacienda en Venta** con la siguiente adición importante:
+* **Mismo relieve que Hacienda en Venta** con las siguientes adiciones importantes:
 * **`furnished`**: **Aplicable.** Una finca o hacienda que se arrienda por temporadas largas o como explotación rural puede incluir mobiliario en la casa patronal.
+* **`gas_type`, `kitchen_type`, `has_hot_water`**: **Aplicables.** Servicios domésticos para la casa patronal alquilada.
 
 #### Campos Excluidos (Sombreado Rojo) y Motivo:
 * Condominio de edificio, vacacionales, pisos verticales y cohabitación.
@@ -511,7 +513,7 @@ A continuación se detallan las 33 combinaciones del sistema y la lista exacta d
 
 ### COMBINACIÓN 24: HACIENDA_FINCA × VACACIONAL
 *(Agro-turismo / Alojamiento rural)*
-* **Campos Aplicables:** Clasificación, marketing, bilingüe, tarifas vacacionales (por noche/fin de semana, checkin, checkout), área construida, total y hectáreas de recreación, habitaciones/baños para huéspedes, conservación y amoblado completo de la casa patronal, confort turístico (tanque, generador, internet, calefacción), parámetros rústicos y acceso.
+* **Campos Aplicables:** Clasificación, marketing, bilingüe, tarifas vacacionales (por noche/fin de semana, checkin, checkout, `price_currency`), área construida, total y hectáreas de recreación, habitaciones/baños y puestos de estacionamiento (`parking_spaces`) para huéspedes, conservación y amoblado completo de la casa patronal, confort turístico (tanque, generador, internet, calefacción, cocina, gas, agua caliente), parámetros rústicos y acceso, seguridad perimetral (`has_security_24h`, `has_electric_fence`, `has_cctv`, `has_electric_gate`).
 * **Campos Excluidos (Sombreado Rojo):** Precios base de venta/arriendo, condominio mensual, pisos verticales y cohabitación.
 
 ---

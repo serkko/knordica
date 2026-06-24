@@ -48,13 +48,20 @@ BEGIN
         NEW.completeness_score := 100;
     END IF;
 
-    -- Assign badge based on completeness_score
-    IF NEW.completeness_score <= 40 THEN
-        NEW.listing_badge := 'basico';
-    ELSIF NEW.completeness_score <= 70 THEN
-        NEW.listing_badge := 'completo';
-    ELSE
-        NEW.listing_badge := 'premium';
+    -- Assign badge based on completeness_score ONLY if NEW.listing_badge is NULL, empty, or one of the default tiers.
+    IF NEW.listing_badge IS NULL 
+       OR NEW.listing_badge = '' 
+       OR NEW.listing_badge = 'basico' 
+       OR NEW.listing_badge = 'completo' 
+       OR NEW.listing_badge = 'premium' 
+    THEN
+        IF NEW.completeness_score <= 40 THEN
+            NEW.listing_badge := 'basico';
+        ELSIF NEW.completeness_score <= 70 THEN
+            NEW.listing_badge := 'completo';
+        ELSE
+            NEW.listing_badge := 'premium';
+        END IF;
     END IF;
 
     RETURN NEW;

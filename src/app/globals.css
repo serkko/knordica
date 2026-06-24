@@ -453,8 +453,8 @@ a {
   gap: 16px;
   align-items: start;
 }
-/* Tablet breakpoint: colapsa a 1 col antes de que el contenido se apriete */
-@media (max-width: 1099px) {
+/* Tablet breakpoint: colapsa a 1 col en móviles */
+@media (max-width: 768px) {
   .prop-form-two-col {
     grid-template-columns: 1fr;
   }
@@ -487,4 +487,63 @@ input::-moz-selection, textarea::-moz-selection, [contenteditable]::-moz-selecti
   background-color: #C9962A !important;
   color: #141210 !important;
 }
+
+/* ─── Suggestion Click Highlight Animation ────────────────── */
+@keyframes fieldPulseGreenBefore {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.6;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.highlight-field-pulse {
+  position: relative !important;
+}
+.highlight-field-pulse::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -8px !important;
+  left: -8px !important;
+  right: -8px !important;
+  bottom: -8px !important;
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.45) !important;
+  border-radius: calc(var(--p-radius, 8px) + 4px) !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  animation: fieldPulseGreenBefore 3s ease-in-out forwards !important;
+}
+/* Asegurar que los hijos del contenedor queden por encima del pseudo-elemento de fondo */
+.highlight-field-pulse > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Custom scrollbar for suggestions dropdown */
+.suggestions-scroll::-webkit-scrollbar {
+  width: 6px;
+  display: block !important;
+}
+.suggestions-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.suggestions-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+.suggestions-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
 

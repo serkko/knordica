@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
 import { YesNoSelector } from "@/components/ui/YesNoSelector";
 import { computeCompletenessScore } from "@/utils/propertyCompleteness";
+import { useLenis } from "@/lib/lenis";
 import {
   Upload,
   X,
@@ -751,8 +752,22 @@ function SectionCard({
   style?: React.CSSProperties;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (!layoutId) return;
+    const handleExpand = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.layoutId === layoutId) {
+        setOpen(true);
+      }
+    };
+    window.addEventListener("expand-section-card", handleExpand);
+    return () => window.removeEventListener("expand-section-card", handleExpand);
+  }, [layoutId]);
+
   return (
     <motion.div
+      id={layoutId}
       layout
       layoutId={layoutId}
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
@@ -974,19 +989,148 @@ function getLayoutVariant(type: string, op: string): LayoutVariant {
   return "residential"; // casa, apartamento, townhouse, edificio
 }
 
-// ── ImageIcon aliased to avoid collision ──
-const _ImageIcon = ImageIcon;
-
-// ── Segmented Progress Bar (Framer Motion) ──
-function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number }[] }) {
+// ── ImageIcon aliased to avoi// ── Segmented Progress Bar (Framer Motion) ──
+function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number; field: string }[] }) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
   const statusLabel = score < 35 ? "Borrador" : score < 80 ? "Incompleto" : "Excelente";
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const lenis = useLenis();
+
+  const handleScrollToField = (field: string) => {
+    // 1. Close the dropdown menu immediately
+    setIsOpen(false);
+
+    // 2. Identify the target element - dynamically find element by ID or input attributes
+    let target: HTMLElement | null = null;
+    
+    // Explicit custom mapping logic for special wrapper fields to ensure we highlight the correct layout input
+    const specFields: Record<string, string> = {
+      topography: "topography",
+      access_type: "access_type",
+      land_use: "land_use",
+      current_use: "current_use",
+      gas_type: "gas_type",
+      kitchen_type: "kitchen_type",
+      bathroom_type: "bathroom_type",
+      host_housing_type: "host_housing_type",
+      cohabitation: "cohabitation",
+      gender_policy: "gender_policy",
+      deposit_required: "deposit_required",
+      allows_pets: "allows_pets",
+      allows_cooking: "allows_cooking",
+      has_independent_entrance: "has_independent_entrance",
+      has_own_water: "has_own_water"
+    };
+
+    if (specFields[field]) {
+      // Find inside custom styled structures or name selector
+      target = document.getElementById(specFields[field]) || 
+               document.querySelector(`[name="${specFields[field]}"]`) || 
+               document.querySelector(`[id^="${specFields[field]}"]`) as HTMLElement;
+    }
+
+    if (!target) {
+      target = document.getElementById(field);
+    }
+    if (!target) {
+      target = document.getElementById(`field-${field}`) || document.querySelector(`[name="${field}"]`);
+    }
+    if (!target && field === "price") {
+      target = document.getElementById("price") || document.querySelector('[name="price"]');
+    }
+    if (!target && field === "lat") {
+      target = document.getElementById("lat") || document.getElementById("lng");
+    }
+
+    if (target) {
+      // 3. Find parent SectionCard layoutId to expand it if closed
+      const sectionCard = target.closest('[id^="sec-"]');
+      if (sectionCard && sectionCard.id) {
+        window.dispatchEvent(
+          new CustomEvent("expand-section-card", {
+            detail: { layoutId: sectionCard.id }
+          })
+        );
+      }
+
+      // 4. Wait a brief moment for the expansion animation layout height calculation, then scroll/focus/pulse using Lenis
+      setTimeout(() => {
+        const rect = target!.getBoundingClientRect();
+        const absoluteElementTop = rect.top + window.scrollY;
+        // Posicionar el elemento en el centro de la pantalla
+        const targetPosition = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
+        // Encontrar el contenedor específico del parámetro.
+        // Si el elemento objetivo (input/select) tiene un contenedor directo de tipo div, lo usamos.
+        // Evitamos subir hasta divs contenedores de grid o secciones grandes.
+        let container = target!;
+        if (target!.id && document.getElementById(target!.id)) {
+          // Si el input tiene ID (ej: title_es) y hay un div con ese id envolviéndolo, ese es el wrapper del parámetro
+          const wrapperDiv = document.getElementById(target!.id)?.closest("div");
+          if (wrapperDiv && wrapperDiv !== target!.closest("form") && wrapperDiv !== target!.closest('[id^="sec-"]')) {
+            container = wrapperDiv;
+          }
+        } else {
+          container = target!.closest("div") || target!;
+        }
+
+        if (lenis) {
+          const currentPos = window.scrollY;
+          const distance = Math.abs(targetPosition - currentPos);
+
+          if (distance > 1200) {
+            // Teletransporte: Salta directamente cerca del objetivo y hace un aterrizaje suave instantáneo
+            const jumpTarget = targetPosition > currentPos ? targetPosition - 400 : targetPosition + 400;
+            lenis.scrollTo(jumpTarget, { immediate: true });
+            setTimeout(() => {
+              lenis.scrollTo(targetPosition, {
+                duration: 0.5,
+                easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+              });
+            }, 50);
+          } else {
+            // Scroll suave Lenis ultra rápido
+            lenis.scrollTo(targetPosition, {
+              duration: 0.5,
+              easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+            });
+          }
+        } else {
+          // Fallback manual rápido
+          window.scrollTo({ top: targetPosition, behavior: "smooth" });
+        }
+
+        // Aplicar el nuevo sombreado verde neon de alta visibilidad al contenedor del parámetro completo
+        container.classList.add("highlight-field-pulse");
+        
+        if (typeof (target as any).focus === "function") {
+          (target as any).focus({ preventScroll: true });
+        }
+
+        setTimeout(() => {
+          container.classList.remove("highlight-field-pulse");
+        }, 3000);
+      }, 350); 
+    }
+  };
+
   return (
     <div 
-      className="relative flex flex-col justify-center select-none" 
-      style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}
+      ref={containerRef}
+      className="relative flex flex-col justify-center select-none animate-fade-in" 
+      style={{ display: "flex", flexDirection: "column", gap: "3px", width: "180px", padding: "10px 12px", marginRight: "6px", cursor: "pointer", borderRadius: "8px" }}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
@@ -1016,22 +1160,28 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         <span style={{ fontSize: "9px", color: "var(--p-text-3)", fontWeight: 500 }}>100%</span>
       </div>
 
+      {isOpen && (
+        <div style={{ position: "absolute", top: "100%", left: 0, width: "100%", height: "20px", zIndex: 99998, background: "transparent" }} />
+      )}
+
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            initial={{ opacity: 0, scale: 0.95, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            exit={{ opacity: 0, scale: 0.95, y: 4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full mt-2 right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-50 text-white leading-normal"
+            className="absolute top-full right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-[99999] text-white leading-normal"
             style={{
-              background: "rgba(15, 15, 15, 0.96)",
+              background: "rgba(15, 15, 15, 0.98)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
-              boxShadow: "0 10px 30px -10px rgba(0,0,0,0.8)",
+              boxShadow: "0 10px 35px -10px rgba(0,0,0,0.95)",
               transformOrigin: "top right",
-              pointerEvents: "none",
+              pointerEvents: "auto",
+              marginTop: "0px", // Removes the gap to prevent accidental mouseleave triggers
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5 font-semibold text-xs">
@@ -1051,11 +1201,18 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
               <div className="border-t border-white/5 pt-3.5">
                 <p className="font-semibold text-white/80 mb-2.5 flex items-center gap-1">
                   <Info size={11} className="text-blue-400" />
-                  <span>Sugerencias para subir el puntaje:</span>
+                  <span>Sugerencias para subir el puntaje (haz clic para ir al campo):</span>
                 </p>
-                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                  {recommendations.slice(0, 4).map((rec, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/[0.03]">
+                <div 
+                  className="space-y-2"
+                >
+                  {recommendations.slice(0, 5).map((rec, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleScrollToField(rec.field)}
+                      className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-white/[0.03] text-left transition-colors cursor-pointer"
+                    >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
                         <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
@@ -1063,7 +1220,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                       <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
                         +{rec.weight}%
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1074,7 +1231,8 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
               </div>
             )}
           </motion.div>
-        )}      </AnimatePresence>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1110,11 +1268,26 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     setForm((prev) => ({ ...prev, [key]: val }));
   };
 
+  const toggleBadge = (badge: string, checked: boolean) => {
+    let badges = form.listing_badge ? form.listing_badge.split(",").map(b => b.trim()).filter(Boolean) : [];
+    if (checked) {
+      if (!badges.includes(badge)) badges.push(badge);
+    } else {
+      badges = badges.filter(b => b !== badge);
+    }
+    set("listing_badge", badges.length > 0 ? badges.join(",") : "basico");
+  };
+
+  const hasBadge = (badge: string): boolean => {
+    if (!form.listing_badge) return false;
+    return form.listing_badge.split(",").map(b => b.trim()).includes(badge);
+  };
+
   const checkApplies = (fieldOrGroup: string): boolean => {
     return checkFieldApplies(fieldOrGroup, form.property_type, form.operation);
   };
 
-  const calculateProgress = (f: FormData, imgs: any[]): { score: number; recommendations: { label: string; weight: number }[] } => {
+  const calculateProgress = (f: FormData, imgs: any[]): { score: number; recommendations: { label: string; weight: number; field: string }[] } => {
     return computeCompletenessScore(f, f.property_type, f.operation, imgs.length, checkApplies);
   };
 
@@ -1648,13 +1821,13 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
           <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
           <Toggle 
-            checked={form.listing_badge === "oportunidad"} 
-            onChange={(v) => set("listing_badge", v ? "oportunidad" : "basico")} 
+            checked={hasBadge("oportunidad")} 
+            onChange={(v) => toggleBadge("oportunidad", v)} 
             label="Oportunidad" 
           />
           <Toggle 
-            checked={form.listing_badge === "ultima_unidad"} 
-            onChange={(v) => set("listing_badge", v ? "ultima_unidad" : "basico")} 
+            checked={hasBadge("ultima_unidad")} 
+            onChange={(v) => toggleBadge("ultima_unidad", v)} 
             label="Última Unidad" 
           />
         </div>
@@ -1671,11 +1844,11 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Español</div>
           <div>
             <Label>Título (Español)</Label>
-            <input value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
+            <input id="title_es" value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
           </div>
           <div>
             <Label>Descripción (Español)</Label>
-            <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} rows={6} />
+            <textarea id="description_es" value={form.description_es} onChange={(e) => set("description_es", e.target.value)} placeholder="Descripción en español..." style={INPUT.textarea} rows={6} />
           </div>
         </div>
 
@@ -1683,11 +1856,11 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Inglés (Opcional)</div>
           <div>
             <Label>Título (Inglés)</Label>
-            <input value={form.title_en} onChange={(e) => set("title_en", e.target.value)} placeholder="Ej: Duplex apartment in La Pedregosa" style={INPUT.base} />
+            <input id="title_en" value={form.title_en} onChange={(e) => set("title_en", e.target.value)} placeholder="Ej: Duplex apartment in La Pedregosa" style={INPUT.base} />
           </div>
           <div>
             <Label>Descripción (Inglés)</Label>
-            <textarea value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} rows={6} />
+            <textarea id="description_en" value={form.description_en} onChange={(e) => set("description_en", e.target.value)} placeholder="Description in English..." style={INPUT.textarea} rows={6} />
           </div>
         </div>
       </div>
@@ -1700,19 +1873,19 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       {isVacacional ? (
         <div className="space-y-4">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
-            <div>
+            <div id="price_per_night">
               <Label>Precio por noche (USD)</Label>
               <FormattedNumberInput value={form.price_per_night} onChange={(val) => set("price_per_night", val)} style={INPUT.base} />
             </div>
-            <div>
+            <div id="price_weekend">
               <Label>Tarifa fines de semana</Label>
               <FormattedNumberInput value={form.price_weekend} onChange={(val) => set("price_weekend", val)} style={INPUT.base} />
             </div>
-            <div>
+            <div id="price">
               <Label>Precio base (referencia)</Label>
               <FormattedNumberInput value={form.price} onChange={(val) => set("price", val)} style={INPUT.base} />
             </div>
-            <div>
+            <div id="price_currency">
               <Label>Moneda base</Label>
               <FormSelect
                 value={form.price_currency}
@@ -1724,17 +1897,17 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
                 ]}
               />
             </div>
-            <div>
+            <div id="min_nights">
               <Label>Mínimo de noches</Label>
               <NumberStepper value={form.min_nights} onChange={(val) => set("min_nights", val)} min={1} />
             </div>
-            <div>
+            <div id="max_guests">
               <Label>Máximo de huéspedes</Label>
               <NumberStepper value={form.max_guests} onChange={(val) => set("max_guests", val)} min={1} />
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div>
+            <div id="checkin_time">
               <Label>Hora Check-in</Label>
               <FormSelect
                 value={form.checkin_time}
@@ -1742,7 +1915,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
                 options={["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map(t => ({ value: t, label: t }))}
               />
             </div>
-            <div>
+            <div id="checkout_time">
               <Label>Hora Check-out</Label>
               <FormSelect
                 value={form.checkout_time}
@@ -1751,20 +1924,22 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               />
             </div>
           </div>
-          <div>
+          <div id="house_rules">
             <Label>Normas de la casa / House Rules</Label>
             <textarea value={form.house_rules} onChange={(e) => set("house_rules", e.target.value)} placeholder="Normas de convivencia, políticas de ruido..." style={INPUT.textarea} />
           </div>
-          <Toggle checked={form.includes_breakfast} onChange={(v) => set("includes_breakfast", v)} label="Incluye desayuno" />
+          <div id="includes_breakfast">
+            <Toggle checked={form.includes_breakfast} onChange={(v) => set("includes_breakfast", v)} label="Incluye desayuno" />
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
-            <div>
+            <div id="price">
               <Label>{form.operation === "alquiler" ? "Canon mensual" : "Precio base"}</Label>
               <FormattedNumberInput value={form.price} onChange={(val) => set("price", val)} style={INPUT.base} required />
             </div>
-            <div>
+            <div id="price_currency">
               <Label>Moneda base</Label>
               <FormSelect
                 value={form.price_currency}
@@ -1777,9 +1952,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               />
             </div>
             {checkApplies("maintenance") && (
-              <div>
+              <div id="maintenance_fee">
                 <Label>Cuota de condominio</Label>
                 <FormattedNumberInput value={form.maintenance_fee} onChange={(val) => set("maintenance_fee", val)} style={INPUT.base} />
+              </div>
+            )}
+            {form.operation === "alquiler" && form.deposit_required && (
+              <div id="deposit_amount">
+                <Label>Monto depósito (USD)</Label>
+                <FormattedNumberInput value={form.deposit_amount} onChange={(val) => set("deposit_amount", val)} style={INPUT.base} />
               </div>
             )}
           </div>
@@ -1787,6 +1968,14 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             <Toggle checked={form.price_negotiable} onChange={(v) => set("price_negotiable", v)} label="Precio negociable" />
             {checkApplies("maintenance") && form.operation === "alquiler" && (
               <Toggle checked={form.maintenance_included} onChange={(v) => set("maintenance_included", v)} label="Condominio incluido en el canon" />
+            )}
+            {form.operation === "alquiler" && (
+              <div id="deposit_required">
+                <Toggle checked={form.deposit_required} onChange={(v) => {
+                  set("deposit_required", v);
+                  if (!v) set("deposit_amount", "");
+                }} label="Requiere depósito" />
+              </div>
             )}
           </div>
         </div>
@@ -1801,65 +1990,65 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     <SectionCard title="Dimensiones y Estructura" layoutId="sec-dimensiones">
       <div style={{ display: "grid", gridTemplateColumns: dimCols, gap: "16px" }}>
         {checkApplies("area_built") && (
-          <div>
+          <div id="area_built">
             <Label>Área construida (m²)</Label>
             <FormattedNumberInput value={form.area_built} onChange={(val) => set("area_built", val)} style={INPUT.base} />
           </div>
         )}
-        <div>
+        <div id="area_total">
           <Label>Área total terreno (m²)</Label>
           <FormattedNumberInput value={form.area_total} onChange={(val) => set("area_total", val)} style={INPUT.base} />
         </div>
         {checkApplies("area_hectares") && (
-          <div>
+          <div id="area_hectares">
             <Label>Área en hectáreas</Label>
             <FormattedNumberInput value={form.area_hectares} onChange={(val) => set("area_hectares", val)} style={INPUT.base} />
           </div>
         )}
         {checkApplies("bedrooms") && (
-          <div>
+          <div id="bedrooms">
             <Label>Habitaciones</Label>
             <NumberStepper value={form.bedrooms} onChange={(val) => set("bedrooms", val)} min={0} />
           </div>
         )}
         {checkApplies("bathrooms") && (
-          <div>
+          <div id="bathrooms">
             <Label>Baños completos</Label>
             <NumberStepper value={form.bathrooms} onChange={(val) => set("bathrooms", val)} min={0} />
           </div>
         )}
         {checkApplies("half_bathrooms") && (
-          <div>
+          <div id="half_bathrooms">
             <Label>Medios baños</Label>
             <NumberStepper value={form.half_bathrooms} onChange={(val) => set("half_bathrooms", val)} min={0} />
           </div>
         )}
         {checkApplies("parking") && (
-          <div>
+          <div id="parking_spaces">
             <Label>Estacionamientos</Label>
             <NumberStepper value={form.parking_spaces} onChange={(val) => set("parking_spaces", val)} min={0} />
           </div>
         )}
         {checkApplies("floor_number") && (
-          <div>
+          <div id="floor_number">
             <Label>Número de piso</Label>
             <NumberStepper value={form.floor_number} onChange={(val) => set("floor_number", val)} min={0} />
           </div>
         )}
         {checkApplies("floors") && (
-          <div>
+          <div id="total_floors">
             <Label>Pisos totales</Label>
             <NumberStepper value={form.floors} onChange={(val) => set("floors", val)} min={0} />
           </div>
         )}
         {checkApplies("year_built") && (
-          <div>
+          <div id="year_built">
             <Label>Año de construcción</Label>
             <input type="number" value={form.year_built} onChange={(e) => set("year_built", e.target.value)} placeholder="Ej: 2015" style={INPUT.base} />
           </div>
         )}
         {checkApplies("condition") && (
-          <div>
+          <div id="condition">
             <Label>Estado de conservación</Label>
             <FormSelect
               value={form.condition}
@@ -1876,7 +2065,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </div>
         )}
         {checkApplies("furnished") && (
-          <div>
+          <div id="furnished">
             <Label>Mobiliario</Label>
             <FormSelect
               value={form.furnished}
@@ -1900,62 +2089,66 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Fotos — always left
   const sectionFotos = (
-    <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos">
-      <ImageDropzone
-        images={images}
-        onAdd={handleAddImages}
-        onRemove={handleRemoveImage}
-        onReorder={setImages}
-        onSetCover={handleSetCover}
-      />
-    </SectionCard>
+    <div id="images">
+      <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos">
+        <ImageDropzone
+          images={images}
+          onAdd={handleAddImages}
+          onRemove={handleRemoveImage}
+          onReorder={setImages}
+          onSetCover={handleSetCover}
+        />
+      </SectionCard>
+    </div>
   );
 
   // Ubicación — right
   const sectionUbicacion = (
     <SectionCard title="Ubicación" layoutId="sec-ubicacion">
       <div className="space-y-3">
-        <div>
-          <Label>Municipio</Label>
-          <FormSelect
-            value={form.municipio}
-            onChange={(val) => set("municipio", val)}
-            placeholder="Seleccionar..."
-            options={[
-              { value: "libertador", label: "Libertador" },
-              { value: "campo_elias", label: "Campo Elías" },
-              { value: "santos_marquina", label: "Santos Marquina" },
-              { value: "sucre", label: "Sucre" },
-              { value: "rangel", label: "Rangel" },
-            ].sort((a, b) => a.label.localeCompare(b.label))}
-          />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div id="municipio">
+            <Label>Municipio</Label>
+            <FormSelect
+              value={form.municipio}
+              onChange={(val) => set("municipio", val)}
+              placeholder="Seleccionar..."
+              options={[
+                { value: "libertador", label: "Libertador" },
+                { value: "campo_elias", label: "Campo Elías" },
+                { value: "santos_marquina", label: "Santos Marquina" },
+                { value: "sucre", label: "Sucre" },
+                { value: "rangel", label: "Rangel" },
+              ].sort((a, b) => a.label.localeCompare(b.label))}
+            />
+          </div>
+          <div id="zone_id">
+            <Label>Zona / Sector</Label>
+            <SearchableFormSelect
+              value={form.zone_id}
+              onChange={(val) => set("zone_id", val)}
+              placeholder="Seleccionar zona..."
+              options={zonesList}
+            />
+          </div>
         </div>
         <div>
           <Label>Dirección (Español)</Label>
-          <input value={form.address_es} onChange={(e) => set("address_es", e.target.value)} placeholder="Calle, edificio..." style={INPUT.base} />
+          <input id="address_es" value={form.address_es} onChange={(e) => set("address_es", e.target.value)} placeholder="Calle, edificio..." style={INPUT.base} />
         </div>
         <div>
           <Label>Dirección (Inglés)</Label>
-          <input value={form.address_en} onChange={(e) => set("address_en", e.target.value)} placeholder="Street name, reference..." style={INPUT.base} />
+          <input id="address_en" value={form.address_en} onChange={(e) => set("address_en", e.target.value)} placeholder="Street name, reference..." style={INPUT.base} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <div>
             <Label>Latitud</Label>
-            <input type="number" step="any" value={form.lat} onChange={(e) => set("lat", e.target.value)} placeholder="8.59" style={INPUT.base} />
+            <input id="lat" type="number" step="any" value={form.lat} onChange={(e) => set("lat", e.target.value)} placeholder="8.59" style={INPUT.base} />
           </div>
           <div>
             <Label>Longitud</Label>
-            <input type="number" step="any" value={form.lng} onChange={(e) => set("lng", e.target.value)} placeholder="-71.14" style={INPUT.base} />
+            <input id="lng" type="number" step="any" value={form.lng} onChange={(e) => set("lng", e.target.value)} placeholder="-71.14" style={INPUT.base} />
           </div>
-        </div>
-        <div>
-          <Label>Zona / Sector</Label>
-          <SearchableFormSelect
-            value={form.zone_id}
-            onChange={(val) => set("zone_id", val)}
-            placeholder="Seleccionar zona..."
-            options={zonesList}
-          />
         </div>
         <Toggle checked={form.show_exact_location} onChange={(v) => set("show_exact_location", v)} label="Mostrar ubicación exacta" />
       </div>
@@ -1999,17 +2192,17 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-              <YesNoSelector value={form.has_water_tank} onChange={(v) => set("has_water_tank", v)} label="Tanque de agua" />
-              <YesNoSelector value={form.has_hot_water} onChange={(v) => set("has_hot_water", v)} label="Agua caliente" />
-              <YesNoSelector value={form.has_generator} onChange={(v) => set("has_generator", v)} label="Generador" />
-              <YesNoSelector value={form.has_internet} onChange={(v) => set("has_internet", v)} label="Internet" />
-              <YesNoSelector value={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" />
-              <YesNoSelector value={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" />
+              <div id="has_water_tank"><YesNoSelector value={form.has_water_tank} onChange={(v) => set("has_water_tank", v)} label="Tanque de agua" /></div>
+              <div id="has_hot_water"><YesNoSelector value={form.has_hot_water} onChange={(v) => set("has_hot_water", v)} label="Agua caliente" /></div>
+              <div id="has_generator"><YesNoSelector value={form.has_generator} onChange={(v) => set("has_generator", v)} label="Generador" /></div>
+              <div id="has_internet"><YesNoSelector value={form.has_internet} onChange={(v) => set("has_internet", v)} label="Internet" /></div>
+              <div id="has_ac"><YesNoSelector value={form.has_ac} onChange={(v) => set("has_ac", v)} label="Aire acondicionado" /></div>
+              <div id="has_heating"><YesNoSelector value={form.has_heating} onChange={(v) => set("has_heating", v)} label="Calefacción" /></div>
               {checkApplies("elevator") && (
-                <YesNoSelector value={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" />
+                <div id="has_elevator"><YesNoSelector value={form.has_elevator} onChange={(v) => set("has_elevator", v)} label="Ascensor" /></div>
               )}
               {checkApplies("has_independent_entrance") && !hasShared && (
-                <YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
+                <div id="has_independent_entrance"><YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" /></div>
               )}
             </div>
           </>
@@ -2020,14 +2213,14 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <div style={{ height: 1, background: "var(--p-border)", margin: "4px 0" }} />
             )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
-              <YesNoSelector value={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24h" />
-              <YesNoSelector value={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" />
-              <YesNoSelector value={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" />
+              <div id="has_security_24h"><YesNoSelector value={form.has_security_24h} onChange={(v) => set("has_security_24h", v)} label="Seguridad 24h" /></div>
+              <div id="has_electric_gate"><YesNoSelector value={form.has_electric_gate} onChange={(v) => set("has_electric_gate", v)} label="Portón eléctrico" /></div>
+              <div id="has_cctv"><YesNoSelector value={form.has_cctv} onChange={(v) => set("has_cctv", v)} label="CCTV / Cámaras" /></div>
               {checkApplies("has_electric_fence") && (
-                <YesNoSelector value={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" />
+                <div id="has_electric_fence"><YesNoSelector value={form.has_electric_fence} onChange={(v) => set("has_electric_fence", v)} label="Cerco eléctrico" /></div>
               )}
-              <YesNoSelector value={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" />
-              <YesNoSelector value={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" />
+              <div id="has_intercom"><YesNoSelector value={form.has_intercom} onChange={(v) => set("has_intercom", v)} label="Intercomunicador" /></div>
+              <div id="has_armored_door"><YesNoSelector value={form.has_armored_door} onChange={(v) => set("has_armored_door", v)} label="Puerta blindada" /></div>
             </div>
           </>
         )}
@@ -2037,44 +2230,34 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Compartido/Habitación — shared variant only
   const sectionCompartido = hasShared ? (
-    <SectionCard title="Condiciones de Habitación" layoutId="sec-compartido" defaultOpen={isShared}>
+    <SectionCard title="Condiciones de Habitación" layoutId="sec-compartido" defaultOpen={true}>
       <div className="space-y-4">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px 16px" }}>
-          <div>
+          <div id="bathroom_type">
             <Label>Tipo de baño</Label>
             <FormSelect value={form.bathroom_type} onChange={(val) => set("bathroom_type", val)} placeholder="Seleccionar..." options={[{ value: "privado", label: "Baño privado" }, { value: "compartido", label: "Baño compartido" }].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
-          <div>
+          <div id="host_housing_type">
             <Label>Vivienda del anfitrión</Label>
             <FormSelect value={form.host_housing_type} onChange={(val) => set("host_housing_type", val)} placeholder="Seleccionar..." options={[{ value: "casa", label: "Casa" }, { value: "apartamento", label: "Apartamento" }].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
-          <div>
+          <div id="cohabitation">
             <Label>Cohabitación</Label>
             <FormSelect value={form.cohabitation} onChange={(val) => set("cohabitation", val)} placeholder="Seleccionar..." options={[{ value: "solo_inquilinos", label: "Solo inquilinos" }, { value: "con_propietario", label: "Con propietario" }].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
-          <div>
+          <div id="gender_policy">
             <Label>Política de género</Label>
             <FormSelect value={form.gender_policy} onChange={(val) => set("gender_policy", val)} placeholder="Seleccionar..." options={[{ value: "mixto", label: "Mixto" }, { value: "solo_mujeres", label: "Solo mujeres" }, { value: "solo_hombres", label: "Solo hombres" }].sort((a, b) => a.label.localeCompare(b.label))} />
           </div>
-          <div>
+          <div id="occupants_count">
             <Label>Ocupantes actuales</Label>
             <NumberStepper value={form.occupants_count} onChange={(val) => set("occupants_count", val)} min={0} />
           </div>
-          {form.deposit_required && (
-            <div>
-              <Label>Monto depósito (USD)</Label>
-              <FormattedNumberInput value={form.deposit_amount} onChange={(val) => set("deposit_amount", val)} style={INPUT.base} />
-            </div>
-          )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "10px 16px", borderTop: "1px solid var(--p-border)", paddingTop: "12px" }}>
-          <Toggle checked={form.deposit_required} onChange={(v) => {
-            set("deposit_required", v);
-            if (!v) set("deposit_amount", "");
-          }} label="Requiere depósito" />
-          <YesNoSelector value={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" />
-          <YesNoSelector value={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" />
-          <YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" />
+          <div id="allows_pets"><YesNoSelector value={form.allows_pets} onChange={(v) => set("allows_pets", v)} label="Acepta mascotas" /></div>
+          <div id="allows_cooking"><YesNoSelector value={form.allows_cooking} onChange={(v) => set("allows_cooking", v)} label="Permite cocinar" /></div>
+          <div id="has_independent_entrance_shared"><YesNoSelector value={form.has_independent_entrance} onChange={(v) => set("has_independent_entrance", v)} label="Entrada independiente" /></div>
         </div>
       </div>
     </SectionCard>
@@ -2082,23 +2265,23 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Terreno y Campo — right for hacienda, main for land
   const sectionTerreno = hasLandSection ? (
-    <SectionCard title="Parámetros de Terreno y Campo" layoutId="sec-terreno" defaultOpen={isLand}>
+    <SectionCard title="Parámetros de Terreno y Campo" layoutId="sec-terreno" defaultOpen={true}>
       <div style={{ display: "grid", gridTemplateColumns: isLand ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: "12px 16px" }}>
-        <div>
+        <div id="topography">
           <Label>Topografía</Label>
           <FormSelect value={form.topography} onChange={(val) => set("topography", val)} placeholder="Seleccionar..." options={[{ value: "plano", label: "Plano" }, { value: "inclinado", label: "Semi-inclinado" }, { value: "irregular", label: "Irregular / Quebrado" }].sort((a, b) => a.label.localeCompare(b.label))} />
         </div>
-        <div>
+        <div id="access_type">
           <Label>Vía de acceso</Label>
           <FormSelect value={form.access_type} onChange={(val) => set("access_type", val)} placeholder="Seleccionar..." options={[{ value: "asfalto", label: "Asfalto / Pavimento" }, { value: "tierra", label: "Tierra / Granzón" }, { value: "concreto", label: "Concreto" }].sort((a, b) => a.label.localeCompare(b.label))} />
         </div>
-        <div>
+        <div id="land_use">
           <Label>Uso del suelo</Label>
-          <input value={form.land_use} onChange={(e) => set("land_use", e.target.value)} placeholder="Ej: Residencial, Agrícola" style={INPUT.base} />
+          <input id="land_use_input" value={form.land_use} onChange={(e) => set("land_use", e.target.value)} placeholder="Ej: Residencial, Agrícola" style={INPUT.base} />
         </div>
-        <div>
+        <div id="current_use">
           <Label>Uso actual</Label>
-          <input value={form.current_use} onChange={(e) => set("current_use", e.target.value)} placeholder="Ej: Cultivo, Vacío" style={INPUT.base} />
+          <input id="current_use_input" value={form.current_use} onChange={(e) => set("current_use", e.target.value)} placeholder="Ej: Cultivo, Vacío" style={INPUT.base} />
         </div>
         {isLand && (
           <div>
@@ -2106,7 +2289,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             <FormattedNumberInput value={form.area_hectares} onChange={(val) => set("area_hectares", val)} style={INPUT.base} />
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", minHeight: "38px", paddingTop: "14px" }}>
+        <div id="has_own_water" style={{ display: "flex", alignItems: "center", minHeight: "38px", paddingTop: "14px" }}>
           <YesNoSelector value={form.has_own_water} onChange={(v) => set("has_own_water", v)} label="Agua propia (Manantial / Pozo)" />
         </div>
       </div>
@@ -2115,7 +2298,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Media — right
   const sectionMedia = (
-    <SectionCard title="Video y Tour Virtual" layoutId="sec-media" defaultOpen={false}>
+    <SectionCard title="Video y Tour Virtual" layoutId="sec-media" defaultOpen={true}>
       <div className="space-y-3">
         <div>
           <Label>Video (YouTube / Vimeo)</Label>
@@ -2142,8 +2325,8 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
     return (
       <form onSubmit={handleSubmit} style={{ width: "100%", textAlign: "left" }}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header with high stacking priority to ensure its dropdown overlays main columns */}
+        <div className="flex items-center justify-between mb-6" style={{ position: "relative", zIndex: 10000 }}>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -2230,10 +2413,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
       <LayoutGroup id={`prop-form-${propertyId}`}>
 
-        {/* Two column main layout */}
-        <div className="prop-form-two-col">
+        {/* Two column main layout with stacking priority below the header */}
+        <div className="prop-form-two-col" style={{ position: "relative", zIndex: 10 }}>
           {/* ─── LEFT COLUMN ─── */}
-          <motion.div layout className="space-y-4">
+          <motion.div layout className="space-y-4" style={{ position: "relative", zIndex: 11 }}>
             {sectionClasificacion}
             {sectionContenido}
             {sectionPrecio}
@@ -2245,7 +2428,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </motion.div>
 
           {/* ─── RIGHT COLUMN ─── */}
-          <motion.div layout className="space-y-4">
+          <motion.div layout className="space-y-4" style={{ position: "relative", zIndex: 11 }}>
             {sectionUbicacion}
             <AnimatePresence mode="sync">
               {!isLand && hasLandSection && (

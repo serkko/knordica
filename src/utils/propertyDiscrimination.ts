@@ -5,8 +5,18 @@
 
 export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string): boolean => {
   switch (fieldOrGroup) {
+    case "price_per_night":
+    case "price_weekend":
+    case "min_nights":
+    case "max_guests":
+    case "checkin_time":
+    case "checkout_time":
+    case "house_rules":
+    case "includes_breakfast":
     case "vacational_section":
       return op === "vacacional";
+    case "price":
+      return op !== "vacacional";
     case "bedrooms":
       return !["terreno_lote", "local", "oficina", "galpon", "edificio"].includes(type);
     case "bathrooms":
@@ -18,22 +28,43 @@ export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string
       return !["terreno_lote", "galpon", "edificio"].includes(type);
     case "has_elevator":
     case "elevator":
-      return ["apartamento", "edificio", "local", "oficina"].includes(type);
+      return ["apartamento", "edificio", "local", "oficina", "townhouse"].includes(type);
     case "parking_spaces":
     case "parking":
-      return !["anexo", "terreno_lote"].includes(type);
+      return type !== "terreno_lote";
 
+    case "unit_count":
+      return type === "edificio";
     case "floors":
       return ["apartamento", "oficina", "local", "edificio"].includes(type);
+    case "total_floors":
+      return ["apartamento", "edificio", "local", "oficina", "townhouse"].includes(type);
     case "maintenance":
+    case "maintenance_fee":
       return op !== "vacacional" && (
         ["apartamento", "casa", "townhouse", "habitacion"].includes(type) ||
         (type === "edificio" && op === "alquiler")
       );
     case "area_hectares":
+      return ["hacienda_finca"].includes(type);
+    case "topography":
+    case "land_use":
+    case "access_type":
+    case "current_use":
+    case "has_own_water":
       return ["hacienda_finca", "terreno_lote"].includes(type);
     case "shared_section":
+    case "bathroom_type":
+    case "host_housing_type":
+    case "cohabitation":
+    case "occupants_count":
+    case "gender_policy":
+    case "allows_pets":
+    case "allows_cooking":
       return ["habitacion", "anexo"].includes(type) && op === "alquiler";
+    case "deposit_required":
+    case "deposit_amount":
+      return op === "alquiler";
     case "has_independent_entrance":
       return ["habitacion", "anexo"].includes(type);
     case "land_section":

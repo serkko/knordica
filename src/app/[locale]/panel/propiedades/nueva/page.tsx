@@ -5,6 +5,8 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
+import { computeCompletenessScore } from "@/utils/propertyCompleteness";
+import { useLenis } from "@/lib/lenis";
 import {
   Upload,
   X,
@@ -903,14 +905,92 @@ function ImageDropzone({ images, onAdd, onRemove, onReorder, onSetCover }: {
 }
 
 // ── Segmented Progress Bar (Framer Motion) ──
-function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number }[] }) {
+function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number; field: string }[] }) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
   const statusLabel = score < 35 ? "Borrador" : score < 80 ? "Incompleto" : "Excelente";
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const lenis = useLenis();
+
+  const handleScrollToField = (field: string) => {
+    let target = document.getElementById(field);
+    if (!target) {
+      target = document.getElementById(`field-${field}`) || document.querySelector(`[name="${field}"]`);
+    }
+    if (!target && field === "price") {
+      target = document.getElementById("price") || document.querySelector('[name="price"]');
+    }
+    if (!target && field === "lat") {
+      target = document.getElementById("lat") || document.getElementById("lng");
+    }
+
+    if (target) {
+      setIsOpen(false);
+      
+      const rect = target.getBoundingClientRect();
+      const absoluteElementTop = rect.top + window.scrollY;
+      const targetPosition = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
+      let container = target;
+      if (target.id && document.getElementById(target.id)) {
+        const wrapperDiv = document.getElementById(target.id)?.closest("div");
+        if (wrapperDiv && wrapperDiv !== target.closest("form") && wrapperDiv !== target.closest('[id^="sec-"]')) {
+          container = wrapperDiv;
+        }
+      } else {
+        container = target.closest("div") || target;
+      }
+
+      if (lenis) {
+        const currentPos = window.scrollY;
+        const distance = Math.abs(targetPosition - currentPos);
+
+        if (distance > 1200) {
+          const jumpTarget = targetPosition > currentPos ? targetPosition - 400 : targetPosition + 400;
+          lenis.scrollTo(jumpTarget, { immediate: true });
+          setTimeout(() => {
+            lenis.scrollTo(targetPosition, {
+              duration: 0.5,
+              easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+            });
+          }, 50);
+        } else {
+          lenis.scrollTo(targetPosition, {
+            duration: 0.5,
+            easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+          });
+        }
+      } else {
+        window.scrollTo({ top: targetPosition, behavior: "smooth" });
+      }
+
+      container.classList.add("highlight-field-pulse");
+      
+      if (typeof (target as any).focus === "function") {
+        (target as any).focus({ preventScroll: true });
+      }
+
+      setTimeout(() => {
+        container.classList.remove("highlight-field-pulse");
+      }, 3000);
+    }
+  };
+
   return (
     <div 
-      className="relative flex flex-col justify-center select-none" 
+      ref={containerRef}
+      className="relative flex flex-col justify-center select-none animate-fade-in" 
       style={{ display: "flex", flexDirection: "column", gap: "3px", width: "160px", marginRight: "12px", cursor: "pointer" }}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
@@ -948,15 +1028,16 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full mt-2 right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-50 text-white leading-normal"
+            className="absolute top-full mt-2 right-0 p-5 rounded-xl shadow-2xl text-[11px] w-[480px] z-[9999] text-white leading-normal"
             style={{
               background: "rgba(15, 15, 15, 0.96)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255, 255, 255, 0.1)",
               boxShadow: "0 10px 30px -10px rgba(0,0,0,0.8)",
               transformOrigin: "top right",
-              pointerEvents: "none",
+              pointerEvents: "auto",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5 font-semibold text-xs">
@@ -976,11 +1057,19 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
               <div className="border-t border-white/5 pt-3.5">
                 <p className="font-semibold text-white/80 mb-2.5 flex items-center gap-1">
                   <Info size={11} className="text-blue-400" />
-                  <span>Sugerencias para subir el puntaje:</span>
+                  <span>Sugerencias para subir el puntaje (haz clic para ir al campo):</span>
                 </p>
-                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
-                  {recommendations.slice(0, 4).map((rec, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/[0.03]">
+                <div 
+                  className="space-y-2 suggestions-scroll max-h-[160px] overflow-y-auto pr-2"
+                  style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.3) rgba(255,255,255,0.05)" }}
+                >
+                  {recommendations.slice(0, 5).map((rec, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleScrollToField(rec.field)}
+                      className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-white/[0.03] text-left transition-colors cursor-pointer"
+                    >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
                         <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
@@ -988,7 +1077,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                       <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
                         +{rec.weight}%
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -999,7 +1088,8 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
               </div>
             )}
           </motion.div>
-        )}      </AnimatePresence>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1031,64 +1121,12 @@ export default function NuevaPropiedadPage() {
     loadZones();
   }, []);
 
-  const calculateProgress = (f: FormData, imgs: ImageFile[]): { score: number; recommendations: { label: string; weight: number }[] } => {
-    let totalWeight = 0;
-    let filledWeight = 0;
-    const recommendations: { label: string; weight: number }[] = [];
+  const checkApplies = (fieldOrGroup: string): boolean => {
+    return checkFieldApplies(fieldOrGroup, form.property_type, form.operation);
+  };
 
-    const checkField = (field: keyof FormData, weight: number, applies: boolean, label: string) => {
-      if (!applies) return;
-      totalWeight += weight;
-      const val = f[field];
-      const isFilled = typeof val === "boolean" ? true : (val && val.toString().trim() !== "");
-      if (isFilled) {
-        filledWeight += weight;
-      } else {
-        recommendations.push({ label, weight });
-      }
-    };
-
-    // 1. Contenido
-    checkField("title_es", 15, true, "Título (Español)");
-    checkField("description_es", 10, true, "Descripción (Español)");
-
-    // 2. Precio
-    checkField("price", 15, true, "Precio");
-    checkField("maintenance_fee", 5, checkFieldApplies("maintenance", f.property_type, f.operation), "Monto de Condominio");
-
-    // 3. Dimensiones
-    checkField("area_built", 10, true, "Área de Construcción");
-    checkField("area_total", 10, true, "Área Total");
-    checkField("bedrooms", 5, checkFieldApplies("bedrooms", f.property_type, f.operation), "Número de Habitaciones");
-    checkField("bathrooms", 5, checkFieldApplies("bathrooms", f.property_type, f.operation), "Número de Baños");
-    checkField("half_bathrooms", 5, checkFieldApplies("half_bathrooms", f.property_type, f.operation), "Medios Baños");
-    checkField("parking_spaces", 5, checkFieldApplies("parking", f.property_type, f.operation), "Puestos de Estacionamiento");
-    checkField("floors", 5, checkFieldApplies("floors", f.property_type, f.operation), "Pisos Totales");
-    checkField("floor_number", 5, checkFieldApplies("floor_number", f.property_type, f.operation), "Número de Piso");
-    checkField("year_built", 5, checkFieldApplies("year_built", f.property_type, f.operation), "Año de Construcción");
-
-    // 4. Ubicación
-    checkField("municipio", 10, true, "Municipio");
-    checkField("zone_id", 10, true, "Zona / Sector");
-    checkField("address_es", 5, true, "Dirección");
-    checkField("lat", 5, true, "Latitud (Mapa)");
-    checkField("lng", 5, true, "Longitud (Mapa)");
-
-    // 5. Media
-    checkField("video_url", 5, true, "Enlace de Video");
-    checkField("virtual_tour_url", 5, true, "Enlace de Tour Virtual");
-
-    // 6. Imágenes
-    totalWeight += 15;
-    if (imgs.length > 0) {
-      filledWeight += 15;
-    } else {
-      recommendations.push({ label: "Fotos de la propiedad", weight: 15 });
-    }
-
-    const score = totalWeight === 0 ? 0 : Math.round((filledWeight / totalWeight) * 100);
-    recommendations.sort((a, b) => b.weight - a.weight);
-    return { score, recommendations };
+  const calculateProgress = (f: FormData, imgs: ImageFile[]): { score: number; recommendations: { label: string; weight: number; field: string }[] } => {
+    return computeCompletenessScore(f, f.property_type, f.operation, imgs.length, checkApplies);
   };
 
   // ── Imágenes: agregar ──
@@ -1391,7 +1429,7 @@ export default function NuevaPropiedadPage() {
       {/* SECCIÓN: Contenido */}
       <SectionCard title="Título y descripción">
         <div className="space-y-4">
-          <div>
+          <div id="title_es">
             <Label>Título (Español)</Label>
             <input
               value={form.title_es}
@@ -1401,7 +1439,7 @@ export default function NuevaPropiedadPage() {
               required
             />
           </div>
-          <div>
+          <div id="description_es">
             <Label>Descripción</Label>
             <textarea
               value={form.description_es}
@@ -1417,7 +1455,7 @@ export default function NuevaPropiedadPage() {
       {/* SECCIÓN: Precio */}
       <SectionCard title="Precio">
         <div className="grid grid-cols-3 gap-4">
-          <div>
+          <div id="price">
             <Label>Precio</Label>
             <FormattedNumberInput
               value={form.price}
@@ -1427,7 +1465,7 @@ export default function NuevaPropiedadPage() {
               required
             />
           </div>
-          <div>
+          <div id="price_currency">
             <Label>Moneda</Label>
             <FormSelect
               value={form.price_currency}
@@ -1440,7 +1478,7 @@ export default function NuevaPropiedadPage() {
             />
           </div>
           {checkFieldApplies("maintenance", form.property_type, form.operation) && (
-            <div>
+            <div id="maintenance_fee">
               <Label>Mantenimiento</Label>
               <FormattedNumberInput
                 value={form.maintenance_fee}
@@ -1481,7 +1519,7 @@ export default function NuevaPropiedadPage() {
           }).map(({ key, label }) => {
             const isStepper = ["bedrooms", "bathrooms", "half_bathrooms", "parking_spaces", "floors", "floor_number"].includes(key);
             return (
-              <div key={key}>
+              <div key={key} id={key}>
                 <Label>{label}</Label>
                 {isStepper ? (
                   <NumberStepper
@@ -1547,7 +1585,7 @@ export default function NuevaPropiedadPage() {
               style={INPUT.base}
             />
           </div>
-          <div>
+          <div id="lat">
             <Label>Latitud</Label>
             <input
               type="number"
@@ -1558,7 +1596,7 @@ export default function NuevaPropiedadPage() {
               style={INPUT.base}
             />
           </div>
-          <div>
+          <div id="lng">
             <Label>Longitud</Label>
             <input
               type="number"
@@ -1573,20 +1611,22 @@ export default function NuevaPropiedadPage() {
       </SectionCard>
 
       {/* SECCIÓN: Imágenes */}
-      <SectionCard title="Fotos (hasta 20)">
-        <ImageDropzone
-          images={images}
-          onAdd={handleAddImages}
-          onRemove={handleRemoveImage}
-          onReorder={setImages}
-          onSetCover={handleSetCover}
-        />
-      </SectionCard>
+      <div id="images">
+        <SectionCard title="Fotos (hasta 20)">
+          <ImageDropzone
+            images={images}
+            onAdd={handleAddImages}
+            onRemove={handleRemoveImage}
+            onReorder={setImages}
+            onSetCover={handleSetCover}
+          />
+        </SectionCard>
+      </div>
 
       {/* SECCIÓN: Video */}
       <SectionCard title="Video y tour virtual" defaultOpen={false}>
         <div className="space-y-4">
-          <div>
+          <div id="video_url">
             <Label>Enlace de YouTube o Vimeo</Label>
             <div className="relative">
               <Video size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--p-text-3)" }} />
@@ -1598,7 +1638,7 @@ export default function NuevaPropiedadPage() {
               />
             </div>
           </div>
-          <div>
+          <div id="virtual_tour_url">
             <Label>Tour virtual (Matterport u otro iframe)</Label>
             <div className="relative">
               <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--p-text-3)" }} />
@@ -1638,12 +1678,13 @@ export default function NuevaPropiedadPage() {
             if (key === "furnished") return checkFieldApplies("furnished", form.property_type, form.operation);
             return true;
           }).map(([key, label]) => (
-            <Toggle
-              key={key}
-              checked={!!form[key as keyof FormData]}
-              onChange={(v) => set(key as keyof FormData, v)}
-              label={label as string}
-            />
+            <div key={key} id={key}>
+              <Toggle
+                checked={!!form[key as keyof FormData]}
+                onChange={(v) => set(key as keyof FormData, v)}
+                label={label as string}
+              />
+            </div>
           ))}
         </div>
       </SectionCard>
