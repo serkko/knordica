@@ -945,7 +945,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
       let container = target;
       if (target.id && document.getElementById(target.id)) {
         const wrapperDiv = document.getElementById(target.id)?.closest("div");
-        if (wrapperDiv && wrapperDiv !== target.closest("form") && wrapperDiv !== target.closest('[id^="sec-"]')) {
+        if (wrapperDiv && (wrapperDiv as any) !== target.closest("form") && (wrapperDiv as any) !== target.closest('[id^="sec-"]')) {
           container = wrapperDiv;
         }
       } else {
@@ -1240,13 +1240,14 @@ export default function NuevaPropiedadPage() {
       if (propErr || !prop) throw propErr ?? new Error("Error al crear propiedad");
 
       // 2. Insertar traducción ES
-      await supabase.from("property_translations").insert({
+      const { error: transErr } = await supabase.from("property_translations").insert({
         property_id: prop.id,
         locale: "es",
         title: form.title_es,
         description: form.description_es || null,
         short_description: null,
       });
+      if (transErr) throw transErr;
 
       // 3. Subir imágenes a Supabase Storage
       if (images.length > 0) {

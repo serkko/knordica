@@ -1,8 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence, Reorder, LayoutGroup } from "framer-motion";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
+import {
+  DndContext,
+  closestCorners,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  DragOverlay,
+  useDroppable,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDiscrimination";
@@ -22,7 +43,7 @@ import {
   Link as LinkIcon,
   ArrowLeft,
   Save,
-  Image as ImageIcon,
+  ImageIcon as ImageIcon,
   Info,
   Sparkles,
   ArrowUpRight,
@@ -294,12 +315,12 @@ function FormattedNumberInput({
     const parts = val.split(".");
     const integerPart = parts[0] || "";
     const decimalPart = parts[1];
-    
+
     const cleanInt = integerPart.replace(/[^\d-]/g, "");
     if (cleanInt === "" || cleanInt === "-") return cleanInt;
-    
+
     const formattedInt = Number(cleanInt).toLocaleString("es-ES", { useGrouping: true, maximumFractionDigits: 0 });
-    
+
     if (decimalPart !== undefined) {
       return `${formattedInt},${decimalPart}`;
     }
@@ -309,7 +330,7 @@ function FormattedNumberInput({
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     const normalized = text.replace(/\./g, "").replace(/,/g, ".");
-    
+
     if (normalized === "" || normalized === "-" || /^-?\d*\.?\d*$/.test(normalized)) {
       onChange(normalized);
     }
@@ -681,7 +702,7 @@ function SearchableFormSelect({ value, onChange, options, placeholder, disabled 
                 }}
               />
             </div>
-            
+
             <div style={{ maxHeight: "220px", overflowY: "auto", padding: "4px 0" }}>
               {filtered.length === 0 ? (
                 <div style={{ padding: "8px 12px", fontSize: "12px", color: "var(--p-text-3)" }}>
@@ -737,40 +758,157 @@ function SearchableFormSelect({ value, onChange, options, placeholder, disabled 
   );
 }
 
-// ── SectionCard with layout animation ──
+
+// ── Title map for ghost card ──
+const SECTION_TITLES: Record<string, string> = {
+  "sec-clasificacion": "Clasificaci\u00f3n y Publicaci\u00f3n",
+  "sec-contenido": "Contenido de la publicaci\u00f3n",
+  "sec-precio": "Precio y Condiciones Financieras",
+  "sec-dimensiones": "Dimensiones y Estructura",
+  "sec-ubicacion": "Ubicaci\u00f3n",
+  "sec-fotos": "Fotos de la propiedad",
+  "sec-media": "Video y Tour Virtual",
+  "sec-servicios": "Servicios, Amenidades y Seguridad",
+  "sec-compartido": "Condiciones de Habitaci\u00f3n",
+  "sec-terreno": "Par\u00e1metros de Terreno y Campo",
+};
+
+// ── Ghost card shown in DragOverlay — only the header at 85% scale ──
+function DragGhostCard({ sectionId }: { sectionId: string }) {
+  return (
+    <div
+      style={{
+        background: "var(--p-surface)",
+        border: "1px solid var(--p-accent)",
+        borderRadius: "var(--p-radius)",
+        padding: "14px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        boxShadow: "0 24px 60px rgba(0,0,0,0.7)",
+        transform: "scale(0.85)",
+        transformOrigin: "top left",
+        cursor: "grabbing",
+        userSelect: "none",
+        opacity: 0.96,
+      }}
+    >
+      <GripVertical size={14} style={{ color: "var(--p-accent)", flexShrink: 0 }} />
+      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--p-text)" }}>
+        {SECTION_TITLES[sectionId] ?? sectionId}
+      </span>
+    </div>
+  );
+}
+
+// ── Column droppable wrapper ──
+function ColumnDroppable({ droppableId, children }: { droppableId: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        flex: 1,
+        minHeight: 100,
+        borderRadius: "var(--p-radius)",
+        outline: isOver ? "2px dashed var(--p-accent)" : "2px dashed transparent",
+        outlineOffset: 4,
+        transition: "outline 150ms",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SortableSectionItem({
+  id,
+  element,
+  isOpen,
+  onOpenChange,
+}: {
+  id: string;
+  element: React.ReactNode;
+  isOpen: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        // Spring-like overshoot easing — neighbours "bubble" out of the way
+        transition: transition
+          ? "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+          : undefined,
+        opacity: isDragging ? 0 : 1,
+        position: "relative",
+      }}
+    >
+      {React.cloneElement(element as React.ReactElement<any>, {
+        dragHandleProps: listeners,
+        open: isOpen,
+        onOpenChange,
+      })}
+    </div>
+  );
+}
+
+// ── SectionCard with drag handle support ──
 function SectionCard({
   title,
   children,
   defaultOpen = true,
   layoutId,
   style = {},
+  id,
+  dragHandleProps,
+  open: openProp,
+  onOpenChange,
 }: {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   layoutId?: string;
   style?: React.CSSProperties;
+  id?: string;
+  dragHandleProps?: Record<string, unknown>;
+  /** Controlled open state (for DragOverlay to preserve section state) */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  // Controlled mode: use openProp; uncontrolled: use internal state
+  const open = openProp !== undefined ? openProp : internalOpen;
+
+  const toggleOpen = () => {
+    const next = !open;
+    if (openProp === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   useEffect(() => {
     if (!layoutId) return;
     const handleExpand = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && customEvent.detail.layoutId === layoutId) {
-        setOpen(true);
+        if (openProp === undefined) setInternalOpen(true);
+        onOpenChange?.(true);
       }
     };
     window.addEventListener("expand-section-card", handleExpand);
     return () => window.removeEventListener("expand-section-card", handleExpand);
-  }, [layoutId]);
+  }, [layoutId, openProp, onOpenChange]);
 
   return (
-    <motion.div
-      id={layoutId}
-      layout
-      layoutId={layoutId}
-      transition={{ type: "spring", stiffness: 280, damping: 28 }}
+    <div
+      id={id || layoutId}
       style={{
         background: "var(--p-surface)",
         border: "1px solid var(--p-border)",
@@ -779,17 +917,38 @@ function SectionCard({
         ...style,
       }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
+      <div
+        className="w-full flex items-center justify-between px-5 py-4"
         style={{ borderBottom: open ? "1px solid var(--p-border)" : "none" }}
       >
-        <span className="text-[13px] font-semibold" style={{ color: "var(--p-text)" }}>
-          {title}
-        </span>
-        {open ? <ChevronUp size={15} style={{ color: "var(--p-text-2)" }} /> : <ChevronDown size={15} style={{ color: "var(--p-text-2)" }} />}
-      </button>
+        {/* Drag handle — only this triggers drag, not clicks on title */}
+        {dragHandleProps && (
+          <div
+            {...dragHandleProps}
+            style={{ cursor: "grab", display: "flex", alignItems: "center", paddingRight: 10, color: "var(--p-text-3)", flexShrink: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={14} />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="flex-1 flex items-center justify-start text-left cursor-pointer bg-transparent border-none p-0 outline-none"
+        >
+          <span className="text-[13px] font-semibold" style={{ color: "var(--p-text)" }}>
+            {title}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="p-1 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white/80 cursor-pointer"
+          style={{ background: "none", border: "none" }}
+        >
+          {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </button>
+      </div>
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -802,7 +961,7 @@ function SectionCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -1015,7 +1174,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
 
     // 2. Identify the target element - dynamically find element by ID or input attributes
     let target: HTMLElement | null = null;
-    
+
     // Explicit custom mapping logic for special wrapper fields to ensure we highlight the correct layout input
     const specFields: Record<string, string> = {
       topography: "topography",
@@ -1037,9 +1196,9 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
 
     if (specFields[field]) {
       // Find inside custom styled structures or name selector
-      target = document.getElementById(specFields[field]) || 
-               document.querySelector(`[name="${specFields[field]}"]`) || 
-               document.querySelector(`[id^="${specFields[field]}"]`) as HTMLElement;
+      target = document.getElementById(specFields[field]) ||
+        document.querySelector(`[name="${specFields[field]}"]`) ||
+        document.querySelector(`[id^="${specFields[field]}"]`) as HTMLElement;
     }
 
     if (!target) {
@@ -1079,7 +1238,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         if (target!.id && document.getElementById(target!.id)) {
           // Si el input tiene ID (ej: title_es) y hay un div con ese id envolviéndolo, ese es el wrapper del parámetro
           const wrapperDiv = document.getElementById(target!.id)?.closest("div");
-          if (wrapperDiv && wrapperDiv !== target!.closest("form") && wrapperDiv !== target!.closest('[id^="sec-"]')) {
+          if (wrapperDiv && (wrapperDiv as any) !== target!.closest("form") && (wrapperDiv as any) !== target!.closest('[id^="sec-"]')) {
             container = wrapperDiv;
           }
         } else {
@@ -1114,7 +1273,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
 
         // Aplicar el nuevo sombreado verde neon de alta visibilidad al contenedor del parámetro completo
         container.classList.add("highlight-field-pulse");
-        
+
         if (typeof (target as any).focus === "function") {
           (target as any).focus({ preventScroll: true });
         }
@@ -1122,14 +1281,14 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         setTimeout(() => {
           container.classList.remove("highlight-field-pulse");
         }, 3000);
-      }, 350); 
+      }, 350);
     }
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative flex flex-col justify-center select-none animate-fade-in" 
+      className="relative flex flex-col justify-center select-none animate-fade-in"
       style={{ display: "flex", flexDirection: "column", gap: "3px", width: "180px", padding: "10px 12px", marginRight: "6px", cursor: "pointer", borderRadius: "8px" }}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
@@ -1166,7 +1325,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}
@@ -1192,7 +1351,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                 {statusLabel} • {score}%
               </span>
             </div>
-            
+
             <p className="text-white/60 mb-4 text-[10px] leading-relaxed">
               Completa los campos recomendados para mejorar el posicionamiento de tu propiedad en las búsquedas.
             </p>
@@ -1203,7 +1362,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                   <Info size={11} className="text-blue-400" />
                   <span>Sugerencias para subir el puntaje (haz clic para ir al campo):</span>
                 </p>
-                <div 
+                <div
                   className="space-y-2"
                 >
                   {recommendations.slice(0, 5).map((rec, i) => (
@@ -1237,6 +1396,10 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
   );
 }
 
+// ── Stable sensor config (module-level = never recreated on render) ──
+const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 8 } } as const;
+const KEYBOARD_SENSOR_OPTIONS = { coordinateGetter: sortableKeyboardCoordinates } as const;
+
 // ── PropertyForm props ──
 interface PropertyFormProps {
   locale: string;
@@ -1264,6 +1427,142 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   formRef.current = form;
   imagesRef.current = images;
 
+  // ── Two-column DnD state (left/right independent stacks) ──
+  const [leftColumnIds, setLeftColumnIds] = useState<string[]>([]);
+  const [rightColumnIds, setRightColumnIds] = useState<string[]>([]);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  // Lifted open/closed state for each section (so DragOverlay can mirror it)
+  const [sectionOpenState, setSectionOpenState] = useState<Record<string, boolean>>({
+    "sec-clasificacion": true, "sec-contenido": true, "sec-precio": true,
+    "sec-dimensiones": true, "sec-ubicacion": true, "sec-fotos": true,
+    "sec-media": true, "sec-servicios": true, "sec-compartido": true, "sec-terreno": true,
+  });
+  const sectionOpenRef = useRef(sectionOpenState);
+  sectionOpenRef.current = sectionOpenState;
+
+  const setSecOpen = useCallback((id: string, v: boolean) => {
+    setSectionOpenState(prev => ({ ...prev, [id]: v }));
+  }, []);
+
+  // Refs for stable access inside drag callbacks (no stale closures)
+  const leftRef = useRef<string[]>([]);
+  const rightRef = useRef<string[]>([]);
+  const dragSnapshotRef = useRef<{ left: string[]; right: string[] } | null>(null);
+  leftRef.current = leftColumnIds;
+  rightRef.current = rightColumnIds;
+
+  // Sensors using module-level stable options (avoids infinite render loops)
+  const sensors = useSensors(
+    useSensor(PointerSensor, POINTER_SENSOR_OPTIONS),
+    useSensor(KeyboardSensor, KEYBOARD_SENSOR_OPTIONS),
+  );
+
+  // Calculate and sync sections when loading finishes or dynamic sections changes
+  const variant = getLayoutVariant(form.property_type, form.operation);
+  const isVacacional = variant === "vacacional";
+  const isLand = variant === "land";
+  const isShared = variant === "shared";
+  const hasServices = checkFieldApplies("services_section", form.property_type, form.operation);
+  const hasSecurity = checkFieldApplies("security_section", form.property_type, form.operation);
+  const hasShared = checkFieldApplies("shared_section", form.property_type, form.operation);
+  const hasLandSection = checkFieldApplies("land_section", form.property_type, form.operation);
+
+  // Sync two-column state when sections activate/deactivate
+  useEffect(() => {
+    if (loading) return;
+
+    const defaultLeft = ["sec-clasificacion", "sec-contenido", "sec-dimensiones", "sec-fotos"];
+    const defaultRight = ["sec-precio", "sec-ubicacion", "sec-servicios", "sec-compartido", "sec-terreno", "sec-media"];
+
+    const active = new Set<string>([
+      "sec-clasificacion", "sec-contenido", "sec-precio", "sec-dimensiones",
+      "sec-ubicacion", "sec-fotos", "sec-media",
+    ]);
+    if (hasShared) active.add("sec-compartido");
+    if (hasLandSection) active.add("sec-terreno");
+    if (hasServices || hasSecurity) active.add("sec-servicios");
+
+    // Use ref values to avoid stale closure
+    const curLeft = leftRef.current.filter(id => active.has(id));
+    const curRight = rightRef.current.filter(id => active.has(id));
+
+    // Add any newly active sections in their default column
+    const insertOrdered = (arr: string[], id: string, defaultOrder: string[]) => {
+      const targetIdx = defaultOrder.indexOf(id);
+      for (let i = 0; i < arr.length; i++) {
+        const item = arr[i];
+        if (item && defaultOrder.indexOf(item) > targetIdx) { arr.splice(i, 0, id); return; }
+      }
+      arr.push(id);
+    };
+
+    [...active].forEach(id => {
+      if (!curLeft.includes(id) && !curRight.includes(id)) {
+        if (defaultLeft.includes(id)) insertOrdered(curLeft, id, defaultLeft);
+        else insertOrdered(curRight, id, defaultRight);
+      }
+    });
+
+    setLeftColumnIds([...curLeft]);
+    setRightColumnIds([...curRight]);
+  }, [loading, form.property_type, form.operation, hasShared, hasLandSection, hasServices, hasSecurity]);
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: DragStartEvent) => {
+    const id = e.active.id as string;
+    setActiveDragId(id);
+    dragSnapshotRef.current = { left: [...leftRef.current], right: [...rightRef.current] };
+  }, []);
+
+  const handleDragOver = useCallback((e: DragOverEvent) => {
+    const { active, over } = e;
+    if (!over) return;
+    const aid = active.id as string;
+    const oid = over.id as string;
+    const L = leftRef.current;
+    const R = rightRef.current;
+    const inLeft = L.includes(aid);
+    const overL = L.includes(oid) || oid === "droppable-left";
+    const overR = R.includes(oid) || oid === "droppable-right";
+    if (!overL && !overR) return;
+
+    if (inLeft && overR) {
+      // left → right
+      const idx = oid === "droppable-right" ? R.length : Math.max(0, R.indexOf(oid));
+      const newR = [...R.filter(id => id !== aid)]; newR.splice(idx, 0, aid);
+      setLeftColumnIds(L.filter(id => id !== aid));
+      setRightColumnIds(newR);
+    } else if (!inLeft && overL) {
+      // right → left
+      const idx = oid === "droppable-left" ? L.length : Math.max(0, L.indexOf(oid));
+      const newL = [...L.filter(id => id !== aid)]; newL.splice(idx, 0, aid);
+      setRightColumnIds(R.filter(id => id !== aid));
+      setLeftColumnIds(newL);
+    } else if (inLeft && overL && aid !== oid) {
+      // within left
+      const o = L.indexOf(aid), n = L.indexOf(oid);
+      if (o !== -1 && n !== -1) setLeftColumnIds(arrayMove(L, o, n));
+    } else if (!inLeft && overR && aid !== oid) {
+      // within right
+      const o = R.indexOf(aid), n = R.indexOf(oid);
+      if (o !== -1 && n !== -1) setRightColumnIds(arrayMove(R, o, n));
+    }
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setActiveDragId(null);
+    dragSnapshotRef.current = null;
+  }, []);
+
+  const handleDragCancel = useCallback(() => {
+    if (dragSnapshotRef.current) {
+      setLeftColumnIds(dragSnapshotRef.current.left);
+      setRightColumnIds(dragSnapshotRef.current.right);
+    }
+    setActiveDragId(null);
+  }, []);
+
   const set = (key: keyof FormData, val: any) => {
     setForm((prev) => ({ ...prev, [key]: val }));
   };
@@ -1290,8 +1589,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const calculateProgress = (f: FormData, imgs: any[]): { score: number; recommendations: { label: string; weight: number; field: string }[] } => {
     return computeCompletenessScore(f, f.property_type, f.operation, imgs.length, checkApplies);
   };
-
-  const variant = getLayoutVariant(form.property_type, form.operation);
 
   // ── Load Property ──
   useEffect(() => {
@@ -1563,15 +1860,17 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           virtual_tour_url: currentForm.virtual_tour_url || null,
           listing_badge: currentForm.listing_badge || "basico",
           completeness_score: currentProgress,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", propertyId);
 
       if (!propErr) {
         // Upsert translations
-        await supabase.from("property_translations").upsert([
+        const { error: transErr } = await supabase.from("property_translations").upsert([
           { property_id: propertyId, locale: "es", title: currentForm.title_es, description: currentForm.description_es || null },
           { property_id: propertyId, locale: "en", title: currentForm.title_en || currentForm.title_es, description: currentForm.description_en || null },
         ], { onConflict: "property_id,locale" });
+        if (transErr) throw transErr;
 
         // Update snapshot
         savedSnapshotRef.current = {
@@ -1688,13 +1987,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           virtual_tour_url: form.virtual_tour_url || null,
           listing_badge: form.listing_badge || "basico",
           completeness_score: currentProgress,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", propertyId);
       if (propErr) throw propErr;
-      await supabase.from("property_translations").upsert([
+      const { error: transErr } = await supabase.from("property_translations").upsert([
         { property_id: propertyId, locale: "es", title: form.title_es, description: form.description_es || null },
         { property_id: propertyId, locale: "en", title: form.title_en || form.title_es, description: form.description_en || null },
       ], { onConflict: "property_id,locale" });
+      if (transErr) throw transErr;
       if (removedImages.length > 0) {
         await supabase.from("property_images").delete().in("id", removedImages);
         setRemovedImages([]);
@@ -1758,17 +2059,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     );
   }
 
-  // ── Derived sections ──
-  const isLand = variant === "land";
-  const isShared = variant === "shared";
-  const isVacacional = variant === "vacacional";
-  const isHacienda = variant === "hacienda";
-  const isCommercial = variant === "commercial";
-  const hasServices = checkApplies("services_section");
-  const hasSecurity = checkApplies("security_section");
-  const hasShared = checkApplies("shared_section");
-  const hasLandSection = checkApplies("land_section");
-
   // ─── SECTION COMPONENTS ───────────────────────────────────────────────────
 
   // Clasificación — always in left column now
@@ -1820,15 +2110,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           <Toggle checked={form.featured} onChange={(v) => set("featured", v)} label="Destacada" />
           <Toggle checked={form.exclusive} onChange={(v) => set("exclusive", v)} label="Exclusiva" />
           <Toggle checked={form.price_reduced} onChange={(v) => set("price_reduced", v)} label="Precio reducido" />
-          <Toggle 
-            checked={hasBadge("oportunidad")} 
-            onChange={(v) => toggleBadge("oportunidad", v)} 
-            label="Oportunidad" 
+          <Toggle
+            checked={hasBadge("oportunidad")}
+            onChange={(v) => toggleBadge("oportunidad", v)}
+            label="Oportunidad"
           />
-          <Toggle 
-            checked={hasBadge("ultima_unidad")} 
-            onChange={(v) => toggleBadge("ultima_unidad", v)} 
-            label="Última Unidad" 
+          <Toggle
+            checked={hasBadge("ultima_unidad")}
+            onChange={(v) => toggleBadge("ultima_unidad", v)}
+            label="Última Unidad"
           />
         </div>
       </div>
@@ -1912,7 +2202,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <FormSelect
                 value={form.checkin_time}
                 onChange={(val) => set("checkin_time", val)}
-                options={["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map(t => ({ value: t, label: t }))}
+                options={["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"].map(t => ({ value: t, label: t }))}
               />
             </div>
             <div id="checkout_time">
@@ -1920,7 +2210,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               <FormSelect
                 value={form.checkout_time}
                 onChange={(val) => set("checkout_time", val)}
-                options={["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"].map(t => ({ value: t, label: t }))}
+                options={["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"].map(t => ({ value: t, label: t }))}
               />
             </div>
           </div>
@@ -2089,17 +2379,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Fotos — always left
   const sectionFotos = (
-    <div id="images">
-      <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos">
-        <ImageDropzone
-          images={images}
-          onAdd={handleAddImages}
-          onRemove={handleRemoveImage}
-          onReorder={setImages}
-          onSetCover={handleSetCover}
-        />
-      </SectionCard>
-    </div>
+    <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos" id="images">
+      <ImageDropzone
+        images={images}
+        onAdd={handleAddImages}
+        onRemove={handleRemoveImage}
+        onReorder={setImages}
+        onSetCover={handleSetCover}
+      />
+    </SectionCard>
   );
 
   // Ubicación — right
@@ -2320,71 +2608,71 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // ─── RENDER ──────────────────────────────────────────────────────────────
 
-    const progressData = calculateProgress(form, images);
-    const progressScore = progressData.score;
+  const progressData = calculateProgress(form, images);
+  const progressScore = progressData.score;
 
-    return (
-      <form onSubmit={handleSubmit} style={{ width: "100%", textAlign: "left" }}>
-        {/* Header with high stacking priority to ensure its dropdown overlays main columns */}
-        <div className="flex items-center justify-between mb-6" style={{ position: "relative", zIndex: 10000 }}>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push(`/${locale}/panel/propiedades`)}
-              className="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
-              style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
-            >
-              <ArrowLeft size={14} />
-            </button>
-            <div className="flex items-center gap-4">
-              <div>
-                <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-                  Editar propiedad
-                </h2>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-                    Modifica la información y fotos de la publicación
-                  </p>
-                  {!loading && (autosaving || lastSavedAt) && (
-                    <span className="text-[11px] italic font-normal text-[var(--p-text-3)]" style={{ color: "var(--p-text-3)", fontStyle: "italic" }}>
-                      {autosaving ? (
-                        "• Guardando..."
-                      ) : lastSavedAt ? (
-                        `• Guardado hace ${secondsSinceSave < 60 ? "<1min" : `${Math.floor(secondsSinceSave / 60)}min`}`
-                      ) : null}
-                    </span>
-                  )}
-                </div>
+  return (
+    <form onSubmit={handleSubmit} style={{ width: "100%", textAlign: "left" }}>
+      {/* Header with high stacking priority to ensure its dropdown overlays main columns */}
+      <div className="flex items-center justify-between mb-6" style={{ position: "relative", zIndex: 10000 }}>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push(`/${locale}/panel/propiedades`)}
+            className="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+          >
+            <ArrowLeft size={14} />
+          </button>
+          <div className="flex items-center gap-4">
+            <div>
+              <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
+                Editar propiedad
+              </h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+                  Modifica la información y fotos de la publicación
+                </p>
+                {!loading && (autosaving || lastSavedAt) && (
+                  <span className="text-[11px] italic font-normal text-[var(--p-text-3)]" style={{ color: "var(--p-text-3)", fontStyle: "italic" }}>
+                    {autosaving ? (
+                      "• Guardando..."
+                    ) : lastSavedAt ? (
+                      `• Guardado hace ${secondsSinceSave < 60 ? "<1min" : `${Math.floor(secondsSinceSave / 60)}min`}`
+                    ) : null}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
-            <button
-              type="button"
-              onClick={() => router.push(`/${locale}/panel/propiedades`)}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
-              style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
-            >
-              <X size={14} />
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
-              style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C", opacity: saving ? 0.7 : 1 }}
-            >
-              <Save size={14} />
-              {saving ? "Guardando..." : "Guardar cambios"}
-            </button>
-          </div>
         </div>
+        <div className="flex items-center gap-3">
+          <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
+          <button
+            type="button"
+            onClick={() => router.push(`/${locale}/panel/propiedades`)}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+          >
+            <X size={14} />
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+            style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C", opacity: saving ? 0.7 : 1 }}
+          >
+            <Save size={14} />
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
 
 
 
-        {/* Alerts */}
-        <AnimatePresence>
+      {/* Alerts */}
+      <AnimatePresence>
         {success && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -2411,63 +2699,101 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </div>
       )}
 
-      <LayoutGroup id={`prop-form-${propertyId}`}>
+      {/* ─── Two-column DnD: left + right independent sortable stacks ─── */}
+      {(() => {
+        const sectionsMap: Record<string, React.ReactNode> = {
+          "sec-clasificacion": sectionClasificacion,
+          "sec-contenido": sectionContenido,
+          "sec-precio": sectionPrecio,
+          "sec-dimensiones": sectionDimensiones,
+          "sec-ubicacion": sectionUbicacion,
+          "sec-fotos": sectionFotos,
+          "sec-media": sectionMedia,
+        };
+        if (hasShared && sectionCompartido) sectionsMap["sec-compartido"] = sectionCompartido;
+        if (hasLandSection && sectionTerreno) sectionsMap["sec-terreno"] = sectionTerreno;
+        if ((hasServices || hasSecurity) && sectionServiciosSeguridad) sectionsMap["sec-servicios"] = sectionServiciosSeguridad;
 
-        {/* Two column main layout with stacking priority below the header */}
-        <div className="prop-form-two-col" style={{ position: "relative", zIndex: 10 }}>
-          {/* ─── LEFT COLUMN ─── */}
-          <motion.div layout className="space-y-4" style={{ position: "relative", zIndex: 11 }}>
-            {sectionClasificacion}
-            {sectionContenido}
-            {sectionPrecio}
-            {sectionDimensiones}
-            {hasShared && sectionCompartido}
-            {/* For land variant: show terreno details in left as part of main content */}
-            {isLand && sectionTerreno}
-            {sectionFotos}
-          </motion.div>
-
-          {/* ─── RIGHT COLUMN ─── */}
-          <motion.div layout className="space-y-4" style={{ position: "relative", zIndex: 11 }}>
-            {sectionUbicacion}
-            <AnimatePresence mode="sync">
-              {!isLand && hasLandSection && (
-                <motion.div key="sec-terreno-wrap" layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ type: "spring", stiffness: 280, damping: 28 }}>
-                  {sectionTerreno}
-                </motion.div>
-              )}
-              {(hasServices || hasSecurity) && (
-                <motion.div key="sec-servicios-wrap" layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ type: "spring", stiffness: 280, damping: 28 }}>
-                  {sectionServiciosSeguridad}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {sectionMedia}
-          </motion.div>
-        </div>
-
-        {/* Bottom actions */}
-        <motion.div layout className="flex justify-between pt-6 pb-8 mt-4">
-          <button
-            type="button"
-            onClick={() => router.push(`/${locale}/panel/propiedades`)}
-            className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium cursor-pointer"
-            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+        return (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
-            <ArrowLeft size={14} />
-            Volver al listado
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 text-[13px] font-medium cursor-pointer"
-            style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C" }}
-          >
-            <Save size={15} />
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </button>
-        </motion.div>
-      </LayoutGroup>
+            <div style={{ display: "flex", gap: 16, alignItems: "start" }}>
+              {/* ── LEFT COLUMN ── */}
+              <SortableContext items={leftColumnIds} strategy={verticalListSortingStrategy}>
+                <ColumnDroppable droppableId="droppable-left">
+                  {leftColumnIds.map(id => {
+                    const el = sectionsMap[id];
+                    return el ? (
+                      <SortableSectionItem
+                        key={id} id={id} element={el}
+                        isOpen={sectionOpenState[id] ?? true}
+                        onOpenChange={(v) => setSecOpen(id, v)}
+                      />
+                    ) : null;
+                  })}
+                </ColumnDroppable>
+              </SortableContext>
+
+              {/* ── RIGHT COLUMN ── */}
+              <SortableContext items={rightColumnIds} strategy={verticalListSortingStrategy}>
+                <ColumnDroppable droppableId="droppable-right">
+                  {rightColumnIds.map(id => {
+                    const el = sectionsMap[id];
+                    return el ? (
+                      <SortableSectionItem
+                        key={id} id={id} element={el}
+                        isOpen={sectionOpenState[id] ?? true}
+                        onOpenChange={(v) => setSecOpen(id, v)}
+                      />
+                    ) : null;
+                  })}
+                </ColumnDroppable>
+              </SortableContext>
+            </div>
+
+            {/* DragOverlay: full section at current open/closed state, non-interactive */}
+            <DragOverlay
+              dropAnimation={{ duration: 200, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}
+            >
+              {activeDragId && sectionsMap[activeDragId] ? (
+                <div style={{ pointerEvents: "none", boxShadow: "0 20px 50px rgba(0,0,0,0.65)" }}>
+                  {React.cloneElement(sectionsMap[activeDragId] as React.ReactElement<any>, {
+                    open: sectionOpenState[activeDragId] ?? true,
+                  })}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        );
+      })()}
+
+      {/* Bottom actions */}
+      <div className="flex justify-between pt-6 pb-8 mt-4">
+        <button
+          type="button"
+          onClick={() => router.push(`/${locale}/panel/propiedades`)}
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-medium cursor-pointer"
+          style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+        >
+          <ArrowLeft size={14} />
+          Volver al listado
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 text-[13px] font-medium cursor-pointer"
+          style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C" }}
+        >
+          <Save size={15} />
+          {saving ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </div>
     </form>
   );
 }

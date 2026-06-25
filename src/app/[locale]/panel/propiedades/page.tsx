@@ -29,13 +29,14 @@ interface Property {
   featured: boolean;
   exclusive: boolean;
   created_at: string;
+  updated_at: string;
   cover_url?: string | null;
   title: string;
   savedFlash?: boolean;
   reactKey?: string;
 }
 
-type SortField = "created_at" | "price" | "status" | "operation";
+type SortField = "created_at" | "updated_at" | "price" | "status" | "operation";
 type SortDir = "asc" | "desc";
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -439,6 +440,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
       area_built: areaBuilt !== "" ? Number(areaBuilt) : null,
       area_total: areaTotal !== "" ? Number(areaTotal) : null,
       featured, exclusive,
+      updated_at: new Date().toISOString(),
     };
 
     const [{ error: propErr }, { error: transErr }] = await Promise.all([
@@ -462,6 +464,7 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
         area_built: areaBuilt !== "" ? Number(areaBuilt) : null,
         area_total: areaTotal !== "" ? Number(areaTotal) : null,
         featured, exclusive, savedFlash: true,
+        updated_at: new Date().toISOString(),
       });
       setTimeout(() => { onClose(); }, 900);
     } else {
@@ -797,7 +800,16 @@ export default function PropiedadesPage() {
   const [filterType, setFilterType] = useState("");
   const [filterMunicipio, setFilterMunicipio] = useState("");
 
-  const [sortField, setSortField] = useState<SortField>("created_at");
+  // Paginación
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Resetear página en filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterOp, filterStatus, filterType, filterMunicipio]);
+
+  const [sortField, setSortField] = useState<SortField>("updated_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -815,8 +827,8 @@ export default function PropiedadesPage() {
       .from("properties")
       .select(`id, slug, operation, property_type, status, price, price_currency,
                area_built, area_total, bedrooms, bathrooms, half_bathrooms,
-               parking_spaces, municipio, featured, exclusive, created_at`)
-      .order("created_at", { ascending: false });
+               parking_spaces, municipio, featured, exclusive, created_at, updated_at`)
+      .order("updated_at", { ascending: false });
 
     if (propsErr) { setDbError(`Error: ${propsErr.message}`); setLoading(false); return; }
     if (!propsData || propsData.length === 0) { setAllProps([]); setLoading(false); return; }
@@ -868,6 +880,12 @@ export default function PropiedadesPage() {
     });
     return list;
   }, [allProps, search, filterOp, filterStatus, filterType, filterMunicipio, sortField, sortDir]);
+
+  const totalPages = Math.ceil(visible.length / pageSize) || 1;
+  const paginatedProperties = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return visible.slice(start, start + pageSize);
+  }, [visible, currentPage, pageSize]);
 
   // Keep selection matching only currently visible items
   useEffect(() => {
@@ -934,6 +952,7 @@ export default function PropiedadesPage() {
       slug: newSlug,
       title: newTitle,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       featured: false,
       exclusive: false,
     };
@@ -1019,7 +1038,7 @@ export default function PropiedadesPage() {
   };
 
   const activeFilters = [filterOp, filterStatus, filterType, filterMunicipio].filter(Boolean);
-  const COLS = "38px 52px 1.5fr 80px 100px 116px 96px 62px";
+  const COLS = "38px 52px 1.5fr 80px 100px 116px 96px 90px 90px 62px";
 
   const renderDatos = (p: Property) => {
     const parts: string[] = [];
@@ -1086,12 +1105,33 @@ export default function PropiedadesPage() {
             </span>
           )}
         </div>
-        <button
-          onClick={() => router.push(`/${locale}/panel/propiedades/nueva`)}
-          style={{ borderRadius: "var(--p-radius)", background: "var(--p-accent)", color: "#090909", padding: "8px 16px", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: 7, border: "none", cursor: "pointer" }}
-        >
-          <Plus size={14} /> Nueva propiedad
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "12px", color: "var(--p-text-3)" }}>Mostrar:</span>
+            <StyledSelect
+              value={String(pageSize)}
+              onChange={(val) => {
+                if (val) {
+                  setPageSize(Number(val));
+                  setCurrentPage(1);
+                }
+              }}
+              options={[
+                { value: "10", label: "10" },
+                { value: "25", label: "25" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" }
+              ]}
+              width={70}
+            />
+          </div>
+          <button
+            onClick={() => router.push(`/${locale}/panel/propiedades/nueva`)}
+            style={{ borderRadius: "var(--p-radius)", background: "var(--p-accent)", color: "#090909", padding: "8px 16px", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", gap: 7, border: "none", cursor: "pointer" }}
+          >
+            <Plus size={14} /> Nueva propiedad
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -1194,11 +1234,13 @@ export default function PropiedadesPage() {
             {allSelected ? <CheckSquare size={14} style={{ color: "var(--p-accent)" }} /> : <Square size={14} style={{ color: "var(--p-text-3)" }} />}
           </button>
           <span />
-          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("created_at")}>Propiedad <ArrowUpDown size={9} /></button>
+          <span style={{ fontSize: "11px", color: "var(--p-text-3)", fontWeight: 500 }}>Propiedad</span>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("operation")}>Op. <ArrowUpDown size={9} /></button>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("status")}>Estado <ArrowUpDown size={9} /></button>
           <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("price")}>Precio <ArrowUpDown size={9} /></button>
           <span style={{ fontSize: "11px", color: "var(--p-text-3)", fontWeight: 500 }}>Datos</span>
+          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("created_at")}>Creado <ArrowUpDown size={9} /></button>
+          <button style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "11px", color: "var(--p-text-3)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }} onClick={() => toggleSort("updated_at")}>Modificado <ArrowUpDown size={9} /></button>
           <span />
         </div>
 
@@ -1223,7 +1265,7 @@ export default function PropiedadesPage() {
           <LayoutGroup>
             <motion.div layout>
               <AnimatePresence initial={false}>
-                {visible.map(p => {
+                {paginatedProperties.map(p => {
                   const isExpanded = quickEditId === p.id;
                   const isFlash = flashIds.has(p.id);
                   const isSelected = selected.has(p.id);
@@ -1362,6 +1404,16 @@ export default function PropiedadesPage() {
                         {/* Data */}
                         {renderDatos(p)}
 
+                        {/* Creado */}
+                        <span style={{ fontSize: "12px", color: "var(--p-text-2)", fontVariantNumeric: "tabular-nums" }}>
+                          {new Date(p.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </span>
+
+                        {/* Modificado */}
+                        <span style={{ fontSize: "12px", color: "var(--p-text-2)", fontVariantNumeric: "tabular-nums" }}>
+                          {p.updated_at ? new Date(p.updated_at).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}
+                        </span>
+
                         {/* Acciones: botón editar completo + menú 3 puntos */}
                         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }} onClick={e => e.stopPropagation()}>
                           <button
@@ -1413,6 +1465,94 @@ export default function PropiedadesPage() {
               <p style={{ fontSize: "14px", fontWeight: 500, color: "var(--p-text)", margin: 0 }}>{allProps.length === 0 ? "Sin propiedades" : "Sin resultados"}</p>
               <p style={{ fontSize: "12px", color: "var(--p-text-3)", marginTop: 4 }}>{allProps.length === 0 ? "Agrega tu primera propiedad para comenzar" : "Intenta con otros filtros o busca por nombre"}</p>
               {dbError && <p style={{ fontSize: "12px", color: "var(--p-red)", marginTop: 8, fontFamily: "monospace" }}>{dbError}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Pagination & Page Size selector */}
+        {!loading && visible.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderTop: "1px solid var(--p-border)", background: "var(--p-surface-2)", borderRadius: "0 0 var(--p-radius) var(--p-radius)" }}>
+            {/* Info label */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: "12px", color: "var(--p-text-3)" }}>
+                Mostrando {Math.min(visible.length, (currentPage - 1) * pageSize + 1)}-{Math.min(visible.length, currentPage * pageSize)} de {visible.length}
+              </span>
+            </div>
+
+            {/* Page Numbers */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                style={{
+                  height: "30px",
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  borderRadius: "var(--p-radius)",
+                  border: "1px solid var(--p-border)",
+                  background: "var(--p-surface-3)",
+                  color: currentPage === 1 ? "var(--p-text-3)" : "var(--p-text)",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                const isSelected = currentPage === pageNum;
+                if (totalPages > 6 && Math.abs(currentPage - pageNum) > 2 && pageNum !== 1 && pageNum !== totalPages) {
+                  if (pageNum === 2 || pageNum === totalPages - 1) {
+                    return <span key={pageNum} style={{ color: "var(--p-text-3)", padding: "0 4px" }}>...</span>;
+                  }
+                  return null;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{
+                      width: "30px",
+                      height: "30px",
+                      fontSize: "12px",
+                      fontWeight: isSelected ? 600 : 400,
+                      borderRadius: "var(--p-radius)",
+                      border: isSelected ? "1px solid var(--p-accent)" : "1px solid var(--p-border)",
+                      background: isSelected ? "var(--p-accent-soft)" : "var(--p-surface-3)",
+                      color: isSelected ? "var(--p-accent)" : "var(--p-text)",
+                      cursor: "pointer",
+                      transition: "all 0.15s"
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                style={{
+                  height: "30px",
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  borderRadius: "var(--p-radius)",
+                  border: "1px solid var(--p-border)",
+                  background: "var(--p-surface-3)",
+                  color: currentPage === totalPages ? "var(--p-text-3)" : "var(--p-text)",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                Siguiente
+              </button>
             </div>
           </div>
         )}
