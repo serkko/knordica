@@ -35,7 +35,7 @@ export type FurnishedStatus =
   | "semi_amoblado"
   | "amoblado";
 
-export type GasType = "central" | "bombonas" | "ninguno";
+export type GasType = "central" | "bombona" | "no_tiene";
 
 export type KitchenType =
   | "gas"       // A gas

@@ -2347,10 +2347,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               options={[
                 { value: "nuevo", label: "Nuevo / A estrenar" },
                 { value: "excelente", label: "Excelente" },
-                { value: "bueno", label: "Buen estado" },
+                { value: "buen_estado", label: "Buen estado" },
                 { value: "por_remodelar", label: "Por remodelar" },
                 { value: "en_gris", label: "En obra gris" },
-              ].sort((a, b) => a.label.localeCompare(b.label))}
+              ]}
             />
           </div>
         )}
@@ -2362,9 +2362,9 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
               onChange={(val) => set("furnished", val)}
               options={[
                 { value: "sin_muebles", label: "Sin muebles" },
-                { value: "semi_amueblado", label: "Semi amoblado" },
-                { value: "completamente_amueblado", label: "Amoblado" },
-              ].sort((a, b) => a.label.localeCompare(b.label))}
+                { value: "semi_amoblado", label: "Semi amoblado" },
+                { value: "amoblado", label: "Amoblado" },
+              ]}
             />
           </div>
         )}
@@ -2460,7 +2460,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
                     { value: "bombona", label: "Bombona" },
                     { value: "central", label: "Gas central" },
                     { value: "no_tiene", label: "No tiene" },
-                  ].sort((a, b) => a.label.localeCompare(b.label))}
+                  ]}
                 />
               </div>
               <div>

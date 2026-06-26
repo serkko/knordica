@@ -62,9 +62,9 @@ export const FURNISHED_OPTIONS: {
 export const GAS_TYPES: {
   value: GasType; label_es: string; label_en: string;
 }[] = [
-  { value: "central",   label_es: "Gas Central",  label_en: "Central Gas" },
-  { value: "bombonas",  label_es: "Gas Bombonas", label_en: "Gas Cylinders" },
-  { value: "ninguno",   label_es: "Sin gas",      label_en: "No gas" },
+  { value: "central",  label_es: "Gas Central",  label_en: "Central Gas" },
+  { value: "bombona",  label_es: "Bombona",       label_en: "Gas Cylinder" },
+  { value: "no_tiene", label_es: "No tiene",      label_en: "No gas" },
 ];
 
 export const KITCHEN_TYPES: {
