@@ -1475,7 +1475,7 @@ export default function PropiedadesPage() {
             {/* Info label */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: "12px", color: "var(--p-text-3)" }}>
-                Mostrando {Math.min(visible.length, (currentPage - 1) * pageSize + 1)}-{Math.min(visible.length, currentPage * pageSize)} de {visible.length}
+                Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(visible.length, currentPage * pageSize)} de {visible.length}
               </span>
             </div>
 

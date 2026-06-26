@@ -24,19 +24,25 @@ export type PropertyStatus =
   | "cerrada";
 
 export type PropertyCondition =
-  | "nuevo"
-  | "remodelado"
-  | "buen_estado"
-  | "a_remodelar";
+  | "nuevo"          // Nuevo / A estrenar
+  | "excelente"      // Excelente
+  | "buen_estado"    // Buen estado
+  | "por_remodelar"  // Por remodelar
+  | "en_gris";       // En obra gris
 
 export type FurnishedStatus =
   | "sin_muebles"
-  | "parcial"
-  | "completo";
+  | "semi_amoblado"
+  | "amoblado";
 
 export type GasType = "central" | "bombonas" | "ninguno";
 
-export type KitchenType = "electrica" | "gas" | "ninguna";
+export type KitchenType =
+  | "gas"       // A gas
+  | "electrica" // Eléctrica
+  | "induccion" // Inducción
+  | "mixta"     // Mixta
+  | "no_tiene"; // No tiene
 
 export type ListingBadge = "basico" | "completo" | "premium";
 

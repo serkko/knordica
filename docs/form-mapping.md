@@ -80,8 +80,8 @@ Este documento detalla la correspondencia entre los campos del estado del formul
 | `year_built` | `year_built` | `INTEGER` | Sí | **Captura Directa:** Año calendario de construcción (ej: `2015`). Capturado en el formulario y guardado directamente en la DB. |
 | `property_age` | `property_age` | `INTEGER` | Sí | **Derivación Automática:** Edad en años transcurridos. Derivada dinámicamente al guardar (`Año Actual - year_built`), NO es un campo de entrada. Almacenada para búsquedas y optimizaciones del catálogo. |
 | `unit_count` | `unit_count` | `INTEGER` | Sí | **Campo Corporativo Pendiente:** Planificado para `property_type = 'edificio'` (número de unidades en el edificio). |
-| `condition` | `condition` | `TEXT` | Sí | Conservación: 'nuevo', 'excelente', 'bueno', 'por_remodelar', 'en_gris'. |
-| `furnished` | `furnished` | `TEXT` | Sí | `DEFAULT 'sin_muebles'`. Opciones: 'sin_muebles', 'semi_amueblado', 'completamente_amueblado'. |
+| `condition` | `condition` | `TEXT` | Sí | Conservación: 'nuevo', 'remodelado', 'buen_estado', 'a_remodelar'. |
+| `furnished` | `furnished` | `TEXT` | Sí | `DEFAULT 'sin_muebles'`. Opciones: 'sin_muebles', 'parcial', 'completo'. |
 
 ---
 
@@ -106,12 +106,12 @@ Este documento detalla la correspondencia entre los campos del estado del formul
 | `has_water_tank` | `has_water_tank` | `BOOLEAN` | Sí | `DEFAULT false` (Tanque de agua). |
 | `has_hot_water` | `has_hot_water` | `BOOLEAN` | Sí | `DEFAULT false` (Calentador operativo). |
 | `has_generator` | `has_generator` | `BOOLEAN` | Sí | `DEFAULT false` (Planta eléctrica). |
-| `gas_type` | `gas_type` | `TEXT` | Sí | Opciones: 'bombona', 'directo', 'no_tiene'. |
+| `gas_type` | `gas_type` | `TEXT` | Sí | Opciones: 'central', 'bombonas', 'ninguno'. |
 | `has_internet` | `has_internet` | `BOOLEAN` | Sí | `DEFAULT false` (Fibra óptica/Wifi). |
 | `has_ac` | `has_ac` | `BOOLEAN` | Sí | `DEFAULT false` (Aire acondicionado). |
 | `has_heating` | `has_heating` | `BOOLEAN` | Sí | `DEFAULT false` (Calefacción). |
 | `has_elevator` | `has_elevator` | `BOOLEAN` | Sí | `DEFAULT false` (Ascensor operativo). |
-| `kitchen_type` | `kitchen_type` | `TEXT` | Sí | Opciones: 'gas', 'electrica', 'induccion', 'mixta'. |
+| `kitchen_type` | `kitchen_type` | `TEXT` | Sí | Opciones: 'electrica', 'gas', 'ninguna'. |
 
 ---
 

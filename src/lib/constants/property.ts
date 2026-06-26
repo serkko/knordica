@@ -44,18 +44,19 @@ export const PROPERTY_STATUSES: {
 export const PROPERTY_CONDITIONS: {
   value: PropertyCondition; label_es: string; label_en: string;
 }[] = [
-  { value: "nuevo",        label_es: "Nuevo",          label_en: "New" },
-  { value: "remodelado",   label_es: "Remodelado",     label_en: "Renovated" },
-  { value: "buen_estado",  label_es: "Buen estado",    label_en: "Good condition" },
-  { value: "a_remodelar",  label_es: "A remodelar",    label_en: "Needs renovation" },
+  { value: "nuevo",         label_es: "Nuevo / A estrenar", label_en: "New / Move-in ready" },
+  { value: "excelente",     label_es: "Excelente",          label_en: "Excellent" },
+  { value: "buen_estado",   label_es: "Buen estado",        label_en: "Good condition" },
+  { value: "por_remodelar", label_es: "Por remodelar",      label_en: "Needs renovation" },
+  { value: "en_gris",       label_es: "En obra gris",       label_en: "Unfinished / Shell" },
 ];
 
 export const FURNISHED_OPTIONS: {
   value: FurnishedStatus; label_es: string; label_en: string;
 }[] = [
-  { value: "sin_muebles", label_es: "Sin muebles",          label_en: "Unfurnished" },
-  { value: "parcial",     label_es: "Parcialmente amoblado", label_en: "Partially furnished" },
-  { value: "completo",    label_es: "Completamente amoblado",label_en: "Fully furnished" },
+  { value: "sin_muebles",              label_es: "Sin muebles",  label_en: "Unfurnished" },
+  { value: "semi_amoblado",           label_es: "Semi amoblado", label_en: "Partially furnished" },
+  { value: "amoblado",                label_es: "Amoblado",      label_en: "Fully furnished" },
 ];
 
 export const GAS_TYPES: {
@@ -69,9 +70,11 @@ export const GAS_TYPES: {
 export const KITCHEN_TYPES: {
   value: KitchenType; label_es: string; label_en: string;
 }[] = [
-  { value: "electrica", label_es: "Eléctrica", label_en: "Electric" },
-  { value: "gas",       label_es: "A gas",     label_en: "Gas" },
-  { value: "ninguna",   label_es: "Sin cocina", label_en: "No kitchen" },
+  { value: "gas",       label_es: "A gas",      label_en: "Gas" },
+  { value: "electrica", label_es: "Eléctrica",  label_en: "Electric" },
+  { value: "induccion", label_es: "Inducción",  label_en: "Induction" },
+  { value: "mixta",     label_es: "Mixta",      label_en: "Mixed" },
+  { value: "no_tiene",  label_es: "No tiene",   label_en: "None" },
 ];
 
 export const MUNICIPIOS: {

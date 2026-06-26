@@ -1887,10 +1887,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     }
   }, [propertyId]);
 
-  // ── Autosave timer: trigger every 15 seconds after initial load ──
+  // ── Autosave timer: trigger every 30 seconds after initial load ──
   useEffect(() => {
     if (loading) return;
-    const interval = setInterval(handleAutosave, 15000);
+    const interval = setInterval(handleAutosave, 30000);
     return () => clearInterval(interval);
   }, [loading, handleAutosave]);
 
@@ -2458,7 +2458,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
                   placeholder="Seleccionar..."
                   options={[
                     { value: "bombona", label: "Bombona" },
-                    { value: "directo", label: "Gas directo" },
+                    { value: "central", label: "Gas central" },
                     { value: "no_tiene", label: "No tiene" },
                   ].sort((a, b) => a.label.localeCompare(b.label))}
                 />
