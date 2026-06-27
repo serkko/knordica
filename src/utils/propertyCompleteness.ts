@@ -174,7 +174,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 export function isAnswered(value: unknown): boolean {
-  return value !== null && value !== undefined && value !== '' && value !== false;
+  return value !== null && value !== undefined && value !== '';
 }
 
 export function computeCompletenessScore(
