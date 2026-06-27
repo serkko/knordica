@@ -32,13 +32,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/panel/inicio",        label: "Inicio",         icon: LayoutDashboard, roles: ["user","agent","senior","admin"] },
+  { href: "/panel/inicio",        label: "Inicio",         icon: LayoutDashboard, roles: ["user","agent","admin"] },
   { href: "/panel/favoritos",     label: "Favoritos",      icon: Heart,           roles: ["user"] },
   { href: "/panel/mensajes",      label: "Mensajes",       icon: MessageSquare,   roles: ["user"] },
-  { href: "/panel/propiedades",   label: "Propiedades",    icon: Building2,       roles: ["agent","senior","admin"] },
-  { href: "/panel/clientes",      label: "Clientes",       icon: Users,           roles: ["agent","senior","admin"] },
-  { href: "/panel/agenda",        label: "Agenda",         icon: Calendar,        roles: ["agent","senior","admin"] },
-  { href: "/panel/estadisticas",  label: "Estadísticas",   icon: TrendingUp,      roles: ["agent","senior","admin"] },
+  { href: "/panel/propiedades",   label: "Propiedades",    icon: Building2,       roles: ["agent","admin"] },
+  { href: "/panel/clientes",      label: "Clientes",       icon: Users,           roles: ["agent","admin"] },
+  { href: "/panel/agenda",        label: "Agenda",         icon: Calendar,        roles: ["agent","admin"] },
+  { href: "/panel/estadisticas",  label: "Estadísticas",   icon: TrendingUp,      roles: ["agent","admin"] },
   { href: "/panel/agentes",       label: "Agentes",        icon: UserCheck,       roles: ["admin"] },
   { href: "/panel/usuarios",      label: "Usuarios",       icon: User,            roles: ["admin"] },
   { href: "/panel/blog",          label: "Blog",           icon: BookOpen,        roles: ["admin"] },
@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const ROLE_LABELS: Record<PanelRole, string> = {
-  user: "Usuario", agent: "Agente", senior: "Senior", admin: "Administrador",
+  user: "Usuario", agent: "Agente", admin: "Admin",
 };
 
 // Sidebar toggle icon — estilo panel AI (columna izquierda + flecha)

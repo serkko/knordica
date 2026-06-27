@@ -245,7 +245,7 @@ type PropertyOperation = "venta" | "alquiler" | "vacacional";
 ## 9. AUTOSAVE EN EL FORMULARIO
 
 - **Intervalo:** 30 s (antes 15 s) – implementado en `PropertyForm.tsx`.
-- **Debounce opcional:** 2 s al disparar manualmente (configurable vía `useAutoSave`).
+- **Debounce:** 3 s al disparar manualmente (configurable vía `useAutoSave`, parámetro `debounceMs`).
 
 ---
 
@@ -453,6 +453,39 @@ type PropertyType =
 type PropertyStatus = "activa" | "reservada" | "vendida" | "alquilada" | "cerrada";
 ```
 
+### Estado de conservación (5)
+```typescript
+type PropertyCondition =
+  | "nuevo"          // Nuevo / A estrenar
+  | "excelente"      // Excelente
+  | "buen_estado"    // Buen estado
+  | "por_remodelar"  // Por remodelar
+  | "en_gris";       // En obra gris
+```
+
+### Mobiliario (3)
+```typescript
+type FurnishedStatus =
+  | "sin_muebles"    // Sin muebles
+  | "semi_amoblado"  // Semi amoblado
+  | "amoblado";      // Amoblado
+```
+
+### Tipo de gas (3)
+```typescript
+type GasType = "central" | "bombona" | "no_tiene";
+```
+
+### Tipo de cocina (5)
+```typescript
+type KitchenType =
+  | "gas"       // A gas
+  | "electrica" // Eléctrica
+  | "induccion" // Inducción
+  | "mixta"     // Mixta
+  | "no_tiene"; // No tiene
+```
+
 ### Moneda
 ```typescript
 price_currency: TEXT  // DEFAULT 'USD' — valores: USD, EUR, VES
@@ -494,32 +527,66 @@ oficina      ✓       ✓          ✗
 terreno_lote ✓       ✓          ✗
 ```
 
-### Reglas de Discriminación por Campo (`checkFieldApplies`)
+### Reglas de Discriminación por Campo (`checkFieldApplies` — `src/utils/propertyDiscrimination.ts`)
 ```typescript
-// Solo vacacional
-"price_per_night", "price_weekend", "min_nights", "max_guests", "checkin_time", "checkout_time", "house_rules", "includes_breakfast"
+// ── Vacacional ──────────────────────────────────────────────
+"price_per_night", "price_weekend", "min_nights", "max_guests",
+"checkin_time", "checkout_time", "house_rules", "includes_breakfast", "vacational_section"
   → op === "vacacional"
 
-// Solo NO vacacional
-"price"  → op !== "vacacional"
+// ── No vacacional ───────────────────────────────────────────
+"price" → op !== "vacacional"
 
-// No en terreno_lote, local, oficina, galpon, edificio
-"bedrooms"  → !["terreno_lote","local","oficina","galpon","edificio"].includes(type);
-
-// No en terreno_lote
+// ── Sin terreno_lote ────────────────────────────────────────
+"bedrooms" → !["terreno_lote","local","oficina","galpon","edificio"].includes(type);
 "bathrooms", "half_bathrooms", "year_built", "condition"
   → type !== "terreno_lote";
+"parking_spaces", "parking" → type !== "terreno_lote";
 
-// No en terreno_lote, galpon, edificio
+// ── Sin terreno_lote, galpon, edificio ──────────────────────
 "furnished" → !["terreno_lote","galpon","edificio"].includes(type);
 
-// Solo en edificios/verticales
-"has_elevator" → ["apartamento","edificio","local","oficina","townhouse"].includes(type);
+// ── Edificios/verticales ────────────────────────────────────
+"has_elevator", "elevator"
+  → ["apartamento","edificio","local","oficina","townhouse"].includes(type);
+"floor_number" → ["apartamento","oficina","local"].includes(type);
+"total_floors"
+  → ["apartamento","edificio","local","oficina","townhouse"].includes(type);
+"floors" → ["apartamento","oficina","local","edificio"].includes(type);
+"unit_count" → type === "edificio";
 
-// No en terreno
-"parking_spaces" → type !== "terreno_lote";
+// ── Mantenimiento (no vacacional + tipo específico) ─────────
+"maintenance", "maintenance_fee"
+  → op !== "vacacional" && (
+      ["apartamento","casa","townhouse","habitacion"].includes(type) ||
+      (type === "edificio" && op === "alquiler")
+    );
 
-// ... (continúa con el resto de los casos) ...
+// ── Campos de tierra ─────────────────────────────────────────
+"area_hectares" → ["hacienda_finca"].includes(type);
+"topography", "land_use", "access_type", "current_use", "has_own_water"
+  → ["hacienda_finca","terreno_lote"].includes(type);
+
+// ── Cohabitación (habitacion/anexo + alquiler) ──────────────
+"shared_section", "bathroom_type", "host_housing_type", "cohabitation",
+"occupants_count", "gender_policy", "allows_pets", "allows_cooking"
+  → ["habitacion","anexo"].includes(type) && op === "alquiler";
+
+// ── Depósito (solo alquiler) ────────────────────────────────
+"deposit_required", "deposit_amount" → op === "alquiler";
+
+// ── Entrada independiente ────────────────────────────────────
+"has_independent_entrance" → ["habitacion","anexo"].includes(type);
+
+// ── Sección tierra ──────────────────────────────────────────
+"land_section" → ["terreno_lote","hacienda_finca"].includes(type);
+
+// ── Servicios y seguridad (no terreno_lote) ────────────────
+"services_section", "security_section" → type !== "terreno_lote";
+
+// ── Cerca eléctrica ─────────────────────────────────────────
+"has_electric_fence"
+  → ["casa","townhouse","edificio","galpon","hacienda_finca","terreno_lote"].includes(type);
 ```
 
 ---
@@ -532,7 +599,7 @@ terreno_lote ✓       ✓          ✗
 | `useFavorites` | Add/remove favoritos (Zustand) |
 | `useReveal` | Scroll‑triggered animations |
 | `useSmartScroll` | Hide/show Navbar en scroll |
-| `useAutoSave` | Debounced auto‑save (30 s por defecto) |
+| `useAutoSave` | Debounced auto‑save (debounce 3 s, interval 30 s) |
 | `usePanelRole` | Rol y permisos del usuario en panel |
 | `useKPIData` | Fetch métricas KPI del panel |
 
@@ -543,7 +610,7 @@ terreno_lote ✓       ✓          ✗
 |---|---|
 | `filters.store.ts` | Filtros del catálogo (precio, zona, tipo, amenidades…) |
 | `comparator.store.ts` | Propiedades seleccionadas para comparar (max 3) |
-| `panelStore.ts` | User info, sidebarOpen, rol |
+| `panelStore.ts` | User info (userId, userRole), UI state (sidebarCollapsed, propertyModalOpen, propertyModalPropertyId, notificationCount), form state (propertyFormStep, propertyFormData), autosave state (autoSaveStatus, autoSaveLastAt) |
 | `toast.store.ts` | Cola de notificaciones |
 
 ---
@@ -588,6 +655,8 @@ CSS variables:     kebab-case          --color-gold, --p-green
 6. `20260623_add_year_built.sql`
 7. `20260624_add_rls_write_policies.sql`
 8. `20260624_adjust_schema_and_trigger.sql`
+9. `20260626_normalize_enum_values.sql` — Normalización de enums (v1, valores old → new)
+10. `20260626_normalize_enum_values_v2.sql` — Normalización de enums (v2, alinea con formulario)
 
 ---
 

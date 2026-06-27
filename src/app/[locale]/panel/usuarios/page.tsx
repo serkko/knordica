@@ -119,9 +119,8 @@ export default function UsuariosPage({ params }: PageProps) {
           style={{ borderColor: "var(--border)", color: "var(--text)" }}
         >
           <option value="user">{locale === "en" ? "User" : "Usuario"}</option>
-          <option value="agent">{locale === "en" ? "Advisor / Agent" : "Asesor"}</option>
-          <option value="senior">{locale === "en" ? "Senior Advisor" : "Asesor Senior"}</option>
-          <option value="admin">{locale === "en" ? "Administrator" : "Administrador"}</option>
+          <option value="agent">{locale === "en" ? "Agent" : "Agente"}</option>
+          <option value="admin">{locale === "en" ? "Admin" : "Admin"}</option>
         </select>
       ),
     },

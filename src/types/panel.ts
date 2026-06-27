@@ -1,5 +1,5 @@
 // Roles del panel — alineados con Supabase profiles.role
-export type PanelRole = "user" | "agent" | "senior" | "admin";
+export type PanelRole = "user" | "agent" | "admin";
 
 // Item de navegación
 export interface PanelNavItem {

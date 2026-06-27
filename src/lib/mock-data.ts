@@ -173,7 +173,7 @@ export const MOCK_AGENTS: Agent[] = [
     bio_en:
       "Specialist in selected residential properties. 10 years in the Mérida, Venezuela real estate market.",
     avatar_url: null,
-    role: "senior",
+    role: "agent",
     active: true,
   },
   {

@@ -159,7 +159,7 @@ function MobileDrawer({
           .select("role")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (data && ["admin", "senior", "agent"].includes(data.role)) {
+        if (data && ["admin", "agent"].includes(data.role)) {
           setIsAgent(true);
         }
       } catch { /* no-op */ }
@@ -396,7 +396,7 @@ function PrivateAccessDropdown({ isOverHero }: { isOverHero?: boolean }) {
             email: user.email ?? "",
             avatarInitial: displayName.charAt(0).toUpperCase(),
           },
-          isAgent: !!agent && ["admin", "senior", "agent"].includes(agent.role),
+          isAgent: !!agent && ["admin", "agent"].includes(agent.role),
         });
       } catch {
         setAuthState({ checked: true, user: null, isAgent: false });

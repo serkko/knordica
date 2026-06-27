@@ -6,6 +6,7 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   DndContext,
   closestCorners,
+  closestCenter,
   PointerSensor,
   KeyboardSensor,
   useSensor,
@@ -773,6 +774,14 @@ const SECTION_TITLES: Record<string, string> = {
   "sec-terreno": "Par\u00e1metros de Terreno y Campo",
 };
 
+// ── Context: section open/close state shared across the DnD tree ──
+// Avoids prop drilling through cloneElement which causes infinite render loops.
+type SectionStateCtx = { getOpen: (id: string) => boolean; setOpen: (id: string, v: boolean) => void; };
+const SectionStateContext = React.createContext<SectionStateCtx>({
+  getOpen: () => true,
+  setOpen: () => {},
+});
+
 // ── Ghost card shown in DragOverlay — only the header at 85% scale ──
 function DragGhostCard({ sectionId }: { sectionId: string }) {
   return (
@@ -827,13 +836,13 @@ function ColumnDroppable({ droppableId, children }: { droppableId: string; child
 function SortableSectionItem({
   id,
   element,
-  isOpen,
-  onOpenChange,
+  style,
+  className,
 }: {
   id: string;
   element: React.ReactNode;
-  isOpen: boolean;
-  onOpenChange: (v: boolean) => void;
+  style?: React.CSSProperties;
+  className?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -841,26 +850,25 @@ function SortableSectionItem({
     <div
       ref={setNodeRef}
       {...attributes}
+      className={className}
       style={{
         transform: CSS.Transform.toString(transform),
-        // Spring-like overshoot easing — neighbours "bubble" out of the way
-        transition: transition
-          ? "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-          : undefined,
-        opacity: isDragging ? 0 : 1,
+        // Animate only transform — never height — eliminates the bubbly effect
+        transition: transition ? "transform 250ms cubic-bezier(0.25, 0.8, 0.25, 1)" : undefined,
+        // Keep ghost placeholder in layout but invisible
+        visibility: isDragging ? "hidden" : "visible",
         position: "relative",
+        ...style,
       }}
     >
       {React.cloneElement(element as React.ReactElement<any>, {
         dragHandleProps: listeners,
-        open: isOpen,
-        onOpenChange,
       })}
     </div>
   );
 }
 
-// ── SectionCard with drag handle support ──
+// ── SectionCard with drag handle and context-based open state ──
 function SectionCard({
   title,
   children,
@@ -879,32 +887,45 @@ function SectionCard({
   style?: React.CSSProperties;
   id?: string;
   dragHandleProps?: Record<string, unknown>;
-  /** Controlled open state (for DragOverlay to preserve section state) */
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
 }) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  // Controlled mode: use openProp; uncontrolled: use internal state
-  const open = openProp !== undefined ? openProp : internalOpen;
+  // Read open state from context (set by PropertyForm's lifted state)
+  const sectionCtx = React.useContext(SectionStateContext);
+  const contextOpen = layoutId ? sectionCtx.getOpen(layoutId) : undefined;
 
-  const toggleOpen = () => {
-    const next = !open;
-    if (openProp === undefined) setInternalOpen(next);
+  // Prefer: direct openProp > context > internal default
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isOpen = openProp !== undefined ? openProp : (contextOpen !== undefined ? contextOpen : internalOpen);
+
+  const toggleOpen = useCallback(() => {
+    const next = !isOpen;
+    // Update context state (the canonical source for DnD sections)
+    if (layoutId) sectionCtx.setOpen(layoutId, next);
+    // Also update internal state for sections used outside DnD context
+    if (openProp === undefined && contextOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
-  };
+  }, [isOpen, layoutId, sectionCtx, openProp, contextOpen, onOpenChange]);
+
+  // Stable ref for onOpenChange in event listener to avoid re-registering
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
 
   useEffect(() => {
     if (!layoutId) return;
     const handleExpand = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail && customEvent.detail.layoutId === layoutId) {
-        if (openProp === undefined) setInternalOpen(true);
-        onOpenChange?.(true);
+        sectionCtx.setOpen(layoutId, true);
+        if (openProp === undefined && contextOpen === undefined) setInternalOpen(true);
+        onOpenChangeRef.current?.(true);
       }
     };
     window.addEventListener("expand-section-card", handleExpand);
     return () => window.removeEventListener("expand-section-card", handleExpand);
-  }, [layoutId, openProp, onOpenChange]);
+  // sectionCtx is stable (createContext default + useMemo in PropertyForm)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutId]);
 
   return (
     <div
@@ -913,44 +934,39 @@ function SectionCard({
         background: "var(--p-surface)",
         border: "1px solid var(--p-border)",
         borderRadius: "var(--p-radius)",
-        overflow: open ? "visible" : "hidden",
+        overflow: isOpen ? "visible" : "hidden",
         ...style,
       }}
     >
       <div
-        className="w-full flex items-center justify-between px-5 py-4"
-        style={{ borderBottom: open ? "1px solid var(--p-border)" : "none" }}
+        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer select-none"
+        onClick={toggleOpen}
+        style={{ borderBottom: isOpen ? "1px solid var(--p-border)" : "none" }}
       >
-        {/* Drag handle — only this triggers drag, not clicks on title */}
         {dragHandleProps && (
           <div
             {...dragHandleProps}
             style={{ cursor: "grab", display: "flex", alignItems: "center", paddingRight: 10, color: "var(--p-text-3)", flexShrink: 0 }}
             onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              (dragHandleProps as any).onPointerDown?.(e);
+              e.stopPropagation();
+            }}
           >
             <GripVertical size={14} />
           </div>
         )}
-        <button
-          type="button"
-          onClick={toggleOpen}
-          className="flex-1 flex items-center justify-start text-left cursor-pointer bg-transparent border-none p-0 outline-none"
-        >
+        <div className="flex-1 flex items-center justify-start text-left">
           <span className="text-[13px] font-semibold" style={{ color: "var(--p-text)" }}>
             {title}
           </span>
-        </button>
-        <button
-          type="button"
-          onClick={toggleOpen}
-          className="p-1 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white/80 cursor-pointer"
-          style={{ background: "none", border: "none" }}
-        >
-          {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
+        </div>
+        <div className="p-1 text-white/40 hover:text-white/80 transition-colors">
+          {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </div>
       </div>
       <AnimatePresence initial={false}>
-        {open && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -1439,11 +1455,19 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     "sec-media": true, "sec-servicios": true, "sec-compartido": true, "sec-terreno": true,
   });
   const sectionOpenRef = useRef(sectionOpenState);
-  sectionOpenRef.current = sectionOpenState;
-
+  // Keep ref in sync only when the state actually changes to avoid render loops
+  useEffect(() => {
+    sectionOpenRef.current = sectionOpenState;
+  }, [sectionOpenState]);
   const setSecOpen = useCallback((id: string, v: boolean) => {
     setSectionOpenState(prev => ({ ...prev, [id]: v }));
   }, []);
+
+  // Stable context value — only changes when sectionOpenState changes
+  const sectionStateCtxValue = React.useMemo<SectionStateCtx>(() => ({
+    getOpen: (id: string) => sectionOpenState[id] ?? true,
+    setOpen: setSecOpen,
+  }), [sectionOpenState, setSecOpen]);
 
   // Refs for stable access inside drag callbacks (no stale closures)
   const leftRef = useRef<string[]>([]);
@@ -1887,10 +1911,13 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     }
   }, [propertyId]);
 
-  // ── Autosave timer: trigger every 30 seconds after initial load ──
+  // ── AUTOSAVE CONFIGURATION ──
+  // The autosave timer is scheduled to run every 1 minute (60,000 ms).
+  // NOTE: The user profile "zsoftuser@gmail.com" (UUID: af54a9c7-5b60-41a0-81d2-f17eb4b862ab)
+  // is verified as an "admin" in the "agents" table. Database write permissions should be fully functional.
   useEffect(() => {
     if (loading) return;
-    const interval = setInterval(handleAutosave, 30000);
+    const interval = setInterval(handleAutosave, 60000);
     return () => clearInterval(interval);
   }, [loading, handleAutosave]);
 
@@ -2699,79 +2726,34 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
         </div>
       )}
 
-      {/* ─── Two-column DnD: left + right independent sortable stacks ─── */}
-      {(() => {
-        const sectionsMap: Record<string, React.ReactNode> = {
-          "sec-clasificacion": sectionClasificacion,
-          "sec-contenido": sectionContenido,
-          "sec-precio": sectionPrecio,
-          "sec-dimensiones": sectionDimensiones,
-          "sec-ubicacion": sectionUbicacion,
-          "sec-fotos": sectionFotos,
-          "sec-media": sectionMedia,
-        };
-        if (hasShared && sectionCompartido) sectionsMap["sec-compartido"] = sectionCompartido;
-        if (hasLandSection && sectionTerreno) sectionsMap["sec-terreno"] = sectionTerreno;
-        if ((hasServices || hasSecurity) && sectionServiciosSeguridad) sectionsMap["sec-servicios"] = sectionServiciosSeguridad;
+      {/* ─── Fixed Static Two-Column Layout (Drag and Drop disabled) ─── */}
+      {/* 
+        NOTE ON DRAG AND DROP:
+        The drag and drop functionality has been disabled and commented out because:
+        1. "Maximum update depth exceeded" loop errors occurred due to state synchronization and context/listener re-registration in the rendering path when dragging in React 19.
+        2. Drag handle clicks sometimes bubbled or conflicted with internal accordion card toggles, causing sections to expand/collapse.
+        3. Drop animations and reordering targets behaved erratically on columns with variable height and dynamic fields.
+        The sections are now displayed in a logical, stable, fixed order.
+      */}
+      <div style={{ display: "flex", gap: 16, alignItems: "start", width: "100%" }}>
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          {sectionClasificacion}
+          {sectionContenido}
+          {sectionDimensiones}
+          {sectionFotos}
+          {hasLandSection && sectionTerreno}
+        </div>
 
-        return (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-            onDragCancel={handleDragCancel}
-          >
-            <div style={{ display: "flex", gap: 16, alignItems: "start" }}>
-              {/* ── LEFT COLUMN ── */}
-              <SortableContext items={leftColumnIds} strategy={verticalListSortingStrategy}>
-                <ColumnDroppable droppableId="droppable-left">
-                  {leftColumnIds.map(id => {
-                    const el = sectionsMap[id];
-                    return el ? (
-                      <SortableSectionItem
-                        key={id} id={id} element={el}
-                        isOpen={sectionOpenState[id] ?? true}
-                        onOpenChange={(v) => setSecOpen(id, v)}
-                      />
-                    ) : null;
-                  })}
-                </ColumnDroppable>
-              </SortableContext>
-
-              {/* ── RIGHT COLUMN ── */}
-              <SortableContext items={rightColumnIds} strategy={verticalListSortingStrategy}>
-                <ColumnDroppable droppableId="droppable-right">
-                  {rightColumnIds.map(id => {
-                    const el = sectionsMap[id];
-                    return el ? (
-                      <SortableSectionItem
-                        key={id} id={id} element={el}
-                        isOpen={sectionOpenState[id] ?? true}
-                        onOpenChange={(v) => setSecOpen(id, v)}
-                      />
-                    ) : null;
-                  })}
-                </ColumnDroppable>
-              </SortableContext>
-            </div>
-
-            {/* DragOverlay: full section at current open/closed state, non-interactive */}
-            <DragOverlay
-              dropAnimation={{ duration: 200, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}
-            >
-              {activeDragId && sectionsMap[activeDragId] ? (
-                <div style={{ pointerEvents: "none", boxShadow: "0 20px 50px rgba(0,0,0,0.65)" }}>
-                  {React.cloneElement(sectionsMap[activeDragId] as React.ReactElement<any>, {
-                    open: sectionOpenState[activeDragId] ?? true,
-                  })}
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        );
-      })()}
+        {/* ── RIGHT COLUMN ── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          {sectionPrecio}
+          {sectionUbicacion}
+          {(hasServices || hasSecurity) && sectionServiciosSeguridad}
+          {hasShared && sectionCompartido}
+          {sectionMedia}
+        </div>
+      </div>
 
       {/* Bottom actions */}
       <div className="flex justify-between pt-6 pb-8 mt-4">

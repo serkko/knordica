@@ -85,7 +85,7 @@ export interface Agent {
   bio_es: string | null;
   bio_en: string | null;
   avatar_url: string | null;
-  role: "agent" | "senior" | "admin";
+  role: "agent" | "admin";
   active: boolean;
 }
 

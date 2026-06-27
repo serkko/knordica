@@ -2,7 +2,10 @@
 "use client";
 
 import React, { use, useState, useEffect } from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+// Note: we keep a simple static list; drag‑and‑drop is optional.
 import { usePanelRole } from "@/hooks/usePanelRole";
 import { Plus, Search, Mail, Phone, MessageSquare, DollarSign, Calendar, X, Eye, FileText, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -110,7 +113,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
 
       let query = supabase.from("crm_clients").select("*");
 
-      if (role !== "admin" && role !== "senior" && userId) {
+      if (role !== "admin" && userId) {
         query = query.eq("agent_id", userId);
       }
 
@@ -138,33 +141,18 @@ export default function ClientesCRMPage({ params }: PageProps) {
   }, [role, userId, roleLoading]);
 
   // Handle drag and drop stage transitions
-  const handleDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-
-    const newStage = destination.droppableId as ClientStage;
-    
-    // Update local state immediately
-    const updated = clients.map((c) => {
-      if (c.id === draggableId) {
-        return { ...c, stage: newStage };
-      }
-      return c;
-    });
-    setClients(updated);
-
-    // Save transition to DB
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      await supabase
-        .from("crm_clients")
-        .update({ stage: newStage, updated_at: new Date().toISOString() })
-        .eq("id", draggableId);
-    } catch (err) {
-      console.warn("DB update failed on stage drag. Keeping local state.", err);
+    // If dropped on a stage column, update the client's stage
+    const targetStage = STAGES.find((s) => s.value === overId);
+    if (targetStage) {
+      setClients((prev) =>
+        prev.map((c) => (c.id === activeId ? { ...c, stage: targetStage.value } : c))
+      );
     }
   };
 
@@ -241,16 +229,14 @@ export default function ClientesCRMPage({ params }: PageProps) {
       </div>
 
       {/* Kanban Board Container */}
-      <DragDropContext onDragEnd={handleDragEnd}>
+      <DndContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none min-h-[500px]">
           {STAGES.map((stage) => {
             const stageClients = filteredClients.filter((c) => c.stage === stage.value);
             const stageTitle = locale === "en" ? stage.label_en : stage.label_es;
 
             return (
-              <div
-                key={stage.value}
-                className="w-72 shrink-0 flex flex-col rounded-sm border"
+              <motion.div layout key={stage.value} className="w-72 shrink-0 flex flex-col rounded-sm border"
                 style={{
                   background: "var(--surface)",
                   borderColor: "var(--border)",
@@ -275,74 +261,18 @@ export default function ClientesCRMPage({ params }: PageProps) {
                   </span>
                 </div>
 
-                {/* Droppable Area */}
-                <Droppable droppableId={stage.value}>
-                  {(provided, snapshot) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="p-2 space-y-2 min-h-[400px] flex-1 overflow-y-auto max-h-[600px]"
-                      style={{
-                        background: snapshot.isDraggingOver ? "rgba(255,255,255,0.01)" : "transparent",
-                      }}
-                    >
-                      {stageClients.map((client, index) => (
-                        <Draggable key={client.id} draggableId={client.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              onClick={() => handleOpenDrawer(client)}
-                              className="p-3 rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between hover:-translate-y-0.5 duration-150"
-                              style={{
-                                background: snapshot.isDragging ? "var(--surface-dynamic)" : "var(--surface-2)",
-                                borderColor: "var(--border)",
-                                boxShadow: snapshot.isDragging ? "var(--shadow-md)" : "none",
-                                ...provided.draggableProps.style,
-                              }}
-                            >
-                              <div className="space-y-1.5">
-                                <span className="text-[9px] font-bold uppercase tracking-wider font-mono text-[var(--text-muted)]">
-                                  {client.client_type}
-                                </span>
-                                <h4 className="text-xs font-semibold text-[var(--text)]">
-                                  {client.full_name}
-                                </h4>
-                                {client.budget_max && (
-                                  <p className="text-[10px] font-semibold font-mono text-[#C9962A] flex items-center gap-0.5">
-                                    <DollarSign size={10} />
-                                    {client.budget_max.toLocaleString()} max
-                                  </p>
-                                )}
-                              </div>
-
-                              <div
-                                className="mt-3 pt-2.5 border-t flex items-center justify-between text-[10px] text-[var(--text-muted)]"
-                                style={{ borderColor: "var(--border)" }}
-                              >
-                                <span className="font-mono">
-                                  {client.last_contact ? client.last_contact : "N/A"}
-                                </span>
-                                <span className="text-[#01696f] flex items-center gap-0.5 font-semibold">
-                                  {locale === "en" ? "Details" : "Ver"}
-                                  <ArrowRight size={10} />
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
+                <div className="p-2 space-y-2 min-h-[400px] flex-1 overflow-y-auto max-h-[600px]">
+                  <SortableContext items={stageClients.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                    {stageClients.map((client) => (
+                      <SortableClient key={client.id} client={client} onOpen={handleOpenDrawer} locale={locale} />
+                    ))}
+                  </SortableContext>
+                </div>
+              </motion.div>
             );
           })}
         </div>
-      </DragDropContext>
-
+      </DndContext>
       {/* CRM Details Sidebar Drawer */}
       <AnimatePresence>
         {isDrawerOpen && selectedClient && (
@@ -464,6 +394,59 @@ export default function ClientesCRMPage({ params }: PageProps) {
           </>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Sortable client component
+function SortableClient({ client, onOpen, locale }: { client: CRMClient; onOpen: (client: CRMClient) => void; locale: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: client.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: "var(--surface-2)",
+    borderColor: "var(--border)",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={(e) => {
+        // Prevent click when dragging
+        if (e.defaultPrevented) return;
+        onOpen(client);
+      }}
+      className="p-3 rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between hover:-translate-y-0.5 duration-150"
+    >
+      <div className="space-y-1.5">
+        <span className="text-[9px] font-bold uppercase tracking-wider font-mono text-[var(--text-muted)]">
+          {client.client_type}
+        </span>
+        <h4 className="text-xs font-semibold text-[var(--text)]">
+          {client.full_name}
+        </h4>
+        {client.budget_max && (
+          <p className="text-[10px] font-semibold font-mono text-[#C9962A] flex items-center gap-0.5">
+            <DollarSign size={10} />
+            {client.budget_max.toLocaleString()} max
+          </p>
+        )}
+        <div
+          className="mt-3 pt-2.5 border-t flex items-center justify-between text-[10px] text-[var(--text-muted)]"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <span className="font-mono">
+            {client.last_contact ? client.last_contact : "N/A"}
+          </span>
+          <span className="text-[#01696f] flex items-center gap-0.5 font-semibold">
+            {locale === "en" ? "Details" : "Ver"}
+            <ArrowRight size={10} />
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

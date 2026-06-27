@@ -142,7 +142,7 @@ export default async function NosotrosPage({ params }: PageProps) {
                   <div className="flex items-center gap-2 mb-0.5">
                     <h4 className="font-display font-bold text-base text-[var(--text)]">{agent.full_name}</h4>
                     <span className="text-[9px] uppercase tracking-widest text-[var(--accent)] font-semibold px-2 py-0.5 rounded-sm bg-[var(--accent-dim)] border border-[var(--border-accent)]">
-                      {agent.role === "senior" ? "Senior" : "Agente"}
+                      {agent.role === "admin" ? "Admin" : "Agente"}
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-2)] font-light">

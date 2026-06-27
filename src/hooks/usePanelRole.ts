@@ -36,7 +36,7 @@ export function usePanelRole(): UsePanelRoleResult {
 
         // 1. Try metadata first (fast)
         const metaRole = user.user_metadata?.role as PanelRole | undefined;
-        if (metaRole && ['user', 'agent', 'senior', 'admin'].includes(metaRole)) {
+        if (metaRole && ['user', 'agent', 'admin'].includes(metaRole)) {
           setUser(user.id, metaRole);
           setLoading(false);
           return;

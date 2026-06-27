@@ -194,7 +194,7 @@ export default function InicioPanelPage() {
       ]);
       setRecent([]);
     } else {
-      // Agente / senior: propiedades propias
+      // Agente: propiedades propias
       // Admin: todas las propiedades
       const isAdmin = r === "admin";
 

@@ -27,7 +27,7 @@ export function useKPIData(role?: PanelRole | null, agentId?: string | null): Us
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
 
-        const isGlobal = role === 'admin' || role === 'senior';
+        const isGlobal = role === 'admin';
 
         let query = supabase
           .from('properties')

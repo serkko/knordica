@@ -8,97 +8,97 @@ export interface FieldScoreConfig {
 
 export const SCORE_CONFIG: Record<string, FieldScoreConfig> = {
   // Contenido
-  title_es:         { weight: 4, group: 1, overrides: { 'edificio_venta': 3, 'galpon_venta': 3.5, 'hacienda_finca_venta': 3.5, 'terreno_lote_venta': 3.5 } },
-  description_es:   { weight: 4, group: 1, overrides: { 'casa_vacacional': 5, 'galpon_venta': 3.5, 'hacienda_finca_venta': 3.5, 'terreno_lote_venta': 3.5 } },
-  title_en:         { weight: 1, group: 3, overrides: { 'casa_vacacional': 1.5, 'galpon_venta': 1.5, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 1.5 } },
-  description_en:   { weight: 2, group: 3, overrides: { 'casa_vacacional': 2.5, 'galpon_venta': 1.5, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 1.5 } },
+  title_es: { weight: 4, group: 1, overrides: { 'edificio_venta': 3, 'galpon_venta': 3.5, 'hacienda_finca_venta': 3.5, 'terreno_lote_venta': 3.5 } },
+  description_es: { weight: 4, group: 1, overrides: { 'casa_vacacional': 5, 'galpon_venta': 3.5, 'hacienda_finca_venta': 3.5, 'terreno_lote_venta': 3.5 } },
+  title_en: { weight: 1, group: 3, overrides: { 'casa_vacacional': 1.5, 'galpon_venta': 1.5, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 1.5 } },
+  description_en: { weight: 2, group: 3, overrides: { 'casa_vacacional': 2.5, 'galpon_venta': 1.5, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 1.5 } },
 
   // Precio
-  price:            { weight: 12, group: 1, overrides: { 'casa_alquiler': 11, 'apartamento_alquiler': 11, 'anexo_alquiler': 11, 'edificio_alquiler': 11, 'galpon_venta': 13, 'galpon_alquiler': 12, 'hacienda_finca_venta': 12, 'hacienda_finca_alquiler': 11, 'local_alquiler': 11, 'terreno_lote_venta': 14 } },
+  price: { weight: 12, group: 1, overrides: { 'casa_alquiler': 11, 'apartamento_alquiler': 11, 'anexo_alquiler': 11, 'edificio_alquiler': 11, 'galpon_venta': 13, 'galpon_alquiler': 12, 'hacienda_finca_venta': 12, 'hacienda_finca_alquiler': 11, 'local_alquiler': 11, 'terreno_lote_venta': 14 } },
   price_negotiable: { weight: 2, group: 1 },
-  price_per_night:  { weight: 11, group: 1 },
-  price_weekend:    { weight: 3, group: 1 },
+  price_per_night: { weight: 11, group: 1 },
+  price_weekend: { weight: 3, group: 1 },
 
   // Mantenimiento / Depósito
-  maintenance_fee:  { weight: 2, group: 1, overrides: { 'apartamento_venta': 3, 'apartamento_alquiler': 2, 'edificio_venta': 3, 'edificio_alquiler': 2, 'galpon_alquiler': 1.5, 'hacienda_finca_alquiler': 1.5, 'local_alquiler': 1.5 } },
+  maintenance_fee: { weight: 2, group: 1, overrides: { 'apartamento_venta': 3, 'apartamento_alquiler': 2, 'edificio_venta': 3, 'edificio_alquiler': 2, 'galpon_alquiler': 1.5, 'hacienda_finca_alquiler': 1.5, 'local_alquiler': 1.5 } },
   maintenance_included: { weight: 2, group: 1, overrides: { 'casa_alquiler': 1.5, 'apartamento_alquiler': 2, 'galpon_alquiler': 1.5, 'hacienda_finca_alquiler': 1.5, 'local_alquiler': 1.5 } },
   deposit_required: { weight: 2, group: 5 },
-  deposit_amount:   { weight: 2, group: 5 },
+  deposit_amount: { weight: 2, group: 5 },
 
   // Vacacional hospedaje
-  min_nights:       { weight: 2, group: 1 },
-  max_guests:       { weight: 2, group: 1 },
-  checkin_time:     { weight: 2, group: 1 },
-  checkout_time:    { weight: 2, group: 1 },
-  house_rules:      { weight: 2, group: 1 },
+  min_nights: { weight: 2, group: 1 },
+  max_guests: { weight: 2, group: 1 },
+  checkin_time: { weight: 2, group: 1 },
+  checkout_time: { weight: 2, group: 1 },
+  house_rules: { weight: 2, group: 1 },
   includes_breakfast: { weight: 2, group: 1 },
 
   // Dimensiones
-  area_built:       { weight: 4, group: 2, overrides: { 'apartamento_venta': 5, 'anexo_venta': 10, 'anexo_alquiler': 5, 'galpon_venta': 7, 'hacienda_finca_venta': 4, 'hacienda_finca_alquiler': 4, 'local_venta': 8 } },
-  area_total:       { weight: 4, group: 2, overrides: { 'casa_alquiler': 3, 'casa_vacacional': 2, 'apartamento_venta': 3, 'galpon_venta': 5, 'hacienda_finca_venta': 4, 'hacienda_finca_alquiler': 4, 'local_venta': 4, 'terreno_lote_venta': 13 } },
-  area_hectares:    { weight: 5, group: 2, overrides: { 'hacienda_finca_venta': 5, 'hacienda_finca_alquiler': 4 } },
+  area_built: { weight: 4, group: 2, overrides: { 'apartamento_venta': 5, 'anexo_venta': 10, 'anexo_alquiler': 5, 'galpon_venta': 7, 'hacienda_finca_venta': 4, 'hacienda_finca_alquiler': 4, 'local_venta': 8 } },
+  area_total: { weight: 4, group: 2, overrides: { 'casa_alquiler': 3, 'casa_vacacional': 2, 'apartamento_venta': 3, 'galpon_venta': 5, 'hacienda_finca_venta': 4, 'hacienda_finca_alquiler': 4, 'local_venta': 4, 'terreno_lote_venta': 13 } },
+  area_hectares: { weight: 5, group: 2, overrides: { 'hacienda_finca_venta': 5, 'hacienda_finca_alquiler': 4 } },
 
   // Habitáculos
-  bedrooms:         { weight: 3, group: 2, overrides: { 'anexo_alquiler': 2, 'hacienda_finca_venta': 2 } },
-  bathrooms:        { weight: 3, group: 2, overrides: { 'hacienda_finca_venta': 2 } },
-  half_bathrooms:   { weight: 1, group: 2, overrides: { 'casa_alquiler': 2, 'anexo_venta': 2 } },
+  bedrooms: { weight: 3, group: 2, overrides: { 'anexo_alquiler': 2, 'hacienda_finca_venta': 2 } },
+  bathrooms: { weight: 3, group: 2, overrides: { 'hacienda_finca_venta': 2 } },
+  half_bathrooms: { weight: 1, group: 2, overrides: { 'casa_alquiler': 2, 'anexo_venta': 2 } },
 
   // Estacionamiento
-  parking_spaces:   { weight: 2, group: 2, overrides: { 'casa_vacacional': 1, 'habitacion_alquiler': 3, 'parking_spaces': 2, 'hacienda_finca_venta': 2, 'galpon_venta': 3 } },
-  parking_covered:  { weight: 1, group: 2, overrides: { 'casa_vacacional': 1, 'galpon_venta': 2 } },
+  parking_spaces: { weight: 2, group: 2, overrides: { 'casa_vacacional': 1, 'habitacion_alquiler': 3, 'parking_spaces': 2, 'hacienda_finca_venta': 2, 'galpon_venta': 3 } },
+  parking_covered: { weight: 1, group: 2, overrides: { 'casa_vacacional': 1, 'galpon_venta': 2 } },
 
   // Estructura
-  total_floors:     { weight: 3, group: 2, overrides: { 'apartamento_venta': 1.5, 'edificio_venta': 3, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'local_venta': 2 } },
-  floor_number:     { weight: 3, group: 2, overrides: { 'apartamento_venta': 1.5, 'local_venta': 2 } },
-  has_elevator:     { weight: 3, group: 2, overrides: { 'apartamento_venta': 2, 'apartamento_vacacional': 4, 'edificio_venta': 3, 'local_venta': 2 } },
-  unit_count:       { weight: 2, group: 2 },
+  total_floors: { weight: 3, group: 2, overrides: { 'apartamento_venta': 1.5, 'edificio_venta': 3, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'local_venta': 2 } },
+  floor_number: { weight: 3, group: 2, overrides: { 'apartamento_venta': 1.5, 'local_venta': 2 } },
+  has_elevator: { weight: 3, group: 2, overrides: { 'apartamento_venta': 2, 'apartamento_vacacional': 4, 'edificio_venta': 3, 'local_venta': 2 } },
+  unit_count: { weight: 2, group: 2 },
 
   // Conservación
-  year_built:       { weight: 2, group: 2, overrides: { 'casa_vacacional': 1.5, 'anexo_alquiler': 1, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'hacienda_finca_venta': 1.33 } },
-  condition:        { weight: 2, group: 2, overrides: { 'casa_vacacional': 1.5, 'anexo_venta': 3, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'hacienda_finca_venta': 1.33 } },
-  furnished:        { weight: 1, group: 2, overrides: { 'casa_alquiler': 2, 'casa_vacacional': 2, 'apartamento_alquiler': 2, 'anexo_alquiler': 2, 'hacienda_finca_venta': 1.33 } },
+  year_built: { weight: 2, group: 2, overrides: { 'casa_vacacional': 1.5, 'anexo_alquiler': 1, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'hacienda_finca_venta': 1.33 } },
+  condition: { weight: 2, group: 2, overrides: { 'casa_vacacional': 1.5, 'anexo_venta': 3, 'galpon_venta': 2, 'galpon_alquiler': 1.66, 'hacienda_finca_venta': 1.33 } },
+  furnished: { weight: 1, group: 2, overrides: { 'casa_alquiler': 2, 'casa_vacacional': 2, 'apartamento_alquiler': 2, 'anexo_alquiler': 2, 'hacienda_finca_venta': 1.33 } },
 
   // Ubicación
-  municipio:        { weight: 3, group: 2 },
-  zone_id:          { weight: 3, group: 2, overrides: { 'casa_vacacional': 2.5, 'local_venta': 2 } },
-  address_es:       { weight: 2, group: 2, overrides: { 'anexo_venta': 3 } },
-  address_en:       { weight: 1, group: 2, overrides: { 'casa_vacacional': 4, 'apartamento_vacacional': 2.5, 'anexo_venta': 3, 'anexo_vacacional': 4.5, 'habitacion_vacacional': 5, 'edificio_venta': 2.5, 'galpon_venta': 3.5, 'hacienda_finca_venta': 2.5, 'terreno_lote_venta': 6.5 } },
-  lat:              { weight: 4, group: 2, overrides: { 'casa_vacacional': 3.5, 'anexo_venta': 5, 'galpon_venta': 5, 'terreno_lote_venta': 6.5 } }, // lat + lng evaluados juntos
+  municipio: { weight: 3, group: 2 },
+  zone_id: { weight: 3, group: 2, overrides: { 'casa_vacacional': 2.5, 'local_venta': 2 } },
+  address_es: { weight: 2, group: 2, overrides: { 'anexo_venta': 3 } },
+  address_en: { weight: 1, group: 2, overrides: { 'casa_vacacional': 4, 'apartamento_vacacional': 2.5, 'anexo_venta': 3, 'anexo_vacacional': 4.5, 'habitacion_vacacional': 5, 'edificio_venta': 2.5, 'galpon_venta': 3.5, 'hacienda_finca_venta': 2.5, 'terreno_lote_venta': 6.5 } },
+  lat: { weight: 4, group: 2, overrides: { 'casa_vacacional': 3.5, 'anexo_venta': 5, 'galpon_venta': 5, 'terreno_lote_venta': 6.5 } }, // lat + lng evaluados juntos
   show_exact_location: { weight: 1, group: 2, overrides: { 'apartamento_vacacional': 2.5, 'anexo_vacacional': 4.5, 'habitacion_vacacional': 5, 'edificio_venta': 2.5, 'galpon_venta': 3.5, 'hacienda_finca_venta': 2.5, 'terreno_lote_venta': 6.5 } },
 
   // Servicios
-  gas_type:         { weight: 1, group: 4, overrides: { 'galpon_venta': 1.75 } },
-  kitchen_type:     { weight: 1, group: 4 },
-  has_water_tank:   { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
-  has_hot_water:    { weight: 1, group: 4 },
-  has_generator:    { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
-  has_internet:     { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
-  has_ac:           { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5 } },
-  has_heating:      { weight: 1, group: 4 },
+  gas_type: { weight: 1, group: 4, overrides: { 'galpon_venta': 1.75 } },
+  kitchen_type: { weight: 1, group: 4 },
+  has_water_tank: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
+  has_hot_water: { weight: 1, group: 4 },
+  has_generator: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
+  has_internet: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5, 'galpon_venta': 1.75, 'hacienda_finca_venta': 1.66 } },
+  has_ac: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.5 } },
+  has_heating: { weight: 1, group: 4 },
 
   // Seguridad
   has_security_24h: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 2 } },
-  has_electric_gate:{ weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5 } },
-  has_cctv:         { weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5 } },
-  has_electric_fence:{ weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 2 } },
-  has_intercom:     { weight: 1, group: 4, overrides: { 'anexo_alquiler': 1.33, 'edificio_venta': 1.16 } },
+  has_electric_gate: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5 } },
+  has_cctv: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5 } },
+  has_electric_fence: { weight: 1, group: 4, overrides: { 'edificio_venta': 1.16, 'galpon_venta': 2, 'hacienda_finca_venta': 1.5, 'terreno_lote_venta': 2 } },
+  has_intercom: { weight: 1, group: 4, overrides: { 'anexo_alquiler': 1.33, 'edificio_venta': 1.16 } },
   has_armored_door: { weight: 1, group: 4, overrides: { 'anexo_alquiler': 1.33, 'edificio_venta': 1.16 } },
 
   // Terrenos y Fincas
-  topography:       { weight: 3, group: 4, overrides: { 'galpon_venta': 2, 'hacienda_finca_venta': 3, 'terreno_lote_venta': 4 } },
-  land_use:         { weight: 3, group: 4, overrides: { 'galpon_venta': 2, 'terreno_lote_venta': 4 } },
-  access_type:      { weight: 3, group: 4, overrides: { 'galpon_venta': 3, 'hacienda_finca_venta': 4, 'terreno_lote_venta': 3 } },
-  current_use:      { weight: 3, group: 4, overrides: { 'hacienda_finca_venta': 3, 'terreno_lote_venta': 3 } },
-  has_own_water:    { weight: 4, group: 4, overrides: { 'hacienda_finca_venta': 5, 'terreno_lote_venta': 4 } },
+  topography: { weight: 3, group: 4, overrides: { 'galpon_venta': 2, 'hacienda_finca_venta': 3, 'terreno_lote_venta': 4 } },
+  land_use: { weight: 3, group: 4, overrides: { 'galpon_venta': 2, 'terreno_lote_venta': 4 } },
+  access_type: { weight: 3, group: 4, overrides: { 'galpon_venta': 3, 'hacienda_finca_venta': 4, 'terreno_lote_venta': 3 } },
+  current_use: { weight: 3, group: 4, overrides: { 'hacienda_finca_venta': 3, 'terreno_lote_venta': 3 } },
+  has_own_water: { weight: 4, group: 4, overrides: { 'hacienda_finca_venta': 5, 'terreno_lote_venta': 4 } },
 
   // Cohabitación
-  bathroom_type:    { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  bathroom_type: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
   host_housing_type: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
-  cohabitation:     { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
-  occupants_count:  { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
-  gender_policy:    { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
-  allows_pets:      { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
-  allows_cooking:   { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  cohabitation: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  occupants_count: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  gender_policy: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  allows_pets: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
+  allows_cooking: { weight: 2, group: 5, overrides: { 'anexo_alquiler': 2, 'habitacion_alquiler': 2.42 } },
   has_independent_entrance: { weight: 4, group: 5, overrides: { 'anexo_venta': 6, 'anexo_alquiler': 4, 'anexo_vacacional': 5, 'habitacion_vacacional': 5 } },
 };
 
@@ -174,7 +174,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 export function isAnswered(value: unknown): boolean {
-  return value !== null && value !== undefined && value !== '';
+  return value !== null && value !== undefined && value !== '' && value !== false;
 }
 
 export function computeCompletenessScore(
@@ -270,12 +270,12 @@ export function computeCompletenessScore(
 
     // Caso general de campos normales
     let val = data[field];
-    
+
     // Mapeo cruzado de campos de interfaz visual y base de datos
     if (field === "total_floors" && val === undefined) {
       val = data.floors;
     }
-    
+
     if (isAnswered(val)) {
       earnedWeight += weight;
     } else {

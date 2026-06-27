@@ -59,8 +59,8 @@ A continuación se describen los campos del formulario, su tipo de datos, su cam
 * **`year_built`** (`INTEGER`): Año calendario en el que se finalizó la construcción (ej: 2018).
 * **`property_age`** (`INTEGER`): Edad transcurrida en años (Autocalculada como `Año Actual - year_built`, no es de entrada).
 * **`unit_count`** (`INTEGER`): Número de unidades en la estructura completa (Campo pendiente exclusivo para edificios).
-* **`condition`** (`TEXT`): Estado físico del inmueble (`'nuevo'`, `'remodelado'`, `'buen_estado'`, `'a_remodelar'`).
-* **`furnished`** (`TEXT`): Nivel de amoblado (`'sin_muebles'`, `'parcial'`, `'completo'`).
+* **`condition`** (`TEXT`): Estado físico del inmueble (`'nuevo'`, `'excelente'`, `'buen_estado'`, `'por_remodelar'`, `'en_gris'`).
+* **`furnished`** (`TEXT`): Nivel de amoblado (`'sin_muebles'`, `'semi_amoblado'`, `'amoblado'`).
 
 ### 7. Ubicación
 * **`municipio`** (`TEXT`): Municipio del estado Mérida. Valores: `'libertador'`, `'campo_elias'`, `'santos_marquina'`, `'sucre'`, `'rangel'`.
@@ -70,8 +70,8 @@ A continuación se describen los campos del formulario, su tipo de datos, su cam
 * **`show_exact_location`** (`BOOLEAN`): Si es falso, el mapa público muestra un radio aproximado en vez del pin exacto.
 
 ### 8. Servicios Básicos y Confort
-* **`gas_type`** (`TEXT`): Tipo de suministro de gas (`'central'`, `'bombonas'`, `'ninguno'`).
-* **`kitchen_type`** (`TEXT`): Tecnología de cocina instalada (`'electrica'`, `'gas'`, `'ninguna'`).
+* **`gas_type`** (`TEXT`): Tipo de suministro de gas (`'central'`, `'bombona'`, `'no_tiene'`).
+* **`kitchen_type`** (`TEXT`): Tecnología de cocina instalada (`'gas'`, `'electrica'`, `'induccion'`, `'mixta'`, `'no_tiene'`).
 * **`has_water_tank`** (`BOOLEAN`): Disponibilidad de tanque de agua auxiliar (aéreo/subterráneo).
 * **`has_hot_water`** (`BOOLEAN`): Presencia de calentador de agua operativo.
 * **`has_generator`** (`BOOLEAN`): Presencia de planta eléctrica o generador auxiliar.
