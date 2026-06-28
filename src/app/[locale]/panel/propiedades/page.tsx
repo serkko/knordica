@@ -998,31 +998,43 @@ export default function PropiedadesPage() {
 
   const handleBulkDelete = async () => {
     const ids = Array.from(selected);
-    setDeletingIds(new Set(ids));
+    setSelected(new Set()); // Clear chips immediately
+    setDeletingIds(new Set(ids)); // Start row fade-out animation
 
-    const res = await fetch("/api/panel/delete-property", {
+    // Run database deletion in the background non-blockingly
+    fetch("/api/panel/delete-property", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Error al eliminar" }));
+        console.error("[Bulk Delete] Error:", err.error);
+      }
+    }).catch(err => {
+      console.error("[Bulk Delete] Error:", err);
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Error al eliminar" }));
-      console.error("[Bulk Delete] Error:", err.error);
-    }
-
+    // Remove rows from local state after transition completes
     setTimeout(() => {
       setAllProps(prev => prev.filter(p => !ids.includes(p.id)));
       setDeletingIds(new Set());
-      setSelected(new Set());
     }, 600);
   };
 
   const handleBulkStatus = async (status: string) => {
     const ids = Array.from(selected);
-    await createClient().from("properties").update({ status }).in("id", ids);
-    setAllProps(prev => prev.map(p => selected.has(p.id) ? { ...p, status } : p));
-    setSelected(new Set());
+    setSelected(new Set()); // Clear chips immediately
+
+    // Optimistically update local state status
+    setAllProps(prev => prev.map(p => ids.includes(p.id) ? { ...p, status } : p));
+
+    // Run database status update in background
+    createClient().from("properties").update({ status }).in("id", ids).then(({ error }) => {
+      if (error) {
+        console.error("[Bulk Status] Error:", error);
+      }
+    });
   };
 
   const handleSaved = (next: Partial<Property> & { id: string }) => {

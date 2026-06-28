@@ -86,7 +86,6 @@ interface FormData {
   price_negotiable: boolean;
   price_usd: string;
   maintenance_fee: string;
-  maintenance_included: boolean;
 
   // Vacacional
   price_per_night: string;
@@ -150,7 +149,7 @@ interface FormData {
   cohabitation: string;
   occupants_count: string;
   gender_policy: string;
-  deposit_required: boolean;
+  deposit_required: boolean | null;
   deposit_amount: string;
   allows_pets: boolean | null;
   allows_cooking: boolean | null;
@@ -169,31 +168,30 @@ interface FormData {
 }
 
 const INIT: FormData = {
-  operation: "venta",
-  property_type: "apartamento",
-  status: "activa",
+  operation: "",
+  property_type: "",
+  status: "",
   listing_badge: "basico",
   completeness_score: "0",
   featured: false,
   exclusive: false,
-  new_listing: true,
+  new_listing: false,
   price_reduced: false,
   title_es: "",
   description_es: "",
   title_en: "",
   description_en: "",
   price: "",
-  price_currency: "USD",
+  price_currency: "",
   price_negotiable: false,
   price_usd: "",
   maintenance_fee: "",
-  maintenance_included: false,
   price_per_night: "",
   price_weekend: "",
-  min_nights: "1",
+  min_nights: "",
   max_guests: "",
-  checkin_time: "14:00",
-  checkout_time: "11:00",
+  checkin_time: "",
+  checkout_time: "",
   house_rules: "",
   includes_breakfast: false,
   area_built: "",
@@ -209,14 +207,14 @@ const INIT: FormData = {
   property_age: "",
   year_built: "",
   condition: "",
-  furnished: "sin_muebles",
+  furnished: "",
   municipio: "",
   zone_id: "",
   address_es: "",
   address_en: "",
   lat: "",
   lng: "",
-  show_exact_location: true,
+  show_exact_location: false,
   has_elevator: null,
   has_water_tank: null,
   has_hot_water: null,
@@ -237,7 +235,7 @@ const INIT: FormData = {
   cohabitation: "",
   occupants_count: "",
   gender_policy: "",
-  deposit_required: false,
+  deposit_required: null,
   deposit_amount: "",
   allows_pets: null,
   allows_cooking: null,
@@ -868,7 +866,6 @@ function SortableSectionItem({
   );
 }
 
-// ── SectionCard with drag handle and context-based open state ──
 function SectionCard({
   title,
   children,
@@ -879,6 +876,8 @@ function SectionCard({
   dragHandleProps,
   open: openProp,
   onOpenChange,
+  warningText = "",
+  onWarning,
 }: {
   title: string;
   children: React.ReactNode;
@@ -889,7 +888,11 @@ function SectionCard({
   dragHandleProps?: Record<string, unknown>;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
+  warningText?: string;
+  onWarning?: (msg: string) => void;
 }) {
+  const disabled = !!warningText;
+
   // Read open state from context (set by PropertyForm's lifted state)
   const sectionCtx = React.useContext(SectionStateContext);
   const contextOpen = layoutId ? sectionCtx.getOpen(layoutId) : undefined;
@@ -899,13 +902,17 @@ function SectionCard({
   const isOpen = openProp !== undefined ? openProp : (contextOpen !== undefined ? contextOpen : internalOpen);
 
   const toggleOpen = useCallback(() => {
+    if (disabled) {
+      onWarning?.(warningText);
+      return;
+    }
     const next = !isOpen;
     // Update context state (the canonical source for DnD sections)
     if (layoutId) sectionCtx.setOpen(layoutId, next);
     // Also update internal state for sections used outside DnD context
     if (openProp === undefined && contextOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
-  }, [isOpen, layoutId, sectionCtx, openProp, contextOpen, onOpenChange]);
+  }, [isOpen, layoutId, sectionCtx, openProp, contextOpen, onOpenChange, disabled, warningText, onWarning]);
 
   // Stable ref for onOpenChange in event listener to avoid re-registering
   const onOpenChangeRef = useRef(onOpenChange);
@@ -927,6 +934,12 @@ function SectionCard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layoutId]);
 
+  const handleDisabledClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onWarning?.(warningText);
+  };
+
   return (
     <div
       id={id || layoutId}
@@ -937,6 +950,7 @@ function SectionCard({
         overflow: isOpen ? "visible" : "hidden",
         ...style,
       }}
+      onClick={disabled ? handleDisabledClick : undefined}
     >
       <div
         className="w-full flex items-center justify-between px-5 py-4 cursor-pointer select-none"
@@ -956,8 +970,8 @@ function SectionCard({
             <GripVertical size={14} />
           </div>
         )}
-        <div className="flex-1 flex items-center justify-start text-left">
-          <span className="text-[13px] font-semibold" style={{ color: "var(--p-text)" }}>
+        <div className="flex-1 flex items-center justify-start text-left min-w-0">
+          <span className="text-[13px] font-semibold truncate" style={{ color: "var(--p-text)" }}>
             {title}
           </span>
         </div>
@@ -973,7 +987,11 @@ function SectionCard({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="p-5">{children}</div>
+            <div className="p-5">
+              <div style={disabled ? { opacity: 0.45, pointerEvents: "none", userSelect: "none" } : undefined}>
+                {children}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1193,6 +1211,8 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
 
     // Explicit custom mapping logic for special wrapper fields to ensure we highlight the correct layout input
     const specFields: Record<string, string> = {
+      operation: "operation",
+      property_type: "property_type",
       topography: "topography",
       access_type: "access_type",
       land_use: "land_use",
@@ -1260,7 +1280,13 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
         } else {
           container = target!.closest("div") || target!;
         }
-
+      
+        // If container is an inner wrapper without an ID and its parent holds the <Label>,
+        // promote container to that parent so the highlight includes the label text.
+        if (container && !container.id && container.parentElement && container.parentElement.querySelector("label")) {
+          container = container.parentElement;
+        }
+      
         if (lenis) {
           const currentPos = window.scrollY;
           const distance = Math.abs(targetPosition - currentPos);
@@ -1382,20 +1408,20 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                   className="space-y-2"
                 >
                   {recommendations.slice(0, 5).map((rec, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => handleScrollToField(rec.field)}
-                      className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-white/[0.03] text-left transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
-                        <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
-                      </div>
-                      <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
-                        +{rec.weight}%
-                      </span>
-                    </button>
+                  <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleScrollToField(rec.field)}
+                  className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-white/[0.03] text-left transition-colors cursor-pointer"
+                  >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                  <ArrowUpRight size={12} className="text-emerald-400 shrink-0" />
+                  <span className="truncate text-white/90 text-[10.5px]">{rec.label}</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-400 shrink-0 ml-2">
+                  +{rec.weight}%
+                  </span>
+                  </button>
                   ))}
                 </div>
               </div>
@@ -1420,9 +1446,10 @@ const KEYBOARD_SENSOR_OPTIONS = { coordinateGetter: sortableKeyboardCoordinates 
 interface PropertyFormProps {
   locale: string;
   propertyId: string;
+  isNew?: boolean;
 }
 
-export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
+export function PropertyForm({ locale, propertyId, isNew = false }: PropertyFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormData>(INIT);
   const [images, setImages] = useState<ImageFile[]>([]);
@@ -1432,6 +1459,19 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [toast, setToast] = useState<{ message: string; id: string } | null>(null);
+
+  const triggerToast = useCallback((message: string) => {
+    setToast({ message, id: Math.random().toString() });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // ── Autosave state ──
   const [autosaving, setAutosaving] = useState(false);
@@ -1487,10 +1527,12 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const isVacacional = variant === "vacacional";
   const isLand = variant === "land";
   const isShared = variant === "shared";
-  const hasServices = checkFieldApplies("services_section", form.property_type, form.operation);
-  const hasSecurity = checkFieldApplies("security_section", form.property_type, form.operation);
-  const hasShared = checkFieldApplies("shared_section", form.property_type, form.operation);
-  const hasLandSection = checkFieldApplies("land_section", form.property_type, form.operation);
+  const hasServices = !!(form.property_type && form.operation && checkFieldApplies("services_section", form.property_type, form.operation));
+  const hasSecurity = !!(form.property_type && form.operation && checkFieldApplies("security_section", form.property_type, form.operation));
+  const hasShared = !!(form.property_type && form.operation && checkFieldApplies("shared_section", form.property_type, form.operation));
+  const hasLandSection = !!(form.property_type && form.operation && checkFieldApplies("land_section", form.property_type, form.operation));
+  const hasDimensions = !!(form.property_type && form.operation);
+  const hasMedia = !!(form.property_type && form.operation);
 
   // Sync two-column state when sections activate/deactivate
   useEffect(() => {
@@ -1607,6 +1649,15 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   };
 
   const checkApplies = (fieldOrGroup: string): boolean => {
+    if (!form.property_type || !form.operation) {
+      const UNIVERSAL_FIELDS = [
+        "title_es", "description_es", "title_en", "description_en",
+        "price", "price_currency",
+        "lat", "lng", "address_es", "address_en", "zone_id", "municipio",
+        "images", "status", "listing_badge", "featured", "exclusive", "show_exact_location"
+      ];
+      return UNIVERSAL_FIELDS.includes(fieldOrGroup);
+    }
     return checkFieldApplies(fieldOrGroup, form.property_type, form.operation);
   };
 
@@ -1645,31 +1696,30 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           .eq("property_id", propertyId)
           .order("sort_order", { ascending: true });
         setForm({
-          operation: prop.operation || "venta",
-          property_type: prop.property_type || "apartamento",
-          status: prop.status || "activa",
-          listing_badge: prop.listing_badge || "basico",
-          completeness_score: prop.completeness_score?.toString() || "0",
+          operation: isNew ? "" : (prop.operation ?? ""),
+          property_type: isNew ? "" : (prop.property_type ?? ""),
+          status: isNew ? "borrador" : (prop.status ?? ""),
+          listing_badge: prop.listing_badge ?? "basico",
+          completeness_score: isNew ? "0" : (prop.completeness_score?.toString() ?? "0"),
           featured: !!prop.featured,
           exclusive: !!prop.exclusive,
-          new_listing: !!prop.new_listing,
+          new_listing: isNew ? false : !!prop.new_listing,
           price_reduced: !!prop.price_reduced,
           title_es: transEs.title || "",
           description_es: transEs.description || "",
           title_en: transEn.title || "",
           description_en: transEn.description || "",
-          price: prop.price?.toString() || "",
-          price_currency: prop.price_currency || "USD",
+          price: isNew ? "" : (prop.price && Number(prop.price) !== 0 ? prop.price.toString() : ""),
+          price_currency: isNew ? "" : (prop.price_currency ?? ""),
           price_negotiable: !!prop.price_negotiable,
           price_usd: prop.price_usd?.toString() || "",
           maintenance_fee: prop.maintenance_fee?.toString() || "",
-          maintenance_included: !!prop.maintenance_included,
           price_per_night: prop.price_per_night?.toString() || "",
           price_weekend: prop.price_weekend?.toString() || "",
-          min_nights: prop.min_nights?.toString() || "1",
-          max_guests: prop.max_guests?.toString() || "",
-          checkin_time: prop.checkin_time || "14:00",
-          checkout_time: prop.checkout_time || "11:00",
+          min_nights: isNew ? "" : (prop.min_nights?.toString() || ""),
+          max_guests: isNew ? "" : (prop.max_guests?.toString() || ""),
+          checkin_time: isNew ? "" : (prop.checkin_time || ""),
+          checkout_time: isNew ? "" : (prop.checkout_time || ""),
           house_rules: prop.house_rules || "",
           includes_breakfast: !!prop.includes_breakfast,
           area_built: prop.area_built?.toString() || "",
@@ -1685,14 +1735,14 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           property_age: prop.property_age?.toString() || "",
           year_built: prop.year_built?.toString() || (prop.property_age ? (new Date().getFullYear() - prop.property_age).toString() : ""),
           condition: prop.condition || "",
-          furnished: prop.furnished || "sin_muebles",
+          furnished: isNew ? "" : (prop.furnished ?? ""),
           municipio: prop.municipio || "",
           zone_id: prop.zone_id || "",
           address_es: prop.address_es || "",
           address_en: prop.address_en || "",
           lat: prop.lat?.toString() || "",
           lng: prop.lng?.toString() || "",
-          show_exact_location: !!prop.show_exact_location,
+          show_exact_location: isNew ? false : !!prop.show_exact_location,
           has_elevator: prop.has_elevator === null ? null : !!prop.has_elevator,
           has_water_tank: prop.has_water_tank === null ? null : !!prop.has_water_tank,
           has_hot_water: prop.has_hot_water === null ? null : !!prop.has_hot_water,
@@ -1713,7 +1763,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           cohabitation: prop.cohabitation || "",
           occupants_count: prop.occupants_count?.toString() || "",
           gender_policy: prop.gender_policy || "",
-          deposit_required: !!prop.deposit_required,
+          deposit_required: isNew ? null : (prop.deposit_required === null ? null : !!prop.deposit_required),
           deposit_amount: prop.deposit_amount?.toString() || "",
           allows_pets: prop.allows_pets === null ? null : !!prop.allows_pets,
           allows_cooking: prop.allows_cooking === null ? null : !!prop.allows_cooking,
@@ -1745,7 +1795,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       }
     }
     loadData();
-  }, [propertyId]);
+  }, [propertyId, isNew]);
 
   // ── Image Handlers ──
   const handleAddImages = (files: File[]) => {
@@ -1798,6 +1848,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
       currentImageIds !== snapshot.imageIds.join(",");
 
     if (!isDirty) return;
+    if (!currentForm.operation || !currentForm.property_type) return;
 
     setAutosaving(true);
     try {
@@ -1820,7 +1871,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           price_negotiable: currentForm.price_negotiable,
           price_usd: currentForm.price_usd ? parseFloat(currentForm.price_usd) : null,
           maintenance_fee: currentForm.maintenance_fee ? parseFloat(currentForm.maintenance_fee) : null,
-          maintenance_included: currentForm.maintenance_included,
           price_per_night: currentForm.price_per_night ? parseFloat(currentForm.price_per_night) : null,
           price_weekend: currentForm.price_weekend ? parseFloat(currentForm.price_weekend) : null,
           min_nights: currentForm.min_nights ? parseInt(currentForm.min_nights) : 1,
@@ -1935,6 +1985,10 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
     e.preventDefault();
     setError("");
     setSuccess("");
+    if (!form.operation || !form.property_type) {
+      setError("Por favor, selecciona primero la Operación y el Tipo de Inmueble.");
+      return;
+    }
     const { score: currentProgress } = calculateProgress(form, images);
     setSaving(true);
     try {
@@ -1950,7 +2004,6 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           price_negotiable: form.price_negotiable,
           price_usd: form.price_usd ? parseFloat(form.price_usd) : null,
           maintenance_fee: form.maintenance_fee ? parseFloat(form.maintenance_fee) : null,
-          maintenance_included: form.maintenance_included,
           price_per_night: form.price_per_night ? parseFloat(form.price_per_night) : null,
           price_weekend: form.price_weekend ? parseFloat(form.price_weekend) : null,
           min_nights: form.min_nights ? parseInt(form.min_nights) : 1,
@@ -2092,7 +2145,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const sectionClasificacion = (
     <SectionCard title="Clasificación y Publicación" layoutId="sec-clasificacion">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-        <div>
+        <div id="operation">
           <Label>Operación</Label>
           <FormSelect
             value={form.operation}
@@ -2104,7 +2157,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
             ].sort((a, b) => a.label.localeCompare(b.label))}
           />
         </div>
-        <div>
+        <div id="property_type">
           <Label>Tipo de inmueble</Label>
           <FormSelect
             value={form.property_type}
@@ -2154,7 +2207,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Contenido multi-idioma — always left
   const sectionContenido = (
-    <SectionCard title="Contenido de la publicación" layoutId="sec-contenido">
+    <SectionCard title="Contenido de la publicación" layoutId="sec-contenido" warningText={!form.operation && !form.property_type ? "Selecciona Operación y Tipo de inmueble" : !form.operation ? "Selecciona Tipo de Operación" : !form.property_type ? "Selecciona Tipo de Inmueble" : ""} onWarning={triggerToast}>
       <div className="space-y-6">
         {/* Sección en Español */}
         <div className="space-y-4">
@@ -2186,7 +2239,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Precio — left
   const sectionPrecio = (
-    <SectionCard title={isVacacional ? "Precio Base y Tarifas" : "Precio y Condiciones Financieras"} layoutId="sec-precio">
+    <SectionCard title={isVacacional ? "Precio Base y Tarifas" : "Precio y Condiciones Financieras"} layoutId="sec-precio" warningText={!form.operation && !form.property_type ? "Selecciona Operación y Tipo de inmueble" : !form.operation ? "Selecciona Tipo de Operación" : !form.property_type ? "Selecciona Tipo de Inmueble" : ""} onWarning={triggerToast}>
       {isVacacional ? (
         <div className="space-y-4">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
@@ -2283,12 +2336,9 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-3">
             <Toggle checked={form.price_negotiable} onChange={(v) => set("price_negotiable", v)} label="Precio negociable" />
-            {checkApplies("maintenance") && form.operation === "alquiler" && (
-              <Toggle checked={form.maintenance_included} onChange={(v) => set("maintenance_included", v)} label="Condominio incluido en el canon" />
-            )}
             {form.operation === "alquiler" && (
               <div id="deposit_required">
-                <Toggle checked={form.deposit_required} onChange={(v) => {
+                <Toggle checked={!!form.deposit_required} onChange={(v) => {
                   set("deposit_required", v);
                   if (!v) set("deposit_amount", "");
                 }} label="Requiere depósito" />
@@ -2406,7 +2456,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Fotos — always left
   const sectionFotos = (
-    <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos" id="images">
+    <SectionCard title="Fotos de la propiedad (hasta 20)" layoutId="sec-fotos" id="images" warningText={!form.operation && !form.property_type ? "Selecciona Operación y Tipo de inmueble" : !form.operation ? "Selecciona Tipo de Operación" : !form.property_type ? "Selecciona Tipo de Inmueble" : ""} onWarning={triggerToast}>
       <ImageDropzone
         images={images}
         onAdd={handleAddImages}
@@ -2419,7 +2469,7 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
 
   // Ubicación — right
   const sectionUbicacion = (
-    <SectionCard title="Ubicación" layoutId="sec-ubicacion">
+    <SectionCard title="Ubicación" layoutId="sec-ubicacion" warningText={!form.operation && !form.property_type ? "Selecciona Operación y Tipo de inmueble" : !form.operation ? "Selecciona Tipo de Operación" : !form.property_type ? "Selecciona Tipo de Inmueble" : ""} onWarning={triggerToast}>
       <div className="space-y-3">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <div id="municipio">
@@ -2639,121 +2689,134 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
   const progressScore = progressData.score;
 
   return (
-    <form onSubmit={handleSubmit} style={{ width: "100%", textAlign: "left" }}>
-      {/* Header with high stacking priority to ensure its dropdown overlays main columns */}
-      <div className="flex items-center justify-between mb-6" style={{ position: "relative", zIndex: 10000 }}>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.push(`/${locale}/panel/propiedades`)}
-            className="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
-            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
-          >
-            <ArrowLeft size={14} />
-          </button>
-          <div className="flex items-center gap-4">
-            <div>
-              <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
-                Editar propiedad
-              </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
-                  Modifica la información y fotos de la publicación
-                </p>
-                {!loading && (autosaving || lastSavedAt) && (
-                  <span className="text-[11px] italic font-normal text-[var(--p-text-3)]" style={{ color: "var(--p-text-3)", fontStyle: "italic" }}>
-                    {autosaving ? (
-                      "• Guardando..."
-                    ) : lastSavedAt ? (
-                      `• Guardado hace ${secondsSinceSave < 60 ? "<1min" : `${Math.floor(secondsSinceSave / 60)}min`}`
-                    ) : null}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
-          <button
-            type="button"
-            onClick={() => router.push(`/${locale}/panel/propiedades`)}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
-            style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
-          >
-            <X size={14} />
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
-            style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C", opacity: saving ? 0.7 : 1 }}
-          >
-            <Save size={14} />
-            {saving ? "Guardando..." : "Guardar cambios"}
-          </button>
-        </div>
-      </div>
+  <form onSubmit={handleSubmit} style={{ width: "100%", textAlign: "left" }}>
+  {/* Header with high stacking priority to ensure its dropdown overlays main columns */}
+  <div className="flex items-center justify-between mb-6" style={{ position: "relative", zIndex: 10000 }}>
+  <div className="flex items-center gap-3">
+  <button
+  type="button"
+  onClick={() => router.push(`/${locale}/panel/propiedades`)}
+  className="w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+  style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+  >
+  <ArrowLeft size={14} />
+  </button>
+  <div className="flex items-center gap-4">
+  <div>
+  <h2 className="text-[18px] font-semibold" style={{ color: "var(--p-text)" }}>
+  Editar propiedad
+  </h2>
+  <div className="flex items-center gap-2 flex-wrap">
+  <p className="text-[12px]" style={{ color: "var(--p-text-2)" }}>
+  Modifica la información y fotos de la publicación
+  </p>
+  {!loading && (autosaving || lastSavedAt) && (
+  <span className="text-[11px] italic font-normal text-[var(--p-text-3)]" style={{ color: "var(--p-text-3)", fontStyle: "italic" }}>
+  {autosaving ? (
+  "• Guardando..."
+  ) : lastSavedAt ? (
+  `• Guardado hace ${secondsSinceSave < 60 ? "<1min" : `${Math.floor(secondsSinceSave / 60)}min`}`
+  ) : null}
+  </span>
+  )}
+  </div>
+  </div>
+  </div>
+  </div>
+  <div className="flex items-center gap-3">
+  <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
+  <button
+  type="button"
+  onClick={() => router.push(`/${locale}/panel/propiedades`)}
+  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+  style={{ borderRadius: "var(--p-radius)", background: "var(--p-surface-2)", border: "1px solid var(--p-border)", color: "var(--p-text-2)" }}
+  >
+  <X size={14} />
+  Cancelar
+  </button>
+  <button
+  type="submit"
+  disabled={saving}
+  className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium cursor-pointer"
+  style={{ borderRadius: "var(--p-radius)", background: saving ? "var(--p-surface-3)" : "var(--p-accent)", color: saving ? "var(--p-text-2)" : "#0E0D0C", opacity: saving ? 0.7 : 1 }}
+  >
+  <Save size={14} />
+  {saving ? "Guardando..." : "Guardar cambios"}
+  </button>
+  </div>
+  </div>
+   
+   
+   
+  {/* Alerts */}
+  <AnimatePresence>
+  {success && (
+  <motion.div
+  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+  className="px-4 py-3 text-[13px] mb-4"
+  style={{ borderRadius: "var(--p-radius)", background: "rgba(76,175,125,0.12)", border: "1px solid rgba(76,175,125,0.2)", color: "var(--p-green)" }}
+  >
+  {success}
+  </motion.div>
+  )}
+  {error && (
+  <motion.div
+  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+  className="px-4 py-3 text-[13px] mb-4"
+  style={{ borderRadius: "var(--p-radius)", background: "rgba(192,96,90,0.12)", border: "1px solid rgba(192,96,90,0.2)", color: "var(--p-red)" }}
+  >
+  {error}
+  </motion.div>
+  )}
+  </AnimatePresence>
+   
+  {isCombinationInconsistent(form.property_type, form.operation) && (
+  <div className="px-4 py-3 text-[12px] rounded mb-4" style={{ background: "rgba(212,146,74,0.12)", border: "1px solid rgba(212,146,74,0.2)", color: "#D4924A" }}>
+  ⚠️ <strong>Aviso de inconsistencia lógica:</strong> La combinación {capitalize(form.property_type)} × {capitalize(form.operation)} no está recomendada. Es solo informativo.
+  </div>
+  )}
+   
+  {/* ─── Fixed Static Two-Column Layout (Drag and Drop disabled) ─── */}
+  {(() => {
+    const activeSections: React.ReactNode[] = [];
+    activeSections.push(sectionClasificacion);
+    activeSections.push(sectionContenido);
+    activeSections.push(sectionPrecio);
+    activeSections.push(sectionUbicacion);
+    activeSections.push(sectionFotos);
+    if (hasDimensions) activeSections.push(sectionDimensiones);
+    if (hasLandSection) activeSections.push(sectionTerreno);
+    if (hasServices || hasSecurity) activeSections.push(sectionServiciosSeguridad);
+    if (hasShared) activeSections.push(sectionCompartido);
+    if (hasMedia) activeSections.push(sectionMedia);
 
+    const leftColumnSections: React.ReactNode[] = [];
+    const rightColumnSections: React.ReactNode[] = [];
+    activeSections.forEach((sec, idx) => {
+      const elementWithKey = React.isValidElement(sec)
+        ? React.cloneElement(sec, { key: `sec-${idx}` })
+        : sec;
+      if (idx % 2 === 0) {
+        leftColumnSections.push(elementWithKey);
+      } else {
+        rightColumnSections.push(elementWithKey);
+      }
+    });
 
-
-      {/* Alerts */}
-      <AnimatePresence>
-        {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="px-4 py-3 text-[13px] mb-4"
-            style={{ borderRadius: "var(--p-radius)", background: "rgba(76,175,125,0.12)", border: "1px solid rgba(76,175,125,0.2)", color: "var(--p-green)" }}
-          >
-            {success}
-          </motion.div>
-        )}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="px-4 py-3 text-[13px] mb-4"
-            style={{ borderRadius: "var(--p-radius)", background: "rgba(192,96,90,0.12)", border: "1px solid rgba(192,96,90,0.2)", color: "var(--p-red)" }}
-          >
-            {error}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isCombinationInconsistent(form.property_type, form.operation) && (
-        <div className="px-4 py-3 text-[12px] rounded mb-4" style={{ background: "rgba(212,146,74,0.12)", border: "1px solid rgba(212,146,74,0.2)", color: "#D4924A" }}>
-          ⚠️ <strong>Aviso de inconsistencia lógica:</strong> La combinación {capitalize(form.property_type)} × {capitalize(form.operation)} no está recomendada. Es solo informativo.
-        </div>
-      )}
-
-      {/* ─── Fixed Static Two-Column Layout (Drag and Drop disabled) ─── */}
-      {/* 
-        NOTE ON DRAG AND DROP:
-        The drag and drop functionality has been disabled and commented out because:
-        1. "Maximum update depth exceeded" loop errors occurred due to state synchronization and context/listener re-registration in the rendering path when dragging in React 19.
-        2. Drag handle clicks sometimes bubbled or conflicted with internal accordion card toggles, causing sections to expand/collapse.
-        3. Drop animations and reordering targets behaved erratically on columns with variable height and dynamic fields.
-        The sections are now displayed in a logical, stable, fixed order.
-      */}
+    return (
       <div style={{ display: "flex", gap: 16, alignItems: "start", width: "100%" }}>
         {/* ── LEFT COLUMN ── */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-          {sectionClasificacion}
-          {sectionContenido}
-          {sectionDimensiones}
-          {sectionFotos}
-          {hasLandSection && sectionTerreno}
+          {leftColumnSections}
         </div>
 
         {/* ── RIGHT COLUMN ── */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-          {sectionPrecio}
-          {sectionUbicacion}
-          {(hasServices || hasSecurity) && sectionServiciosSeguridad}
-          {hasShared && sectionCompartido}
-          {sectionMedia}
+          {rightColumnSections}
         </div>
       </div>
+    );
+  })()}
 
       {/* Bottom actions */}
       <div className="flex justify-between pt-6 pb-8 mt-4">
@@ -2776,6 +2839,66 @@ export function PropertyForm({ locale, propertyId }: PropertyFormProps) {
           {saving ? "Guardando..." : "Guardar cambios"}
         </button>
       </div>
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            style={{
+              position: "fixed",
+              bottom: 24,
+              right: 24,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "12px 16px",
+              background: "rgba(30, 30, 32, 0.95)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(212, 146, 74, 0.3)",
+              borderRadius: "12px",
+              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 146, 74, 0.1)",
+              maxWidth: "380px",
+              pointerEvents: "auto",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", background: "rgba(212, 146, 74, 0.12)", flexShrink: 0 }}>
+              <span style={{ color: "#D4924A", fontSize: 13, fontWeight: "bold" }}>⚠️</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: "12px", fontWeight: 500, color: "var(--p-text)", lineHeight: "1.4" }}>
+                {toast.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              style={{ background: "none", border: "none", color: "var(--p-text-3)", cursor: "pointer", fontSize: 12, padding: 4 }}
+            >
+              ✕
+            </button>
+            {/* Countdown animation bar */}
+            <motion.div
+              initial={{ width: "100%" }}
+              animate={{ width: "0%" }}
+              transition={{ duration: 3.5, ease: "linear" }}
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                height: "3px",
+                background: "#D4924A",
+                borderBottomLeftRadius: "12px",
+                borderBottomRightRadius: "12px",
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </form>
   );
 }
