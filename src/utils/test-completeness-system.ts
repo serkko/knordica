@@ -85,7 +85,7 @@ const MINIMAL_DATA = {
   cohabitation: '',
   occupants_count: '',
   gender_policy: '',
-  deposit_required: false,
+  deposit_required: null,
   deposit_amount: '',
   allows_pets: null,
   allows_cooking: null,
@@ -105,15 +105,42 @@ export async function testCompletenessSystem() {
 
   let allTestsPassed = true;
 
+  // Test Case A: Empty form (no operation, no property type)
+  console.log('--- Test Case A: Completely Empty Form ---');
+  const emptyData = { ...MINIMAL_DATA };
+  const scoreEmpty = computeCompletenessScore(emptyData, '', '', 0, () => false);
+  const recOp = scoreEmpty.recommendations.find(r => r.field === 'operation');
+  const recType = scoreEmpty.recommendations.find(r => r.field === 'property_type');
+  const emptyPassed = scoreEmpty.score === 0 && recOp?.weight === 15 && recType?.weight === 15;
+  console.log(`Score: ${scoreEmpty.score}% (Expected: 0%)`);
+  console.log(`Operation Rec Weight: ${recOp?.weight || 'N/A'} (Expected: 15)`);
+  console.log(`Property Type Rec Weight: ${recType?.weight || 'N/A'} (Expected: 15)`);
+  if (!emptyPassed) {
+    allTestsPassed = false;
+    console.log(' ❌ TEST CASE A FAILED\n');
+  } else {
+    console.log(' ✓ TEST CASE A PASSED\n');
+  }
+
+  // Test Case B: Only Operation Selected
+  console.log('--- Test Case B: Only Operation Selected ---');
+  const scoreOnlyOp = computeCompletenessScore(emptyData, '', 'venta', 0, () => false);
+  const recTypeOnly = scoreOnlyOp.recommendations.find(r => r.field === 'property_type');
+  const onlyOpPassed = scoreOnlyOp.score === 15 && recTypeOnly?.weight === 15 && !scoreOnlyOp.recommendations.some(r => r.field === 'operation');
+  console.log(`Score: ${scoreOnlyOp.score}% (Expected: 15%)`);
+  console.log(`Property Type Rec Weight: ${recTypeOnly?.weight || 'N/A'} (Expected: 15)`);
+  if (!onlyOpPassed) {
+    allTestsPassed = false;
+    console.log(' ❌ TEST CASE B FAILED\n');
+  } else {
+    console.log(' ✓ TEST CASE B PASSED\n');
+  }
+
+  // Test Case C: All valid combinations with ONLY parameters selected (should be exactly 30%)
+  console.log('--- Test Case C: Valid Combinations with Only Parameters ---');
   for (const combo of VALID_COMBINATIONS) {
-    console.log(`Testing: ${combo.type.toUpperCase()} × ${combo.op.toUpperCase()}`);
-
-    // Create a copy of minimal data
     const testData = { ...MINIMAL_DATA };
-
-    // Test 1: Verify the system correctly calculates score when only operation and property_type are provided as parameters
-    // and no other fields are completed
-    const scoreOnlyParams = computeCompletenessScore(
+    const result = computeCompletenessScore(
       testData,
       combo.type,
       combo.op,
@@ -121,43 +148,26 @@ export async function testCompletenessSystem() {
       (field) => checkFieldApplies(field, combo.type, combo.op)
     );
 
-    // Test 2: Verify recommendations show absolute weights for operation and property_type
-    const recommendations = scoreOnlyParams.recommendations;
-    const operationRecommendation = recommendations.find(r => r.field === 'operation');
-    const propertyTypeRecommendation = recommendations.find(r => r.field === 'property_type');
-
-    // Test 3: Verify total score is 0% when no fields are completed (since operation and property_type are not fields but parameters)
-    // The score should be 0% because no fields are completed, but the combination context is valid
-    const expectedScore = 0; // No fields completed, so 0%
-
-    console.log(` Score with only parameters: ${scoreOnlyParams.score}%`);
-    console.log(` Expected score: ${expectedScore}%`);
-
-    // Check if recommendations show correct absolute weights for operation and property_type
-    const operationRecommendationValid = operationRecommendation && operationRecommendation.weight === 15;
-    const propertyTypeRecommendationValid = propertyTypeRecommendation && propertyTypeRecommendation.weight === 15;
-
-    console.log(` Operation recommendation weight: ${operationRecommendation?.weight || 'N/A'} (${operationRecommendationValid ? '✓' : '✗'})`);
-    console.log(` Property type recommendation weight: ${propertyTypeRecommendation?.weight || 'N/A'} (${propertyTypeRecommendationValid ? '✓' : '✗'})`);
-
-    // The test passes if the recommendations show the correct absolute weights
-    // The score being 0% is expected since no fields are completed
-    const testPassed = operationRecommendationValid && propertyTypeRecommendationValid;
-
-    if (!testPassed) {
+    const expectedScore = 30; // 15% operation + 15% property_type, others empty
+    const hasOpRec = result.recommendations.some(r => r.field === 'operation');
+    const hasTypeRec = result.recommendations.some(r => r.field === 'property_type');
+    
+    const comboPassed = result.score === expectedScore && !hasOpRec && !hasTypeRec;
+    
+    console.log(`Combo ${combo.type} x ${combo.op}: Score = ${result.score}% (Expected: ${expectedScore}%) | Passed: ${comboPassed ? '✓' : '✗'}`);
+    
+    if (!comboPassed) {
       allTestsPassed = false;
-      console.log(' ❌ TEST FAILED\n');
-    } else {
-      console.log(' ✓ TEST PASSED\n');
+      console.log(`Recommendations returned:`, result.recommendations);
     }
   }
 
-  console.log('Testing completed.');
+  console.log('\nTesting completed.');
 
   if (allTestsPassed) {
-    console.log('✅ ALL TESTS PASSED: Operation and property_type recommendations show correct absolute weights');
+    console.log('✅ ALL TESTS PASSED');
   } else {
-    console.log('❌ SOME TESTS FAILED: Operation and property_type recommendation weights are incorrect');
+    console.log('❌ SOME TESTS FAILED');
   }
 
   return allTestsPassed;

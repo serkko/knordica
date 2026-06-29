@@ -24,7 +24,6 @@ export const SCORE_CONFIG: Record<string, FieldScoreConfig> = {
 
   // Mantenimiento / Depósito
   maintenance_fee: { weight: 2, group: 1, overrides: { 'apartamento_venta': 3, 'apartamento_alquiler': 2, 'edificio_venta': 3, 'edificio_alquiler': 2, 'galpon_alquiler': 1.5, 'hacienda_finca_alquiler': 1.5, 'local_alquiler': 1.5 } },
-  deposit_required: { weight: 2, group: 5 },
   deposit_amount: { weight: 2, group: 5 },
 
   // Vacacional hospedaje
@@ -64,7 +63,6 @@ export const SCORE_CONFIG: Record<string, FieldScoreConfig> = {
   address_es: { weight: 3, group: 2, overrides: { 'anexo_venta': 4 } },
   address_en: { weight: 2, group: 2, overrides: { 'casa_vacacional': 5, 'apartamento_vacacional': 3, 'anexo_venta': 4, 'anexo_vacacional': 6, 'habitacion_vacacional': 7, 'edificio_venta': 3, 'galpon_venta': 5, 'hacienda_finca_venta': 3, 'terreno_lote_venta': 8 } },
   lat: { weight: 5, group: 2, overrides: { 'casa_vacacional': 4, 'anexo_venta': 6, 'galpon_venta': 6, 'terreno_lote_venta': 8 } }, // lat + lng evaluados juntos
-  show_exact_location: { weight: 2, group: 2, overrides: { 'apartamento_vacacional': 3, 'anexo_vacacional': 6, 'habitacion_vacacional': 7, 'edificio_venta': 3, 'galpon_venta': 5, 'hacienda_finca_venta': 3, 'terreno_lote_venta': 8 } },
 
   // Servicios
   gas_type: { weight: 0.75, group: 4, overrides: { 'galpon_venta': 1.25 } },
@@ -239,10 +237,6 @@ export function computeCompletenessScore(
 
   // 3. Evaluar respuestas y acumular
   activeFields.forEach(({ field, weight }) => {
-    if (field === "has_water_tank") {
-      console.log(`[Completeness Test] Field: has_water_tank, Value: ${data.has_water_tank}, Type: ${typeof data.has_water_tank}, isAnswered: ${isAnswered(data.has_water_tank)}`);
-    }
-
     // Caso especial 1: Precio y moneda (se evalúan juntos)
     if (field === "price") {
       const isPriceFilled = isAnswered(data.price) && isAnswered(data.price_currency);
@@ -288,7 +282,7 @@ export function computeCompletenessScore(
         // Si no requiere depósito, gana los puntos de deposit_amount automáticamente,
         // pero no en un formulario recién creado donde solo se han seleccionado operación y tipo.
         const hasOtherAnswers = Object.keys(data).some(k => {
-          if (["operation", "property_type", "status", "listing_badge", "completeness_score", "deposit_required", "min_nights", "checkin_time", "checkout_time"].includes(k)) {
+          if (["operation", "property_type", "status", "listing_badge", "completeness_score", "deposit_required", "min_nights", "checkin_time", "checkout_time", "show_exact_location"].includes(k)) {
             return false;
           }
           return isAnswered(data[k]);

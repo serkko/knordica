@@ -2,7 +2,7 @@
 
 ## 1. Visión General
 
-Knordica es una plataforma inmobiliaria avanzada construida con Next.js 14, Supabase y TypeScript que permite a agentes gestionar propiedades, crear listados detallados y conectar con clientes. La plataforma combina una interfaz de usuario rica con una arquitectura de backend robusta que soporta múltiples tipos de propiedades, operaciones y condiciones financieras.
+Knordica es una plataforma inmobiliaria avanzada construida con Next.js 16.2.9, Supabase y TypeScript que permite a agentes gestionar propiedades, crear listados detallados y conectar con clientes. La plataforma combina una interfaz de usuario rica con una arquitectura de backend robusta que soporta múltiples tipos de propiedades, operaciones y condiciones financieras.
 
 La aplicación sigue un enfoque de componentes reutilizables con un sistema de formularios dinámicos que adapta los campos según el tipo de propiedad y operación seleccionada. El backend utiliza Supabase con políticas de seguridad a nivel de fila (RLS) para garantizar que los usuarios solo accedan a sus propios datos.
 
@@ -10,7 +10,7 @@ La aplicación sigue un enfoque de componentes reutilizables con un sistema de f
 
 ### 2.1. Frontend
 
-- **Framework**: Next.js 14 con App Router y Server Components
+- **Framework**: Next.js 16.2.9 con App Router y Server Components
 - **Estilos**: Tailwind CSS con personalizaciones y utilidades propias
 - **Animaciones**: Framer Motion para transiciones suaves y efectos de arrastre
 - **Tipado**: TypeScript completo en todo el códigobase
@@ -121,9 +121,9 @@ knordica/
 
 - `id` (UUID): Identificador único
 - `agent_id` (UUID): Referencia al agente propietario
-- `operation` (text): Operación (venta, renta, venta_renta, intercambio)
+- `operation` (text): Operación (venta, alquiler, vacacional)
 - `property_type` (text): Tipo de propiedad (apartamento, casa, etc.)
-- `status` (text): Estado (borrador, publicado, suspendido)
+- `status` (text): Estado (activa, reservada, vendida, alquilada, cerrada)
 - `listing_badge` (text): Distintivo de listado (basico, destacado, premium)
 - `featured` (boolean): Destacado
 - `exclusive` (boolean): Exclusivo
@@ -155,7 +155,7 @@ knordica/
 - `floor_number` (integer): Número de piso
 - `property_age` (integer): Edad de la propiedad (años)
 - `year_built` (integer): Año de construcción
-- `condition` (text): Condición (nuevo, excelente, bueno, regular, malo)
+- `condition` (text): Condición (nuevo, excelente, buen_estado, por_remodelar, en_gris)
 - `furnished` (text): Amueblado (no, parcial, completo)
 - `municipio` (text): Municipio
 - `zone_id` (UUID): Referencia a la zona
@@ -349,9 +349,8 @@ $$ LANGUAGE plpgsql;
 ```typescript
 export const PROPERTY_OPERATIONS = [
   "venta",
-  "renta",
-  "venta_renta",
-  "intercambio"
+  "alquiler",
+  "vacacional"
 ] as const;
 ```
 
@@ -377,9 +376,11 @@ export const PROPERTY_TYPES = [
 
 ```typescript
 export const PROPERTY_STATUSES = [
-  "borrador",
-  "publicado",
-  "suspendido"
+  "activa",
+  "reservada",
+  "vendida",
+  "alquilada",
+  "cerrada"
 ] as const;
 ```
 
@@ -389,9 +390,9 @@ export const PROPERTY_STATUSES = [
 export const PROPERTY_CONDITIONS = [
   "nuevo",
   "excelente",
-  "bueno",
-  "regular",
-  "malo"
+  "buen_estado",
+  "por_remodelar",
+  "en_gris"
 ] as const;
 ```
 
@@ -1524,3 +1525,41 @@ La aplicación incluye:
 - **2026-06-26**: Normalizados los valores de los enums para `condition`, `furnished` y `kitchen_type` para asegurar consistencia en los datos.
 
 El sistema ha evolucionado desde una plataforma básica de listado de propiedades hasta una solución completa de gestión inmobiliaria con un sistema de puntuación de completitud, lógica de discriminación de campos y soporte multilingüe.
+
+## 21. Reglas de Negocio y Decisiones de Producto
+
+- **Regla**: Score de Completitud al 99% si falta algún parámetro.
+  - *Justificación*: El score de completitud nunca debe marcar 100% si hay parámetros sin responder, reservando el 100% únicamente para cuando la propiedad esté completamente rellenada.
+  - *Decisión final*: Modificar `propertyCompleteness.ts` para aplicar un tope matemático estricto del 99% si se detecta cualquier recomendación pendiente.
+  - *Alcance*: Formulario de nueva propiedad y edición de propiedad.
+
+- **Regla**: Drag-and-Drop desactivado en favor de layout fijo.
+  - *Justificación*: En React 19, el reordenamiento dinámico causaba loops infinitos de actualización de estado y colisiones de gestos en el acordeón de tarjetas.
+  - *Decisión*: Reemplazar con flexbox estático de dos columnas en `PropertyForm`.
+
+## 22. Decisiones Técnicas Tomadas
+
+- **DT-10: Edición quirúrgica de documentación de contexto**
+  - *Qué se decidió*: Evitar regenerar `context.md` desde cero borrando secciones históricas. En su lugar, realizar reemplazos de contenido multilínea hiper-enfocados.
+  - *Contexto*: El modelo borró accidentalmente el 90% de la base de conocimiento histórico de base de datos y lógica del formulario.
+  - *Motivo*: Preservar la base de conocimiento acumulada por agentes previos y minimizar el desperdicio de tokens.
+  - *Fecha*: 2026-06-28.
+
+## 23. Backlog Técnico Priorizado
+
+- **Validación de Integración de Formularios** (🔴 Alta)
+  - *Descripción*: Verificar que el unificado de PropertyForm opera sin errores en los endpoints de nueva/editar tras la unificación y el Fast-Forward merge a `main`.
+  - *Archivos*: `src/components/panel/PropertyForm.tsx`, `src/app/[locale]/panel/propiedades/`.
+  - *Notas*: Probar con un nuevo registro desde cero y guardar.
+
+## 24. Patrones a Evitar
+
+- **Anti-patrón**: Sobreescribir archivos de documentación grandes (`context.md`) mediante herramientas de escritura destructivas (`write_to_file`) sin validar el contenido anterior.
+  - *Por qué falla*: Elimina conocimiento histórico insustituible que el modelo no puede inferir solo leyendo el código actual.
+  - *Qué hacer*: Usar `multi_replace_file_content` o `replace_file_content` para realizar parches controlados y específicos.
+
+## 25. Contexto de Sesión Activa
+
+- **Qué se trabajó**: Restauración de `context.md` al estado original tras borrado destructivo. Corrección manual y quirúrgica de discrepancias críticas de constantes y versiones de framework.
+- **En qué punto quedó**: Sincronización de constantes inmobiliarias (`PROPERTY_OPERATIONS`, `PROPERTY_STATUSES`, `PROPERTY_CONDITIONS`) y versión de Next.js.
+- **Siguiente paso concreto**: Ejecutar validaciones en el entorno de desarrollo y continuar con las tareas del Backlog.
