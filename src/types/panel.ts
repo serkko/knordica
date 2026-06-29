@@ -33,28 +33,8 @@ export interface KPIData {
 // Estado de una propiedad en el panel
 export type PanelPropertyStatus = "activa" | "vendida" | "alquilada" | "reservada" | "inactiva";
 
-// Estado de un cliente en CRM
-export type CRMStage = "nuevo" | "contactado" | "visita" | "negociacion" | "cerrado" | "perdido" | "calificado" | "propuesta";
-
-export interface CRMClient {
-  id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  stage: CRMStage;
-  client_type?: ClientType | null;
-  agent_id: string;
-  property_interest?: string | null;
-  budget_min?: number | null;
-  budget_max?: number | null;
-  budget_currency?: string | null;
-  interested_zones?: string[] | null;
-  notes?: string | null;
-  last_contact?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Pipeline CRM — 6 etapas canónicas (mismo valor que leads.status en DB)
+export type CRMStage = "nuevo" | "contactado" | "visita" | "negociacion" | "cerrado" | "perdido";
 
 // Entrada de agenda
 export interface AgendaEvent {
@@ -113,9 +93,10 @@ export interface BlogArticle {
   updated_at: string;
 }
 
-// Tipos del CRM extendidos
+// Tipos del CRM
 export type ClientStage = CRMStage;
-export type ClientType = "comprador" | "propietario" | "inquilino" | "inversionista" | "inversor" | "arrendatario";
+// 4 tipos canónicos sin sinónimos — coinciden exactamente con los valores en DB
+export type ClientType = "comprador" | "arrendatario" | "propietario" | "inversor";
 
 export interface CRMClient {
   id: string;

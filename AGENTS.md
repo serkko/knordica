@@ -19,3 +19,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # GIT OPERATIONS RULE
 - **Rule**: No proponer ni ejecutar comandos de terminal para git commit o push (los cuales fuerzan una decisión de aprobación en la UI de comandos) a menos que el usuario lo solicite primero de forma explícita en el chat de texto. Si el trabajo está listo, simplemente consúltalo al final del mensaje en el chat.
 
+# CONVERSATION BACKUP RULE
+- **Rule**: Al inicio y final de cada turno, el agente debe realizar una copia de seguridad incremental y automática de los archivos de la conversación actual (transcripts y markdowns del brain) en `C:/Github/chats-backup/<nombre_del_chat>/` (ordenados en carpetas nombradas según el título del chat o primer prompt, precedidos por la fecha de creación para mantener el orden cronológico).
+- **Rule**: Por motivos de seguridad de datos, el agente tiene prohibido de forma absoluta y bajo cualquier circunstancia eliminar o vaciar cualquier archivo o carpeta dentro de `C:/Github/chats-backup`. Solo se permiten operaciones de escritura, adición y copia incremental. La eliminación de respaldos solo podrá ser efectuada de manera manual por el usuario.
+
