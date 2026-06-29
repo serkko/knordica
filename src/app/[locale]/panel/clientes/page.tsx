@@ -11,6 +11,7 @@ import {
   useDroppable,
   DragOverlay,
   DragStartEvent,
+  pointerWithin,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -561,6 +562,9 @@ export default function ClientesCRMPage({ params }: PageProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [draggedClient, setDraggedClient] = useState<CRMClient | null>(null);
+  const [activeOverId, setActiveOverId] = useState<string | null>(null);
+  const [lastDroppedId, setLastDroppedId] = useState<string | null>(null);
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
   
   // Estado para el modal de 3 pasos
   const [modalStep, setModalStep] = useState(1);
@@ -618,28 +622,65 @@ export default function ClientesCRMPage({ params }: PageProps) {
   const handleDragStart = (event: DragStartEvent) => {
     const client = clients.find((c) => c.id === event.active.id);
     if (client) setDraggedClient(client);
+    setActiveOverId(null);
+    
+    if (typeof window !== "undefined") {
+      const activeNode = document.getElementById(event.active.id as string);
+      if (activeNode) {
+        setDragWidth(activeNode.getBoundingClientRect().width);
+      }
+    }
+  };
+
+  const handleDragOver = (event: any) => {
+    const { over } = event;
+    setActiveOverId(over?.id as string || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setDraggedClient(null);
+    setActiveOverId(null);
     const { active, over } = event;
     if (!over) return;
 
     const activeId = active.id as string;
-    const targetStage = over.id as CRMStage;
+    const overId = over.id as string;
 
-    // Verificar si es un stage válido de columnas
-    if (STAGES.some((s) => s.value === targetStage) || ARCHIVED_STAGES.some((s) => s.value === targetStage)) {
-      // Actualizar localmente de inmediato
-      setClients((prev) =>
-        prev.map((c) => (c.id === activeId ? { ...c, stage: targetStage } : c))
-      );
+    const targetStage = STAGES.find((s) => s.value === overId) || ARCHIVED_STAGES.find((s) => s.value === overId);
 
-      // Persistir en Supabase
+    setLastDroppedId(activeId);
+    setTimeout(() => {
+      setLastDroppedId((curr) => (curr === activeId ? null : curr));
+    }, 1500);
+
+    if (targetStage) {
+      setClients((prev) => {
+        const moved = prev.find((c) => c.id === activeId);
+        if (!moved) return prev;
+        const updated = { ...moved, stage: targetStage.value, updated_at: new Date().toISOString() };
+        const filtered = prev.filter((c) => c.id !== activeId);
+        return [updated, ...filtered]; // Prepend it so it sits at the top of the column
+      });
       try {
-        await updateClientStage(activeId, targetStage);
+        await updateClientStage(activeId, targetStage.value);
       } catch (err) {
         console.error("Error persisting drag-and-drop stage change", err);
+      }
+    } else {
+      const overClient = clients.find((c) => c.id === overId);
+      if (overClient) {
+        setClients((prev) => {
+          const moved = prev.find((c) => c.id === activeId);
+          if (!moved) return prev;
+          const updated = { ...moved, stage: overClient.stage, updated_at: new Date().toISOString() };
+          const filtered = prev.filter((c) => c.id !== activeId);
+          return [updated, ...filtered]; // Prepend it so it sits at the top of the column
+        });
+        try {
+          await updateClientStage(activeId, overClient.stage);
+        } catch (err) {
+          console.error("Error persisting drag-and-drop stage change", err);
+        }
       }
     }
   };
@@ -991,8 +1032,8 @@ export default function ClientesCRMPage({ params }: PageProps) {
         </div>
       ) : view === "kanban" ? (
         // ─── KANBAN PIPELINE VIEW ───────────────────────────────────────────
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto pb-4 items-start select-none min-h-[500px] panel-scroll">
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pb-4 items-start select-none min-h-[500px] w-full">
             {STAGES.map((stage) => {
               const stageClients = filteredClients.filter((c) => c.stage === stage.value);
 
@@ -1003,26 +1044,23 @@ export default function ClientesCRMPage({ params }: PageProps) {
                   clients={stageClients}
                   locale={locale}
                   onOpen={handleOpenDrawer}
+                  draggedClient={draggedClient}
+                  activeOverId={activeOverId}
+                  lastDroppedId={lastDroppedId}
                 />
               );
             })}
           </div>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {draggedClient ? (
-              <div
-                className="p-3 rounded-sm border flex flex-col justify-between opacity-80 cursor-grabbing bg-[var(--p-surface-2)] border-[var(--p-border)]"
-                style={{ width: "288px" }}
+              <motion.div
+                layoutId={draggedClient.id}
+                className="p-3 rounded-sm border flex flex-col justify-between cursor-grabbing bg-[var(--p-surface-2)] border-[var(--p-text-3)] opacity-95 shadow-2xl pointer-events-none select-none"
+                style={{ minHeight: "125px", width: dragWidth ? `${dragWidth}px` : "auto" }}
               >
-                <div className="space-y-2">
-                  <span className="text-[9px] font-bold uppercase tracking-wider font-mono text-[var(--p-text-3)]">
-                    {draggedClient.client_type}
-                  </span>
-                  <h4 className="text-xs font-semibold text-[var(--p-text)]">
-                    {draggedClient.full_name}
-                  </h4>
-                </div>
-              </div>
+                <ClientCardInner client={draggedClient} locale={locale} />
+              </motion.div>
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -1595,26 +1633,43 @@ function KanbanColumn({
   clients,
   locale,
   onOpen,
+  draggedClient,
+  activeOverId,
+  lastDroppedId,
 }: {
   stage: { value: CRMStage; label_es: string; label_en: string; color: string };
   clients: CRMClient[];
   locale: string;
   onOpen: (client: CRMClient) => void;
+  draggedClient: CRMClient | null;
+  activeOverId: string | null;
+  lastDroppedId: string | null;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: stage.value,
   });
+
+  // El puntero está dentro si el activeOverId es esta columna o cualquiera de sus tarjetas
+  const isPointerInside = activeOverId === stage.value || clients.some((c) => c.id === activeOverId);
+
+  const isOverActive = isPointerInside && draggedClient && draggedClient.stage !== stage.value;
 
   return (
     <div
       ref={setNodeRef}
-      className={`w-72 shrink-0 flex flex-col rounded-sm border transition-colors ${
-        isOver ? "bg-white/[0.03]" : ""
+      className={`w-full flex flex-col rounded-sm border transition-all duration-300 ${
+        isOverActive ? "bg-white/[0.04]" : ""
       }`}
       style={{
         background: "var(--p-surface)",
-        borderColor: isOver ? stage.color : "var(--p-border)",
-        borderTop: `2.5px solid ${stage.color}`,
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderTopWidth: "2.5px",
+        borderTopColor: stage.color,
+        borderRightColor: isOverActive ? stage.color : "var(--p-border)",
+        borderBottomColor: isOverActive ? stage.color : "var(--p-border)",
+        borderLeftColor: isOverActive ? stage.color : "var(--p-border)",
+        boxShadow: isOverActive ? `0 0 16px 2px ${stage.color}25` : "none",
       }}
     >
       {/* Column Header */}
@@ -1634,7 +1689,7 @@ function KanbanColumn({
       </div>
 
       {/* Cards list container */}
-      <div className="p-2 space-y-2 min-h-[440px] flex-1 overflow-y-auto max-h-[600px] panel-scroll">
+      <div className="p-2 space-y-2 flex-1 min-h-[125px]">
         <SortableContext items={clients.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           {clients.length > 0 ? (
             clients.map((client) => (
@@ -1643,15 +1698,79 @@ function KanbanColumn({
                 client={client}
                 onOpen={onOpen}
                 locale={locale}
+                lastDroppedId={lastDroppedId}
               />
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-[var(--p-text-3)] space-y-1">
+            <div className="h-[125px] border border-dashed border-white/10 rounded-sm bg-black/5 flex flex-col items-center justify-center text-[var(--p-text-3)] space-y-1">
               <Building size={16} strokeWidth={1.5} />
-              <span className="text-[10px]">{locale === "en" ? "Empty Column" : "Sin clientes"}</span>
+              <span className="text-[9px] uppercase tracking-wider font-mono font-semibold">{locale === "en" ? "Empty Column" : "Sin clientes"}</span>
             </div>
           )}
         </SortableContext>
+      </div>
+    </div>
+  );
+}
+
+// Componente interno reutilizable para el contenido de la tarjeta
+function ClientCardInner({ client, locale }: { client: CRMClient; locale: string }) {
+  const typeCfg = CLIENT_TYPE_CFG[client.client_type as ClientType] || CLIENT_TYPE_CFG.comprador;
+  const today = new Date().toISOString().split("T")[0] || "";
+  const isActionExpired =
+    client.next_action_date &&
+    client.next_action_date < today &&
+    client.stage !== "cerrado" &&
+    client.stage !== "perdido";
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <span
+          className="px-1.5 py-0.5 rounded-xs text-[9px] font-bold font-mono uppercase tracking-wider"
+          style={{ background: typeCfg.color, color: "var(--p-text)" }}
+        >
+          {locale === "en" ? typeCfg.label_en : typeCfg.label_es}
+        </span>
+        {isActionExpired && (
+          <span
+            className="flex items-center gap-1 text-[9px] font-bold text-[var(--p-red)] uppercase"
+            title={locale === "en" ? "Overdue Action" : "Acción Vencida"}
+          >
+            <AlertCircle size={10} />
+            {locale === "en" ? "Overdue" : "Vencida"}
+          </span>
+        )}
+      </div>
+
+      <h4 className="text-xs font-semibold text-[var(--p-text)]">{client.full_name}</h4>
+
+      {client.interested_types && client.interested_types.length > 0 && (
+        <p className="text-[10px] text-[var(--p-text-2)] flex items-center gap-1">
+          <Building size={10} className="text-[var(--p-text-3)]" />
+          {client.interested_types.map((t) => PROP_TYPE_LABEL[t] || t).join(", ")}
+        </p>
+      )}
+
+      {client.budget_max && (
+        <p className="text-[10px] font-semibold font-mono text-[#C9962A] flex items-center gap-0.5">
+          <DollarSign size={10} />
+          {client.budget_max.toLocaleString()} max
+        </p>
+      )}
+
+      <div
+        className="mt-3 pt-2 border-t flex items-center justify-between text-[9px] text-[var(--p-text-3)]"
+        style={{ borderColor: "var(--p-border)" }}
+      >
+        <span className="font-mono flex items-center gap-1">
+          <Clock size={9} />
+          {client.last_contact ? client.last_contact : "N/A"}
+        </span>
+        <span className="text-[var(--p-text-2)] flex items-center gap-0.5 font-semibold">
+          {locale === "en" ? "Details" : "Ver"}
+          <ArrowRight size={8} />
+        </span>
       </div>
     </div>
   );
@@ -1662,92 +1781,58 @@ function SortableClientCard({
   client,
   onOpen,
   locale,
+  lastDroppedId,
 }: {
   client: CRMClient;
   onOpen: (client: CRMClient) => void;
   locale: string;
+  lastDroppedId: string | null;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: client.id,
   });
 
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        className="p-3 h-auto min-h-[125px] rounded-sm border border-dashed border-white/25 bg-black/20 select-none flex flex-col justify-between"
+      >
+        <div style={{ visibility: "hidden" }} className="w-full">
+          <ClientCardInner client={client} locale={locale} />
+        </div>
+      </div>
+    );
+  }
+
+  const isLastDropped = client.id === lastDroppedId;
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    background: isDragging ? "transparent" : "var(--p-surface-2)",
-    borderColor: "var(--p-border)",
-    opacity: isDragging ? 0.35 : 1,
+    zIndex: isLastDropped ? 50 : 1,
+    position: "relative" as const,
   };
 
-  const typeCfg = CLIENT_TYPE_CFG[client.client_type as ClientType] || CLIENT_TYPE_CFG.comprador;
-  const today = new Date().toISOString().split("T")[0] || "";
-  const isActionExpired =
-    client.next_action_date &&
-    client.next_action_date < today &&
-    client.stage !== "cerrado" &&
-    client.stage !== "perdido";
-
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
+      id={client.id}
       style={style}
+      layoutId={client.id}
+      layout="position"
+      transition={{
+        type: "spring",
+        stiffness: 60, // Slow and soft spring glide
+        damping: 18,   // Controlled landing
+      }}
       {...attributes}
       {...listeners}
       onClick={(e) => {
         if (e.defaultPrevented) return;
         onOpen(client);
       }}
-      className="p-3 rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between hover:border-[var(--p-text-3)] hover:-translate-y-0.5 duration-150"
+      className="p-3 h-auto min-h-[125px] rounded-sm border cursor-pointer select-none transition-all flex flex-col justify-between hover:border-[var(--p-text-3)] hover:-translate-y-0.5 duration-150 bg-[var(--p-surface-2)] border-[var(--p-border)]"
     >
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span
-            className="px-1.5 py-0.5 rounded-xs text-[9px] font-bold font-mono uppercase tracking-wider"
-            style={{ background: typeCfg.color, color: "var(--p-text)" }}
-          >
-            {locale === "en" ? typeCfg.label_en : typeCfg.label_es}
-          </span>
-          {isActionExpired && (
-            <span
-              className="flex items-center gap-1 text-[9px] font-bold text-[var(--p-red)] uppercase"
-              title={locale === "en" ? "Overdue Action" : "Acción Vencida"}
-            >
-              <AlertCircle size={10} />
-              {locale === "en" ? "Overdue" : "Vencida"}
-            </span>
-          )}
-        </div>
-
-        <h4 className="text-xs font-semibold text-[var(--p-text)]">{client.full_name}</h4>
-
-        {client.interested_types && client.interested_types.length > 0 && (
-          <p className="text-[10px] text-[var(--p-text-2)] flex items-center gap-1">
-            <Building size={10} className="text-[var(--p-text-3)]" />
-            {client.interested_types.map((t) => PROP_TYPE_LABEL[t] || t).join(", ")}
-          </p>
-        )}
-
-        {client.budget_max && (
-          <p className="text-[10px] font-semibold font-mono text-[#C9962A] flex items-center gap-0.5">
-            <DollarSign size={10} />
-            {client.budget_max.toLocaleString()} max
-          </p>
-        )}
-
-        <div
-          className="mt-3 pt-2 border-t flex items-center justify-between text-[9px] text-[var(--p-text-3)]"
-          style={{ borderColor: "var(--p-border)" }}
-        >
-          <span className="font-mono flex items-center gap-1">
-            <Clock size={9} />
-            {client.last_contact ? client.last_contact : "N/A"}
-          </span>
-          <span className="text-[var(--p-text-2)] flex items-center gap-0.5 font-semibold">
-            {locale === "en" ? "Details" : "Ver"}
-            <ArrowRight size={8} />
-          </span>
-        </div>
-      </div>
-    </div>
+      <ClientCardInner client={client} locale={locale} />
+    </motion.div>
   );
 }

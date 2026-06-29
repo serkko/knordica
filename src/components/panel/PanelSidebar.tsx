@@ -19,7 +19,7 @@ import {
   LogOut,
   ExternalLink,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { PanelRole } from "@/types/panel";
 import { createClient } from "@/lib/supabase/client";
 
@@ -78,6 +78,21 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
   const router    = useRouter();
   const [collapsed, setCollapsed]   = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("panel-sidebar-collapsed");
+    if (stored !== null) {
+      setCollapsed(stored === "true");
+    }
+  }, []);
+
+  const handleToggle = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("panel-sidebar-collapsed", next.toString());
+      return next;
+    });
+  };
 
   const visibleItems = NAV_ITEMS.filter(item => item.roles.includes(role));
 
@@ -284,9 +299,8 @@ export function PanelSidebar({ role, userName, userEmail, avatarUrl, locale = "e
         </div>
       </div>
 
-      {/* Collapse toggle — sidebar panel icon */}
       <motion.button
-        onClick={() => setCollapsed(v => !v)}
+        onClick={handleToggle}
         style={{
           position: "absolute",
           top: 14,
