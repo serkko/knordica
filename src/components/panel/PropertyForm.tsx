@@ -31,6 +31,7 @@ import { checkFieldApplies, isCombinationInconsistent } from "@/utils/propertyDi
 import { YesNoSelector } from "@/components/ui/YesNoSelector";
 import { computeCompletenessScore } from "@/utils/propertyCompleteness";
 import { useLenis } from "@/lib/lenis";
+import { useToastStore } from "@/store/toast.store";
 import {
   Upload,
   X,
@@ -1183,7 +1184,7 @@ function getLayoutVariant(type: string, op: string): LayoutVariant {
 }
 
 // ── ImageIcon aliased to avoi// ── Segmented Progress Bar (Framer Motion) ──
-function ProgressBar({ score, recommendations }: { score: number; recommendations: { label: string; weight: number; field: string }[] }) {
+function ProgressBar({ score, recommendations, onScrollToField }: { score: number; recommendations: { label: string; weight: number; field: string }[]; onScrollToField: (field: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const activeColor = score < 35 ? "#ef4444" : score < 80 ? "#f59e0b" : "#10b981";
@@ -1200,131 +1201,9 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const lenis = useLenis();
-
-  const handleScrollToField = (field: string) => {
-    // 1. Close the dropdown menu immediately
+  const handleScrollClick = (field: string) => {
     setIsOpen(false);
-
-    // 2. Identify the target element - dynamically find element by ID or input attributes
-    let target: HTMLElement | null = null;
-
-    // Explicit custom mapping logic for special wrapper fields to ensure we highlight the correct layout input
-    const specFields: Record<string, string> = {
-      operation: "operation",
-      property_type: "property_type",
-      topography: "topography",
-      access_type: "access_type",
-      land_use: "land_use",
-      current_use: "current_use",
-      gas_type: "gas_type",
-      kitchen_type: "kitchen_type",
-      bathroom_type: "bathroom_type",
-      host_housing_type: "host_housing_type",
-      cohabitation: "cohabitation",
-      gender_policy: "gender_policy",
-      deposit_required: "deposit_required",
-      allows_pets: "allows_pets",
-      allows_cooking: "allows_cooking",
-      has_independent_entrance: "has_independent_entrance",
-      has_own_water: "has_own_water"
-    };
-
-    if (specFields[field]) {
-      // Find inside custom styled structures or name selector
-      target = document.getElementById(specFields[field]) ||
-        document.querySelector(`[name="${specFields[field]}"]`) ||
-        document.querySelector(`[id^="${specFields[field]}"]`) as HTMLElement;
-    }
-
-    if (!target) {
-      target = document.getElementById(field);
-    }
-    if (!target) {
-      target = document.getElementById(`field-${field}`) || document.querySelector(`[name="${field}"]`);
-    }
-    if (!target && field === "price") {
-      target = document.getElementById("price") || document.querySelector('[name="price"]');
-    }
-    if (!target && field === "lat") {
-      target = document.getElementById("lat") || document.getElementById("lng");
-    }
-
-    if (target) {
-      // 3. Find parent SectionCard layoutId to expand it if closed
-      const sectionCard = target.closest('[id^="sec-"]');
-      if (sectionCard && sectionCard.id) {
-        window.dispatchEvent(
-          new CustomEvent("expand-section-card", {
-            detail: { layoutId: sectionCard.id }
-          })
-        );
-      }
-
-      // 4. Wait a brief moment for the expansion animation layout height calculation, then scroll/focus/pulse using Lenis
-      setTimeout(() => {
-        const rect = target!.getBoundingClientRect();
-        const absoluteElementTop = rect.top + window.scrollY;
-        // Posicionar el elemento en el centro de la pantalla
-        const targetPosition = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
-        // Encontrar el contenedor específico del parámetro.
-        // Si el elemento objetivo (input/select) tiene un contenedor directo de tipo div, lo usamos.
-        // Evitamos subir hasta divs contenedores de grid o secciones grandes.
-        let container = target!;
-        if (target!.id && document.getElementById(target!.id)) {
-          // Si el input tiene ID (ej: title_es) y hay un div con ese id envolviéndolo, ese es el wrapper del parámetro
-          const wrapperDiv = document.getElementById(target!.id)?.closest("div");
-          if (wrapperDiv && (wrapperDiv as any) !== target!.closest("form") && (wrapperDiv as any) !== target!.closest('[id^="sec-"]')) {
-            container = wrapperDiv;
-          }
-        } else {
-          container = target!.closest("div") || target!;
-        }
-      
-        // If container is an inner wrapper without an ID and its parent holds the <Label>,
-        // promote container to that parent so the highlight includes the label text.
-        if (container && !container.id && container.parentElement && container.parentElement.querySelector("label")) {
-          container = container.parentElement;
-        }
-      
-        if (lenis) {
-          const currentPos = window.scrollY;
-          const distance = Math.abs(targetPosition - currentPos);
-
-          if (distance > 1200) {
-            // Teletransporte: Salta directamente cerca del objetivo y hace un aterrizaje suave instantáneo
-            const jumpTarget = targetPosition > currentPos ? targetPosition - 400 : targetPosition + 400;
-            lenis.scrollTo(jumpTarget, { immediate: true });
-            setTimeout(() => {
-              lenis.scrollTo(targetPosition, {
-                duration: 0.5,
-                easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
-              });
-            }, 50);
-          } else {
-            // Scroll suave Lenis ultra rápido
-            lenis.scrollTo(targetPosition, {
-              duration: 0.5,
-              easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
-            });
-          }
-        } else {
-          // Fallback manual rápido
-          window.scrollTo({ top: targetPosition, behavior: "smooth" });
-        }
-
-        // Aplicar el nuevo sombreado verde neon de alta visibilidad al contenedor del parámetro completo
-        container.classList.add("highlight-field-pulse");
-
-        if (typeof (target as any).focus === "function") {
-          (target as any).focus({ preventScroll: true });
-        }
-
-        setTimeout(() => {
-          container.classList.remove("highlight-field-pulse");
-        }, 3000);
-      }, 350);
-    }
+    onScrollToField(field);
   };
 
   return (
@@ -1411,7 +1290,7 @@ function ProgressBar({ score, recommendations }: { score: number; recommendation
                   <button
                   key={i}
                   type="button"
-                  onClick={() => handleScrollToField(rec.field)}
+                  onClick={() => handleScrollClick(rec.field)}
                   className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-white/[0.03] text-left transition-colors cursor-pointer"
                   >
                   <div className="flex items-center gap-2 overflow-hidden">
@@ -1459,19 +1338,119 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [toast, setToast] = useState<{ message: string; id: string } | null>(null);
+  const toastFn = useToastStore((state) => state.toast);
 
   const triggerToast = useCallback((message: string) => {
-    setToast({ message, id: Math.random().toString() });
-  }, []);
+    toastFn({ title: message, type: "warning", duration: 5000 });
+  }, [toastFn]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 3500);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const lenis = useLenis();
+
+  const handleScrollToField = useCallback((field: string) => {
+    let target: HTMLElement | null = null;
+    const specFields: Record<string, string> = {
+      operation: "operation",
+      property_type: "property_type",
+      topography: "topography",
+      access_type: "access_type",
+      land_use: "land_use",
+      current_use: "current_use",
+      gas_type: "gas_type",
+      kitchen_type: "kitchen_type",
+      bathroom_type: "bathroom_type",
+      host_housing_type: "host_housing_type",
+      cohabitation: "cohabitation",
+      gender_policy: "gender_policy",
+      deposit_required: "deposit_required",
+      allows_pets: "allows_pets",
+      allows_cooking: "allows_cooking",
+      has_independent_entrance: "has_independent_entrance",
+      has_own_water: "has_own_water"
+    };
+
+    if (specFields[field]) {
+      target = document.getElementById(specFields[field]) ||
+        document.querySelector(`[name="${specFields[field]}"]`) ||
+        document.querySelector(`[id^="${specFields[field]}"]`) as HTMLElement;
+    }
+
+    if (!target) {
+      target = document.getElementById(field);
+    }
+    if (!target) {
+      target = document.getElementById(`field-${field}`) || document.querySelector(`[name="${field}"]`);
+    }
+    if (!target && field === "price") {
+      target = document.getElementById("price") || document.querySelector('[name="price"]');
+    }
+    if (!target && field === "lat") {
+      target = document.getElementById("lat") || document.getElementById("lng");
+    }
+
+    if (target) {
+      const sectionCard = target.closest('[id^="sec-"]');
+      if (sectionCard && sectionCard.id) {
+        window.dispatchEvent(
+          new CustomEvent("expand-section-card", {
+            detail: { layoutId: sectionCard.id }
+          })
+        );
+      }
+
+      setTimeout(() => {
+        const rect = target!.getBoundingClientRect();
+        const absoluteElementTop = rect.top + window.scrollY;
+        const targetPosition = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
+        
+        let container = target!;
+        if (target!.id && document.getElementById(target!.id)) {
+          const wrapperDiv = document.getElementById(target!.id)?.closest("div");
+          if (wrapperDiv && (wrapperDiv as any) !== target!.closest("form") && (wrapperDiv as any) !== target!.closest('[id^="sec-"]')) {
+            container = wrapperDiv;
+          }
+        } else {
+          container = target!.closest("div") || target!;
+        }
+      
+        if (container && !container.id && container.parentElement && container.parentElement.querySelector("label")) {
+          container = container.parentElement;
+        }
+      
+        if (lenis) {
+          const currentPos = window.scrollY;
+          const distance = Math.abs(targetPosition - currentPos);
+
+          if (distance > 1200) {
+            const jumpTarget = targetPosition > currentPos ? targetPosition - 400 : targetPosition + 400;
+            lenis.scrollTo(jumpTarget, { immediate: true });
+            setTimeout(() => {
+              lenis.scrollTo(targetPosition, {
+                duration: 0.5,
+                easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+              });
+            }, 50);
+          } else {
+            lenis.scrollTo(targetPosition, {
+              duration: 0.5,
+              easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+            });
+          }
+        } else {
+          window.scrollTo({ top: targetPosition, behavior: "smooth" });
+        }
+
+        container.classList.add("highlight-field-pulse");
+
+        if (typeof (target as any).focus === "function") {
+          (target as any).focus({ preventScroll: true });
+        }
+
+        setTimeout(() => {
+          container.classList.remove("highlight-field-pulse");
+        }, 3000);
+      }, 350);
+    }
+  }, [lenis]);
 
   // ── Autosave state ──
   const [autosaving, setAutosaving] = useState(false);
@@ -1983,12 +1962,45 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
   // ── Submit ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     if (!form.operation || !form.property_type) {
-      setError("Por favor, selecciona primero la Operación y el Tipo de Inmueble.");
+      let description = "";
+      if (!form.operation && !form.property_type) {
+        handleScrollToField("operation");
+        description = "Por favor, selecciona la Operación y el Tipo de Inmueble.";
+      } else if (!form.operation) {
+        handleScrollToField("operation");
+        description = "Por favor, selecciona el Tipo de Operación.";
+      } else {
+        handleScrollToField("property_type");
+        description = "Por favor, selecciona el Tipo de Inmueble.";
+      }
+      toastFn({ title: "Clasificación incompleta", description, type: "warning" });
       return;
     }
+
+    if (!form.title_es?.trim()) {
+      handleScrollToField("title_es");
+      toastFn({
+        title: "Información incompleta",
+        description: "Por favor, ingresa el Título de la publicación en Español.",
+        type: "warning"
+      });
+      return;
+    }
+
+    if (form.operation !== "vacacional" && !form.price?.trim()) {
+      handleScrollToField("price");
+      const description = form.operation === "alquiler"
+        ? "Por favor, ingresa el Canon de arrendamiento mensual."
+        : "Por favor, ingresa el Precio base de la propiedad.";
+      toastFn({
+        title: "Precio requerido",
+        description,
+        type: "warning"
+      });
+      return;
+    }
+
     const { score: currentProgress } = calculateProgress(form, images);
     setSaving(true);
     try {
@@ -2119,10 +2131,9 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
       };
       setLastSavedAt(new Date());
       setSecondsSinceSave(0);
-      setSuccess("Propiedad guardada correctamente");
-      setTimeout(() => setSuccess(""), 3000);
+      toastFn({ title: "Cambios guardados", description: "Propiedad guardada correctamente", type: "success" });
     } catch (err: any) {
-      setError(err.message || "Error al guardar los cambios");
+      toastFn({ title: "Error al guardar", description: err.message || "Error al guardar los cambios", type: "danger" });
     } finally {
       setSaving(false);
     }
@@ -2214,7 +2225,7 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
           <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Publicación en Español</div>
           <div>
             <Label>Título (Español)</Label>
-            <input id="title_es" value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} required />
+            <input id="title_es" value={form.title_es} onChange={(e) => set("title_es", e.target.value)} placeholder="Ej: Apartamento duplex en La Pedregosa" style={INPUT.base} />
           </div>
           <div>
             <Label>Descripción (Español)</Label>
@@ -2307,7 +2318,7 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "16px" }}>
             <div id="price">
               <Label>{form.operation === "alquiler" ? "Canon mensual" : "Precio base"}</Label>
-              <FormattedNumberInput value={form.price} onChange={(val) => set("price", val)} style={INPUT.base} required />
+              <FormattedNumberInput value={form.price} onChange={(val) => set("price", val)} style={INPUT.base} />
             </div>
             <div id="price_currency">
               <Label>Moneda base</Label>
@@ -2724,7 +2735,7 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
   </div>
   </div>
   <div className="flex items-center gap-3">
-  <ProgressBar score={progressScore} recommendations={progressData.recommendations} />
+  <ProgressBar score={progressScore} recommendations={progressData.recommendations} onScrollToField={handleScrollToField} />
   <button
   type="button"
   onClick={() => router.push(`/${locale}/panel/propiedades`)}
@@ -2839,66 +2850,6 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
           {saving ? "Guardando..." : "Guardar cambios"}
         </button>
       </div>
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            key={toast.id}
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 350, damping: 25 }}
-            style={{
-              position: "fixed",
-              bottom: 24,
-              right: 24,
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "12px 16px",
-              background: "rgba(30, 30, 32, 0.95)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(212, 146, 74, 0.3)",
-              borderRadius: "12px",
-              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 146, 74, 0.1)",
-              maxWidth: "380px",
-              pointerEvents: "auto",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "50%", background: "rgba(212, 146, 74, 0.12)", flexShrink: 0 }}>
-              <span style={{ color: "#D4924A", fontSize: 13, fontWeight: "bold" }}>⚠️</span>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: 0, fontSize: "12px", fontWeight: 500, color: "var(--p-text)", lineHeight: "1.4" }}>
-                {toast.message}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              style={{ background: "none", border: "none", color: "var(--p-text-3)", cursor: "pointer", fontSize: 12, padding: 4 }}
-            >
-              ✕
-            </button>
-            {/* Countdown animation bar */}
-            <motion.div
-              initial={{ width: "100%" }}
-              animate={{ width: "0%" }}
-              transition={{ duration: 3.5, ease: "linear" }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                height: "3px",
-                background: "#D4924A",
-                borderBottomLeftRadius: "12px",
-                borderBottomRightRadius: "12px",
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
     </form>
   );
 }

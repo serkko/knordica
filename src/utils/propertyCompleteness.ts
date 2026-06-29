@@ -243,7 +243,8 @@ export function computeCompletenessScore(
       if (isPriceFilled) {
         earnedRestWeight += weight;
       } else {
-        recommendations.push({ label: FIELD_LABELS.price || "Precio y Moneda", weight, field: "price" });
+        const label = data.operation === "alquiler" ? "Canon de arrendamiento" : (FIELD_LABELS.price || "Precio y Moneda");
+        recommendations.push({ label, weight, field: "price" });
       }
       return;
     }

@@ -15,3 +15,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   2. Drag handle triggers clashed with click toggles on cards, causing accordion panels to open/close unexpectedly.
   3. Dynamic content blocks (with variable heights and fields) made drop animations and order calculations behave erratically.
 - **Current Layout**: Displayed as a static two-column flexbox container. Drag handles are hidden since `dragHandleProps` is not passed to `SectionCard`.
+
+# GIT OPERATIONS RULE
+- **Rule**: No proponer ni ejecutar comandos de terminal para git commit o push (los cuales fuerzan una decisión de aprobación en la UI de comandos) a menos que el usuario lo solicite primero de forma explícita en el chat de texto. Si el trabajo está listo, simplemente consúltalo al final del mensaje en el chat.
+
