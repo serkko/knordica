@@ -118,6 +118,15 @@ export interface CRMClient {
   last_contact?: string | null;
   next_action?: string | null;
   next_action_date?: string | null;
+  priority?: "alta" | "media" | "baja" | null;
+  source?: string | null;
+  req_bedrooms?: number | null;
+  req_bathrooms?: number | null;
+  req_parking?: number | null;
+  bath_preference?: "privado" | "compartido" | "indiferente" | null;
+  cedula_rif?: string | null;
+  preferred_payment?: string | null;
+  urgency?: string | null;
   created_at: string;
   updated_at: string;
 }

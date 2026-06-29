@@ -42,6 +42,13 @@ const CRM_SELECT_FIELDS = [
   "priority",
   "intent",
   "source",
+  "req_bedrooms",
+  "req_bathrooms",
+  "req_parking",
+  "bath_preference",
+  "cedula_rif",
+  "preferred_payment",
+  "urgency",
   "created_at",
   "updated_at",
 ].join(", ");
@@ -90,8 +97,21 @@ export async function upsertClient(
 
   // Mapeamos stage → status para la DB
   const { stage, ...rest } = client;
+
+  // Sanitizar fechas vacías ("" -> null) para evitar errores sintácticos de fecha en Postgres
+  const sanitized = { ...rest } as any;
+  if (sanitized.next_action_date === "") {
+    sanitized.next_action_date = null;
+  }
+  if (sanitized.last_contact === "") {
+    sanitized.last_contact = null;
+  }
+  if (sanitized.bath_preference === "") {
+    sanitized.bath_preference = null;
+  }
+
   const payload = {
-    ...rest,
+    ...sanitized,
     status: stage ?? "nuevo",
     updated_at: new Date().toISOString(),
   };

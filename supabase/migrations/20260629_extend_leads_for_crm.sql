@@ -18,7 +18,13 @@ ALTER TABLE leads
   ADD COLUMN IF NOT EXISTS next_action_date  DATE,
   ADD COLUMN IF NOT EXISTS properties_shown  UUID[],
   ADD COLUMN IF NOT EXISTS notes             TEXT,
-  ADD COLUMN IF NOT EXISTS last_contact      DATE;
+  ADD COLUMN IF NOT EXISTS last_contact      DATE,
+  ADD COLUMN IF NOT EXISTS priority          TEXT DEFAULT 'media',
+  ADD COLUMN IF NOT EXISTS source            TEXT DEFAULT 'web',
+  ADD COLUMN IF NOT EXISTS req_bedrooms      INTEGER,
+  ADD COLUMN IF NOT EXISTS req_bathrooms     NUMERIC,
+  ADD COLUMN IF NOT EXISTS req_parking       INTEGER,
+  ADD COLUMN IF NOT EXISTS bath_preference   TEXT;
 
 
 -- Nota: el campo `status` ya existe en leads con DEFAULT 'nuevo'.

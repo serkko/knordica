@@ -1651,7 +1651,17 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
         setLoading(true);
         const supabase = createClient();
         // 1. Fetch zones list
-        const { data: zonesData } = await supabase.from("zones").select("id, name_es").order("name_es", { ascending: true });
+        const { data: zonesData } = await supabase
+          .from("zones")
+          .select(`
+            id,
+            name_es,
+            active,
+            municipalities!inner(active)
+          `)
+          .eq("active", true)
+          .eq("municipalities.active", true)
+          .order("name_es", { ascending: true });
         if (zonesData) {
           setZonesList(zonesData.map((z: any) => ({ value: z.id, label: z.name_es })));
         }
