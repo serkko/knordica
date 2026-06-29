@@ -94,6 +94,7 @@ const en = {
       vendida: "Sold",
       alquilada: "Rented",
       reservada: "Reserved",
+      inactiva: "Inactive",
     },
     badge: {
       destacada: "Featured",

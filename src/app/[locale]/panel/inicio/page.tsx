@@ -145,9 +145,9 @@ function StatusBadge({ status }: { status: string }) {
     vendida:   { label: "Vendida",   color: "var(--p-blue)",  bg: "rgba(91,143,212,0.1)" },
     alquilada: { label: "Alquilada", color: "var(--p-blue)",  bg: "rgba(91,143,212,0.1)" },
     reservada: { label: "Reservada", color: "var(--p-amber)", bg: "rgba(212,146,74,0.1)" },
-    cerrada:   { label: "Cerrada",   color: "var(--p-text-3)",bg: "var(--p-surface-3)" },
+    inactiva:  { label: "Inactiva",  color: "var(--p-text-3)",bg: "var(--p-surface-3)" },
   };
-  const s = map[status] || { label: "Cerrada", color: "var(--p-text-3)", bg: "var(--p-surface-3)" };
+  const s = map[status] || { label: "Inactiva", color: "var(--p-text-3)", bg: "var(--p-surface-3)" };
   return (
     <span
       className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium"

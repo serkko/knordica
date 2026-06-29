@@ -25,7 +25,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale, slug } = await params;
   const property = await getPropertyBySlug(slug);
 
-  if (!property) return {};
+  if (!property || property.status === "inactiva") return {
+    robots: { index: false, follow: false }
+  };
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://knordica.com";
   return generatePropertyMetadata({
@@ -44,7 +46,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     getProperties({ page: 1, per_page: 10 }),
   ]);
 
-  if (!property) {
+  if (!property || property.status === "inactiva") {
     notFound();
   }
 

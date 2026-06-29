@@ -85,7 +85,7 @@ export function PropertyCard({ property, isFeatured = false }: PropertyCardProps
     reservada: { label: locale === "es" ? "Reservada" : "Reserved", className: "bg-orange-600 text-white border-orange-500 font-semibold shadow-md" },
     vendida:   { label: locale === "es" ? "Vendida"   : "Sold",     className: "bg-zinc-800 text-white border-zinc-600 font-semibold shadow-md" },
     alquilada: { label: locale === "es" ? "Alquilada" : "Rented",   className: "bg-zinc-800 text-white border-zinc-600 font-semibold shadow-md" },
-    cerrada:   { label: locale === "es" ? "Cerrada"   : "Closed",   className: "bg-zinc-800 text-white border-zinc-600 font-semibold shadow-md" },
+    inactiva:  { label: locale === "es" ? "Inactiva"  : "Inactive", className: "bg-zinc-800 text-white border-zinc-600 font-semibold shadow-md" },
   } as Record<string, {label: string; className: string}>)[property.status] ?? null : null;
 
   // --- FEATURED CARD DESIGN (index 0 / superimposed layout) ---

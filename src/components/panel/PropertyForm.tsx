@@ -2187,11 +2187,11 @@ export function PropertyForm({ locale, propertyId, isNew = false }: PropertyForm
             onChange={(val) => set("status", val)}
             options={[
               { value: "activa", label: "Activa" },
+              { value: "alquilada", label: "Alquilada" },
               { value: "reservada", label: "Reservada" },
               { value: "vendida", label: "Vendida" },
-              { value: "alquilada", label: "Alquilada" },
-              { value: "cerrada", label: "Cerrada" },
-            ].sort((a, b) => a.label.localeCompare(b.label))}
+              { value: "inactiva", label: "Inactiva" },
+            ]}
           />
         </div>
       </div>

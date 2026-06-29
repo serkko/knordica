@@ -38,7 +38,7 @@ export const PROPERTY_STATUSES: {
   { value: "reservada", label_es: "Reservada", label_en: "Reserved",  color: "yellow" },
   { value: "vendida",   label_es: "Vendida",   label_en: "Sold",      color: "blue" },
   { value: "alquilada", label_es: "Alquilada", label_en: "Rented",    color: "blue" },
-  { value: "cerrada",   label_es: "Cerrada",   label_en: "Closed",    color: "gray" },
+  { value: "inactiva",  label_es: "Inactiva",  label_en: "Inactive",  color: "gray" },
 ];
 
 export const PROPERTY_CONDITIONS: {

@@ -44,7 +44,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   reservada: { label: "Reservada", color: "#FBB040", bg: "rgba(251,176,64,0.12)", border: "rgba(251,176,64,0.25)" },
   vendida: { label: "Vendida", color: "#A78BFA", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)" },
   alquilada: { label: "Alquilada", color: "#60A5FA", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.25)" },
-  cerrada: { label: "Cerrada", color: "#71717A", bg: "rgba(113,113,122,0.12)", border: "rgba(113,113,122,0.25)" },
+  inactiva: { label: "Inactiva", color: "#71717A", bg: "rgba(113,113,122,0.12)", border: "rgba(113,113,122,0.25)" },
 };
 
 const OP_LABEL: Record<string, string> = {
@@ -323,7 +323,7 @@ function DropdownItem({ label, active, muted, onClick }: {
 
 // ─── StatusBadge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CFG[status] ?? STATUS_CFG["cerrada"];
+  const cfg = STATUS_CFG[status] ?? STATUS_CFG["inactiva"];
   if (!cfg) return null;
   return (
     <span style={{
@@ -527,11 +527,11 @@ function QuickEditRow({ property, onClose, onSaved, onEdit }: {
             {label("Estado")}
             <StyledSelectFull value={status} onChange={setStatus} options={[
               { value: "activa", label: "Activa" },
+              { value: "alquilada", label: "Alquilada" },
               { value: "reservada", label: "Reservada" },
               { value: "vendida", label: "Vendida" },
-              { value: "alquilada", label: "Alquilada" },
-              { value: "cerrada", label: "Cerrada" },
-            ].sort((a, b) => a.label.localeCompare(b.label))} />
+              { value: "inactiva", label: "Inactiva" },
+            ]} />
           </div>
           <div>
             {label("Tipo de propiedad")}
@@ -1164,7 +1164,7 @@ export default function PropiedadesPage() {
          <StyledSelect value={filterOp} onChange={setFilterOp} placeholder="Operación" resetLabel="Todas" width={110}
           options={[{ value: "venta", label: "Venta" }, { value: "alquiler", label: "Alquiler" }, { value: "vacacional", label: "Vacacional" }].sort((a, b) => a.label.localeCompare(b.label))} />
         <StyledSelect value={filterStatus} onChange={setFilterStatus} placeholder="Estado" resetLabel="Todos" width={120}
-          options={[{ value: "activa", label: "Activa" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "alquilada", label: "Alquilada" }, { value: "cerrada", label: "Cerrada" }].sort((a, b) => a.label.localeCompare(b.label))} />
+          options={[{ value: "activa", label: "Activa" }, { value: "alquilada", label: "Alquilada" }, { value: "reservada", label: "Reservada" }, { value: "vendida", label: "Vendida" }, { value: "inactiva", label: "Inactiva" }]} />
         <StyledSelect value={filterType} onChange={setFilterType} placeholder="Tipo" resetLabel="Todos" width={150}
           options={Object.entries(PROP_TYPE_LABEL).map(([v, l]) => ({ value: v, label: (l || v) as string })).sort((a, b) => a.label.localeCompare(b.label))} />
         <StyledSelect value={filterMunicipio} onChange={setFilterMunicipio} placeholder="Municipio" resetLabel="Todos" width={165}

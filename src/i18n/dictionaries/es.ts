@@ -95,6 +95,7 @@ const es = {
       vendida: "Vendida",
       alquilada: "Alquilada",
       reservada: "Reservada",
+      inactiva: "Inactiva",
     },
     badge: {
       destacada: "Destacada",

@@ -31,7 +31,7 @@ export interface KPIData {
 }
 
 // Estado de una propiedad en el panel
-export type PanelPropertyStatus = "activa" | "vendida" | "alquilada" | "reservada" | "cerrada";
+export type PanelPropertyStatus = "activa" | "vendida" | "alquilada" | "reservada" | "inactiva";
 
 // Estado de un cliente en CRM
 export type CRMStage = "nuevo" | "contactado" | "visita" | "negociacion" | "cerrado" | "perdido" | "calificado" | "propuesta";

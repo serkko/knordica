@@ -21,7 +21,7 @@ export type PropertyStatus =
   | "vendida"
   | "alquilada"
   | "reservada"
-  | "cerrada";
+  | "inactiva";
 
 export type PropertyCondition =
   | "nuevo"          // Nuevo / A estrenar
