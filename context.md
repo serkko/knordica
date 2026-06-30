@@ -1,14 +1,19 @@
 # Contexto Técnico del Proyecto Knordica
 
-## 1. Visión General
+<!-- ════════════════════════════════════════════════
+     BLOQUE A — CONTEXTO DE REPOSITORIO
+     Gestionado exclusivamente por context-repo.md
+     ════════════════════════════════════════════════ -->
+
+## Visión General
 
 Knordica es una plataforma inmobiliaria avanzada construida con Next.js 16.2.9, Supabase y TypeScript que permite a agentes gestionar propiedades, crear listados detallados y conectar con clientes. La plataforma combina una interfaz de usuario rica con una arquitectura de backend robusta que soporta múltiples tipos de propiedades, operaciones y condiciones financieras.
 
 La aplicación sigue un enfoque de componentes reutilizables con un sistema de formularios dinámicos que adapta los campos según el tipo de propiedad y operación seleccionada. El backend utiliza Supabase con políticas de seguridad a nivel de fila (RLS) para garantizar que los usuarios solo accedan a sus propios datos.
 
-## 2. Arquitectura del Sistema
+## Arquitectura del Sistema
 
-### 2.1. Frontend
+### 1. Frontend
 
 - **Framework**: Next.js 16.2.9 con App Router y Server Components
 - **Estilos**: Tailwind CSS con personalizaciones y utilidades propias
@@ -18,7 +23,7 @@ La aplicación sigue un enfoque de componentes reutilizables con un sistema de f
 - **Gestión de estado**: Zustand para store de filtros, panel y notificaciones
 - **Componentes UI**: Componentes personalizados para formularios, selectores, botones y tarjetas
 
-### 2.2. Backend
+### 2. Backend
 
 - **Base de datos**: Supabase (PostgreSQL)
 - **Autenticación**: Supabase Auth con roles de usuario (admin, agent, client)
@@ -27,14 +32,14 @@ La aplicación sigue un enfoque de componentes reutilizables con un sistema de f
 - **Migraciones**: Sistema de migraciones de base de datos con versionado
 - **Funciones de base de datos**: Triggers y funciones personalizadas para lógica de negocio
 
-### 2.3. Infraestructura
+### 3. Infraestructura
 
 - **Despliegue**: Vercel para frontend, Supabase para backend
 - **Almacenamiento**: Supabase Storage para imágenes de propiedades
 - **Monitoreo**: Logs y métricas integradas con Supabase
 - **Pruebas**: Mock data para desarrollo y pruebas unitarias
 
-## 3. Estructura de Directorios
+## Estructura de Directorios
 
 ```
 knordica/
@@ -90,11 +95,11 @@ knordica/
 └── ...                         # Otros archivos del proyecto
 ```
 
-## 4. Esquema de Base de Datos
+## Esquema de Base de Datos
 
-### 4.1. Tablas Principales
+### 1. Tablas Principales
 
-#### 4.1.1. `zones`
+#### 1.1. `zones`
 
 - `id` (UUID): Identificador único
 - `name_es` (text): Nombre en español
@@ -106,7 +111,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.2. `agents`
+#### 1.2. `agents`
 
 - `id` (UUID): Identificador único
 - `user_id` (UUID): Referencia a Supabase Auth
@@ -117,7 +122,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.3. `properties`
+#### 1.3. `properties`
 
 - `id` (UUID): Identificador único
 - `agent_id` (UUID): Referencia al agente propietario
@@ -200,7 +205,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.4. `property_translations`
+#### 1.4. `property_translations`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -210,7 +215,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.5. `property_images`
+#### 1.5. `property_images`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -220,7 +225,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.6. `property_features`
+#### 1.6. `property_features`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -229,14 +234,14 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.7. `favorites`
+#### 1.7. `favorites`
 
 - `id` (UUID): Identificador único
 - `user_id` (UUID): Referencia al usuario
 - `property_id` (UUID): Referencia a la propiedad
 - `created_at` (timestamp with time zone): Fecha de creación
 
-#### 4.1.8. `leads`
+#### 1.8. `leads`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -248,7 +253,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.9. `lead_notes`
+#### 1.9. `lead_notes`
 
 - `id` (UUID): Identificador único
 - `lead_id` (UUID): Referencia al lead
@@ -256,7 +261,7 @@ knordica/
 - `created_by` (UUID): Usuario que creó la nota
 - `created_at` (timestamp with time zone): Fecha de creación
 
-#### 4.1.10. `appointments`
+#### 1.10. `appointments`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -268,7 +273,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 4.1.11. `blog_posts`
+#### 1.11. `blog_posts`
 
 - `id` (UUID): Identificador único
 - `title_es` (text): Título en español
@@ -285,7 +290,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-### 4.2. Políticas de Seguridad (RLS)
+### 2. Políticas de Seguridad (RLS)
 
 Las políticas de seguridad a nivel de fila (RLS) se implementan en las tablas críticas para garantizar que los usuarios solo puedan acceder y modificar sus propios datos:
 
@@ -294,9 +299,9 @@ Las políticas de seguridad a nivel de fila (RLS) se implementan en las tablas c
 - `property_images`: Solo se pueden modificar imágenes de propiedades del usuario
 - `property_features`: Solo se pueden modificar características de propiedades del usuario
 
-### 4.3. Triggers y Funciones de Base de Datos
+### 3. Triggers y Funciones de Base de Datos
 
-#### 4.3.1. `update_completeness_score()`
+#### 3.1. `update_completeness_score()`
 
 Función que se ejecuta automáticamente cuando se actualiza una propiedad para recalcular la puntuación de completitud basada en los campos completados y sus pesos configurados.
 
@@ -342,9 +347,9 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-## 5. Constantes de Dominio
+## Constantes de Dominio
 
-### 5.1. Operaciones de Propiedad
+### 1. Operaciones de Propiedad
 
 ```typescript
 export const PROPERTY_OPERATIONS = [
@@ -354,7 +359,7 @@ export const PROPERTY_OPERATIONS = [
 ] as const;
 ```
 
-### 5.2. Tipos de Propiedad
+### 2. Tipos de Propiedad
 
 ```typescript
 export const PROPERTY_TYPES = [
@@ -372,7 +377,7 @@ export const PROPERTY_TYPES = [
 ] as const;
 ```
 
-### 5.3. Estados de Propiedad
+### 3. Estados de Propiedad
 
 ```typescript
 export const PROPERTY_STATUSES = [
@@ -384,7 +389,7 @@ export const PROPERTY_STATUSES = [
 ] as const;
 ```
 
-### 5.4. Condiciones de Propiedad
+### 4. Condiciones de Propiedad
 
 ```typescript
 export const PROPERTY_CONDITIONS = [
@@ -396,7 +401,7 @@ export const PROPERTY_CONDITIONS = [
 ] as const;
 ```
 
-### 5.5. Opciones de Amueblado
+### 5. Opciones de Amueblado
 
 ```typescript
 export const FURNISHED_OPTIONS = [
@@ -406,7 +411,7 @@ export const FURNISHED_OPTIONS = [
 ] as const;
 ```
 
-### 5.6. Tipos de Gas
+### 6. Tipos de Gas
 
 ```typescript
 export const GAS_TYPES = [
@@ -416,7 +421,7 @@ export const GAS_TYPES = [
 ] as const;
 ```
 
-### 5.7. Tipos de Cocina
+### 7. Tipos de Cocina
 
 ```typescript
 export const KITCHEN_TYPES = [
@@ -426,7 +431,7 @@ export const KITCHEN_TYPES = [
 ] as const;
 ```
 
-### 5.8. Municipios
+### 8. Municipios
 
 ```typescript
 export const MUNICIPIOS = [
@@ -444,7 +449,7 @@ export const MUNICIPIOS = [
 ] as const;
 ```
 
-### 5.9. Categorías de Características
+### 9. Categorías de Características
 
 ```typescript
 export const FEATURE_CATEGORIES = [
@@ -457,7 +462,7 @@ export const FEATURE_CATEGORIES = [
 ] as const;
 ```
 
-### 5.10. Opciones de Amenidades
+### 10. Opciones de Amenidades
 
 ```typescript
 export const AMENITIES_OPTIONS = [
@@ -490,7 +495,7 @@ export const AMENITIES_OPTIONS = [
 ] as const;
 ```
 
-### 5.11. Opciones de Mobiliario
+### 11. Opciones de Mobiliario
 
 ```typescript
 export const FURNITURE_OPTIONS = [
@@ -517,7 +522,7 @@ export const FURNITURE_OPTIONS = [
 ] as const;
 ```
 
-### 5.12. Servicios Incluidos
+### 12. Servicios Incluidos
 
 ```typescript
 export const SERVICES_INCLUDED_OPTIONS = [
@@ -539,7 +544,7 @@ export const SERVICES_INCLUDED_OPTIONS = [
 ] as const;
 ```
 
-### 5.13. Servicios de Zona
+### 13. Servicios de Zona
 
 ```typescript
 export const ZONE_SERVICES_OPTIONS = [
@@ -561,7 +566,7 @@ export const ZONE_SERVICES_OPTIONS = [
 ] as const;
 ```
 
-### 5.14. Distintivos de Listado
+### 14. Distintivos de Listado
 
 ```typescript
 export const LISTING_BADGES = [
@@ -571,7 +576,7 @@ export const LISTING_BADGES = [
 ] as const;
 ```
 
-## 6. Lógica de Discriminación de Campos
+## Lógica de Discriminación de Campos
 
 La lógica de discriminación de campos determina qué campos se muestran en el formulario según el tipo de propiedad y la operación seleccionada. Esta lógica se implementa en `src/utils/propertyDiscrimination.ts`.
 
@@ -666,11 +671,11 @@ export const isCombinationInconsistent = (type: string, op: string): boolean => 
 };
 ```
 
-## 7. Sistema de Puntuación de Completitud
+## Sistema de Puntuación de Completitud
 
 El sistema de puntuación de completitud evalúa cuán completa está una lista de propiedad y proporciona recomendaciones para mejorarla. Se implementa en `src/utils/propertyCompleteness.ts`.
 
-### 7.1. Configuración de Puntuación
+### 1. Configuración de Puntuación
 
 ```typescript
 export interface FieldScoreConfig {
@@ -760,7 +765,7 @@ export const SCORE_CONFIG: FieldScoreConfig[] = [
 ];
 ```
 
-### 7.2. Cálculo de Puntuación
+### 2. Cálculo de Puntuación
 
 ```typescript
 export function computeCompletenessScore(
@@ -837,11 +842,11 @@ export function computeCompletenessScore(
 }
 ```
 
-## 8. Formulario de Propiedad (PropertyForm)
+## Formulario de Propiedad (PropertyForm)
 
 El componente principal de gestión de propiedades se encuentra en `src/components/panel/PropertyForm.tsx`. Este componente dinámico renderiza campos específicos según el tipo de propiedad y operación seleccionada.
 
-### 8.1. Estructura del Formulario
+### 1. Estructura del Formulario
 
 El formulario está organizado en secciones lógicas:
 
@@ -856,7 +861,7 @@ El formulario está organizado en secciones lógicas:
 9. **Parámetros de Terreno y Campo**: Para terrenos y fincas
 10. **Video y Tour Virtual**: URLs de video y tour virtual
 
-### 8.2. Lógica de Renderizado Dinámico
+### 2. Lógica de Renderizado Dinámico
 
 ```typescript
 const sectionClasificacion = (
@@ -913,7 +918,7 @@ const sectionClasificacion = (
 );
 ```
 
-### 8.3. Gestión de Imágenes
+### 3. Gestión de Imágenes
 
 ```typescript
 const sectionFotos = (
@@ -935,7 +940,7 @@ const sectionFotos = (
 );
 ```
 
-### 8.4. Validación y Guardado Automático
+### 4. Validación y Guardado Automático
 
 ```typescript
 const handleAutosave = useCallback(async () => {
@@ -1007,9 +1012,9 @@ const handleAutosave = useCallback(async () => {
 }, [form, images, features, propertyId, isDirty]);
 ```
 
-## 9. Consultas a la Base de Datos
+## Consultas a la Base de Datos
 
-### 9.1. Consultas de Propiedades
+### 1. Consultas de Propiedades
 
 ```typescript
 export async function getProperties(filters: PropertyFilters = {}): Promise<{
@@ -1162,7 +1167,7 @@ export async function getProperties(filters: PropertyFilters = {}): Promise<{
 }
 ```
 
-### 9.2. Consultas de Zonas
+### 2. Consultas de Zonas
 
 ```typescript
 export async function getZones(): Promise<Zone[]> {
@@ -1178,7 +1183,7 @@ export async function getZones(): Promise<Zone[]> {
 }
 ```
 
-### 9.3. Consultas de Blog
+### 3. Consultas de Blog
 
 ```typescript
 export async function getBlogPosts(locale: "es" | "en" = "es"): Promise<BlogPostCard[]> {
@@ -1206,9 +1211,9 @@ export async function getBlogPosts(locale: "es" | "en" = "es"): Promise<BlogPost
 }
 ```
 
-## 10. SEO y Datos Estructurados
+## SEO y Datos Estructurados
 
-### 10.1. Metadatos SEO
+### 1. Metadatos SEO
 
 ```typescript
 export function generatePropertyMetadata({
@@ -1244,7 +1249,7 @@ export function generatePropertyMetadata({
 }
 ```
 
-### 10.2. Datos Estructurados (JSON-LD)
+### 2. Datos Estructurados (JSON-LD)
 
 ```typescript
 export function generatePropertyStructuredData({
@@ -1331,9 +1336,9 @@ export function generatePropertyStructuredData({
 }
 ```
 
-## 11. Cliente Supabase
+## Cliente Supabase
 
-### 11.1. Cliente Cliente
+### 1. Cliente Cliente
 
 ```typescript
 export function createClient() {
@@ -1344,7 +1349,7 @@ export function createClient() {
 }
 ```
 
-### 11.2. Cliente Servidor
+### 2. Cliente Servidor
 
 ```typescript
 export async function createClient() {
@@ -1360,7 +1365,7 @@ export async function createClient() {
 }
 ```
 
-### 11.3. Middleware de Sesión
+### 3. Middleware de Sesión
 
 ```typescript
 export async function updateSession(request: NextRequest) {
@@ -1393,9 +1398,9 @@ export async function updateSession(request: NextRequest) {
 }
 ```
 
-## 12. Utilidades
+## Utilidades
 
-### 12.1. Formateo de Números y Moneda
+### 1. Formateo de Números y Moneda
 
 ```typescript
 export function formatPrice(price: number, currency: string = "USD", locale: "es" | "en" = "es"): string {
@@ -1432,7 +1437,7 @@ export function formatNumber(num: number | null | undefined, locale: "es" | "en"
 }
 ```
 
-### 12.2. Combinación de Clases CSS
+### 2. Combinación de Clases CSS
 
 ```typescript
 import { clsx } from "clsx";
@@ -1443,7 +1448,7 @@ export function cn(...inputs: any[]) {
 }
 ```
 
-## 13. Datos de Prueba (Mock Data)
+## Datos de Prueba (Mock Data)
 
 Los datos de prueba se utilizan para el desarrollo y pruebas locales. Se encuentran en `src/lib/mock-data.ts` y contienen:
 
@@ -1454,7 +1459,7 @@ Los datos de prueba se utilizan para el desarrollo y pruebas locales. Se encuent
 
 Los datos de prueba permiten a los desarrolladores trabajar sin necesidad de una base de datos real y facilitan la prueba de diferentes escenarios.
 
-## 14. Integración de Framer Motion
+## Integración de Framer Motion
 
 Las animaciones se implementan mediante Framer Motion en componentes clave:
 
@@ -1465,7 +1470,7 @@ Las animaciones se implementan mediante Framer Motion en componentes clave:
 
 Las variantes de animación se definen en `src/lib/motion/variants.ts` y se aplican a través de propiedades específicas en los componentes.
 
-## 15. Sistema de Notificaciones
+## Sistema de Notificaciones
 
 El sistema de notificaciones utiliza Zustand para gestionar el estado de las notificaciones y se implementa en `src/store/toast.store.ts`. Las notificaciones se muestran cuando:
 
@@ -1476,7 +1481,7 @@ El sistema de notificaciones utiliza Zustand para gestionar el estado de las not
 
 Las notificaciones tienen un temporizador de desaparición automática y pueden ser cerradas manualmente.
 
-## 16. Integración de i18n
+## Integración de i18n
 
 La aplicación soporta internacionalización completa con:
 
@@ -1487,7 +1492,7 @@ La aplicación soporta internacionalización completa con:
 
 El idioma se detecta automáticamente desde la URL (`/[locale]/`) y se aplica a todo el sistema.
 
-## 17. Pruebas y Calidad
+## Pruebas y Calidad
 
 La aplicación incluye:
 
@@ -1498,7 +1503,7 @@ La aplicación incluye:
 - Formateo con Prettier
 - Tipado TypeScript estricto
 
-## 18. Despliegue y Mantenimiento
+## Despliegue y Mantenimiento
 
 - Despliegue en Vercel para el frontend
 - Despliegue en Supabase para el backend
@@ -1506,7 +1511,7 @@ La aplicación incluye:
 - Monitoreo de errores con Sentry
 - Backup de base de datos diario
 
-## 19. Mejoras Futuras
+## Mejoras Futuras
 
 - Integración con Google Maps para mejor visualización de ubicaciones
 - Sistema de recomendaciones de propiedades basado en historial de búsqueda
@@ -1514,7 +1519,7 @@ La aplicación incluye:
 - Sistema de reportes y análisis de ventas
 - Aplicación móvil nativa
 
-## 20. Cambios Detectados
+## Cambios Detectados
 
 - **2026-06-19**: Esquema inicial de la base de datos con tablas para zonas, agentes, propiedades, traducciones, imágenes, características, favoritos, leads, notas de leads, citas y publicaciones de blog.
 - **2026-06-21**: Evolución del esquema añadiendo nuevas columnas a la tabla `properties`: municipio, show_exact_location, price_usd, video_url, has_water_tank, has_hot_water, has_generator, gas_type, has_internet, has_security_24h, has_electric_gate, has_cctv, has_electric_fence, has_intercom, has_armored_door, floor_number, total_floors, has_elevator, property_age, condition, furnished, parking_covered, has_ac, has_heating, kitchen_type, furniture_inventory, amenities, bathroom_type, host_housing_type, cohabitation, occupants_count, gender_policy, deposit_required, deposit_amount, services_included, allows_pets, allows_cooking, has_independent_entrance, topography, land_use, zone_services, area_hectares, has_own_water, access_type, current_use, price_per_night, price_weekend, min_nights, max_guests, checkin_time, checkout_time, house_rules, includes_breakfast, completeness_score, listing_badge.
@@ -1526,7 +1531,12 @@ La aplicación incluye:
 
 El sistema ha evolucionado desde una plataforma básica de listado de propiedades hasta una solución completa de gestión inmobiliaria con un sistema de puntuación de completitud, lógica de discriminación de campos y soporte multilingüe.
 
-## 21. Reglas de Negocio y Decisiones de Producto
+<!-- ════════════════════════════════════════════════
+     BLOQUE B — CONTEXTO DE SESIÓN
+     Gestionado exclusivamente por context-chat-dev.md
+     ════════════════════════════════════════════════ -->
+
+## Reglas de Negocio y Decisiones de Producto
 
 - **Regla**: Score de Completitud al 99% si falta algún parámetro.
   - *Justificación*: El score de completitud nunca debe marcar 100% si hay parámetros sin responder, reservando el 100% únicamente para cuando la propiedad esté completamente rellenada.
@@ -1537,7 +1547,7 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Justificación*: En React 19, el reordenamiento dinámico causaba loops infinitos de actualización de estado y colisiones de gestos en el acordeón de tarjetas.
   - *Decisión*: Reemplazar con flexbox estático de dos columnas en `PropertyForm`.
 
-## 22. Decisiones Técnicas Tomadas
+## Decisiones Técnicas Tomadas
 
 - **DT-10: Edición quirúrgica de documentación de contexto**
   - *Qué se decidió*: Evitar regenerar `context.md` desde cero borrando secciones históricas. En su lugar, realizar reemplazos de contenido multilínea hiper-enfocados.
@@ -1545,20 +1555,20 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Motivo*: Preservar la base de conocimiento acumulada por agentes previos y minimizar el desperdicio de tokens.
   - *Fecha*: 2026-06-28.
 
-## 23. Backlog Técnico Priorizado
+## Backlog Técnico Priorizado
 
 - **Validación de Integración de Formularios** (🔴 Alta)
   - *Descripción*: Verificar que el unificado de PropertyForm opera sin errores en los endpoints de nueva/editar tras la unificación y el Fast-Forward merge a `main`.
   - *Archivos*: `src/components/panel/PropertyForm.tsx`, `src/app/[locale]/panel/propiedades/`.
   - *Notas*: Probar con un nuevo registro desde cero y guardar.
 
-## 24. Patrones a Evitar
+## Patrones a Evitar
 
 - **Anti-patrón**: Sobreescribir archivos de documentación grandes (`context.md`) mediante herramientas de escritura destructivas (`write_to_file`) sin validar el contenido anterior.
   - *Por qué falla*: Elimina conocimiento histórico insustituible que el modelo no puede inferir solo leyendo el código actual.
   - *Qué hacer*: Usar `multi_replace_file_content` o `replace_file_content` para realizar parches controlados y específicos.
 
-## 25. Contexto de Sesión Activa
+## Contexto de Sesión Activa
 
 - **Qué se trabajó**: Restauración de `context.md` al estado original tras borrado destructivo. Corrección manual y quirúrgica de discrepancias críticas de constantes y versiones de framework.
 - **En qué punto quedó**: Sincronización de constantes inmobiliarias (`PROPERTY_OPERATIONS`, `PROPERTY_STATUSES`, `PROPERTY_CONDITIONS`) y versión de Next.js.
