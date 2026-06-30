@@ -920,6 +920,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
     const handleOutsideClick = (e: MouseEvent) => {
       if (newClientIsZoneDropdownOpen && newClientZoneDropdownRef.current && !newClientZoneDropdownRef.current.contains(e.target as Node)) {
         setNewClientIsZoneDropdownOpen(false);
+        setNewClientZoneSearchQuery("");
       }
       if (newClientIsTypeDropdownOpen && newClientTypeDropdownRef.current && !newClientTypeDropdownRef.current.contains(e.target as Node)) {
         setNewClientIsTypeDropdownOpen(false);
@@ -1255,6 +1256,13 @@ export default function ClientesCRMPage({ params }: PageProps) {
     setClients((prev) => [clientToInsert, ...prev]);
     setIsModalOpen(false);
     
+    // Desplegar el toast inmediatamente para dar retroalimentación instantánea
+    toastFn({
+      title: locale === "en" ? "Client Created" : "Cliente agregado",
+      description: locale === "en" ? "New client added successfully" : "El nuevo cliente ha sido agregado con éxito",
+      type: "success",
+    });
+
     // Reset modal state AFTER the smooth fade out transition finishes
     setTimeout(() => {
       setModalStep(1);
@@ -1289,16 +1297,11 @@ export default function ClientesCRMPage({ params }: PageProps) {
       if (saved) {
         setClients((prev) => prev.map((c) => (c.id === localId ? saved : c)));
       }
-      toastFn({
-        title: locale === "en" ? "Client Created" : "Cliente agregado",
-        description: locale === "en" ? "New client added successfully" : "El nuevo cliente ha sido agregado con éxito",
-        type: "success",
-      });
     } catch (err: any) {
       console.error("Failed to insert client on Supabase, keeping local copy", err);
       toastFn({
-        title: locale === "en" ? "Error Creating Client" : "Error al agregar cliente",
-        description: err.message || (locale === "en" ? "An error occurred" : "Ocurrió un error"),
+        title: locale === "en" ? "Sync Error" : "Error de sincronización",
+        description: err.message || (locale === "en" ? "Failed to sync changes with server" : "No se pudieron sincronizar los cambios con el servidor"),
         type: "danger",
       });
     }
@@ -2633,21 +2636,20 @@ export default function ClientesCRMPage({ params }: PageProps) {
         )}
       </AnimatePresence>
 
-      {/* Multistep client creation Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <>
-            <motion.div
-              key="modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-xs z-40"
-            />
-
-            <motion.div
-              key="modal"
+          <motion.div
+            key="modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsModalOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-xs z-40"
+          />
+        )}
+        {isModalOpen && (
+          <motion.div
+            key="modal"
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -3001,7 +3003,9 @@ export default function ClientesCRMPage({ params }: PageProps) {
                             <button
                               type="button"
                               onClick={() => {
-                                setNewClientIsZoneDropdownOpen(!newClientIsZoneDropdownOpen);
+                                const nextVal = !newClientIsZoneDropdownOpen;
+                                setNewClientIsZoneDropdownOpen(nextVal);
+                                if (!nextVal) setNewClientZoneSearchQuery("");
                                 if (newClientIsTypeDropdownOpen) setNewClientIsTypeDropdownOpen(false);
                               }}
                               className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors h-[38px]"
@@ -3025,42 +3029,56 @@ export default function ClientesCRMPage({ params }: PageProps) {
                                   className="relative mt-2 z-10 w-full bg-[var(--p-sidebar)] border border-[var(--p-border)] rounded-sm shadow-xl p-3 space-y-2 overflow-hidden"
                                   style={{ background: "var(--p-surface-3)" }}
                                 >
-                                  <div className="flex items-center justify-end pb-1 border-b border-white/5">
-                                    <div className="flex gap-1.5">
+                                  <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/5 h-[34px]">
+                                    {/* Campo de búsqueda (al menos el 50% del ancho) */}
+                                    <div className="relative w-[50%] md:w-[55%] flex-shrink-0">
+                                      <input
+                                        type="text"
+                                        value={newClientZoneSearchQuery}
+                                        onChange={(e) => setNewClientZoneSearchQuery(e.target.value)}
+                                        placeholder={locale === "en" ? "Search..." : "Buscar..."}
+                                        className="w-full text-xs p-1.5 pr-6 rounded-xs border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[26px]"
+                                        autoFocus
+                                      />
+                                      {newClientZoneSearchQuery && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setNewClientZoneSearchQuery("")}
+                                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white cursor-pointer"
+                                        >
+                                          <X size={10} />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Chips de control */}
+                                    <div className="flex gap-1 flex-1 justify-end">
                                       <button
                                         type="button"
                                         onClick={() => {
                                           const allVals = (zonesList.length > 0 ? zonesList : MERIDA_ZONES).map((z) => z.value);
                                           setNewClient({ ...newClient, interested_zones: allVals });
                                         }}
-                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-[#C9962A]/10 border border-[#C9962A]/20 text-[#C9962A] hover:bg-[#C9962A]/20 transition-colors cursor-pointer"
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-[#C9962A]/10 border border-[#C9962A]/20 text-[#C9962A] hover:bg-[#C9962A]/20 transition-colors cursor-pointer whitespace-nowrap"
                                       >
                                         {locale === "en" ? "Select All" : "Marcar Todos"}
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setNewClient({ ...newClient, interested_zones: [] })}
-                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer whitespace-nowrap"
                                       >
-                                        {locale === "en" ? "Deselect All" : "Desmarcar Todos"}
+                                        {locale === "en" ? "Deselect" : "Desmarcar Todos"}
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setNewClient({ ...newClient, interested_zones: [] })}
-                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer"
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer whitespace-nowrap"
                                       >
                                         {locale === "en" ? "Clear" : "Limpiar"}
                                       </button>
                                     </div>
                                   </div>
-                                  <input
-                                    type="text"
-                                    value={newClientZoneSearchQuery}
-                                    onChange={(e) => setNewClientZoneSearchQuery(e.target.value)}
-                                    placeholder={locale === "en" ? "Search zone..." : "Buscar zona..."}
-                                    className="w-full text-xs p-1.5 rounded-xs border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                                    autoFocus
-                                  />
 
                                   <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 p-1 bg-black/10 rounded-xs border border-white/5">
                                     {(zonesList.length > 0 ? zonesList : MERIDA_ZONES)
@@ -3354,7 +3372,6 @@ export default function ClientesCRMPage({ params }: PageProps) {
                 </div>
               </form>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </div>
