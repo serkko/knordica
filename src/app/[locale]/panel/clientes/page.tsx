@@ -777,8 +777,64 @@ function NumberStepper({
   );
 }
 
+// ─── HELPER FORMATTING FUNCTIONS ─────────────────────────────────────────────
+function formatCedula(val: string): string {
+  const cleaned = val.replace(/[^a-zA-Z0-9]/g, "");
+  if (!cleaned) return "";
+  let prefix = "V";
+  let numberPart = cleaned;
+  const firstChar = cleaned[0]?.toUpperCase();
+  if (firstChar && ["V", "E", "J", "G"].includes(firstChar)) {
+    prefix = firstChar;
+    numberPart = cleaned.slice(1);
+  }
+  numberPart = numberPart.replace(/[^0-9]/g, "");
+  if (!numberPart) return `${prefix}-`;
+  const formattedNumber = Number(numberPart).toLocaleString("de-DE");
+  return `${prefix}-${formattedNumber}`;
+}
+
+function formatPhone(val: string): string {
+  let cleaned = val.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) {
+    const digits = cleaned.slice(1);
+    if (digits.length <= 2) {
+      return cleaned;
+    }
+    const countryCode = digits.slice(0, 2);
+    const rest = digits.slice(2);
+    if (rest.length <= 3) {
+      return `+${countryCode} ${rest}`;
+    } else if (rest.length <= 6) {
+      return `+${countryCode} ${rest.slice(0, 3)} ${rest.slice(3)}`;
+    } else {
+      return `+${countryCode} ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6, 10)}`;
+    }
+  } else {
+    if (cleaned.length <= 4) {
+      return cleaned;
+    } else if (cleaned.length <= 7) {
+      return `${cleaned.slice(0, 4)} ${cleaned.slice(4)}`;
+    } else {
+      return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7, 11)}`;
+    }
+  }
+}
+
+function formatThousands(val: number | undefined | null): string {
+  if (val === undefined || val === null || isNaN(val)) return "";
+  return val.toLocaleString("de-DE");
+}
+
+function parseThousands(val: string): number | undefined {
+  const cleaned = val.replace(/[^0-9]/g, "");
+  if (!cleaned) return undefined;
+  return parseInt(cleaned, 10);
+}
+
 export default function ClientesCRMPage({ params }: PageProps) {
-  const { locale } = use(params);
+  const resolvedParams = params ? use(params) : { locale: "es" };
+  const locale = resolvedParams?.locale || "es";
   const { role, userId, loading: roleLoading } = usePanelRole();
   const toastFn = useToastStore((state) => state.toast);
 
@@ -829,8 +885,50 @@ export default function ClientesCRMPage({ params }: PageProps) {
     return Array.from(munis).sort();
   }, [zonesList]);
   
-  // Estado para el modal de 3 pasos
+  // Estado para el modal de 3 pasos y animaciones premium
   const [modalStep, setModalStep] = useState(1);
+  const [animationDirection, setAnimationDirection] = useState(1);
+  const [newClientIsZoneDropdownOpen, setNewClientIsZoneDropdownOpen] = useState(false);
+  const [newClientIsTypeDropdownOpen, setNewClientIsTypeDropdownOpen] = useState(false);
+  const [newClientZoneSearchQuery, setNewClientZoneSearchQuery] = useState("");
+  const [agentDbId, setAgentDbId] = useState<string | null>(null);
+
+  const newClientZoneDropdownRef = useRef<HTMLDivElement>(null);
+  const newClientTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    async function fetchAgentDbId() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("agents")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (data) {
+          setAgentDbId(data.id);
+        }
+      } catch (err) {
+        console.error("Failed to pre-fetch agent DB id:", err);
+      }
+    }
+    fetchAgentDbId();
+  }, [userId]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (newClientIsZoneDropdownOpen && newClientZoneDropdownRef.current && !newClientZoneDropdownRef.current.contains(e.target as Node)) {
+        setNewClientIsZoneDropdownOpen(false);
+      }
+      if (newClientIsTypeDropdownOpen && newClientTypeDropdownRef.current && !newClientTypeDropdownRef.current.contains(e.target as Node)) {
+        setNewClientIsTypeDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [newClientIsZoneDropdownOpen, newClientIsTypeDropdownOpen]);
+
   const [newClient, setNewClient] = useState<Partial<CRMClient>>({
     full_name: "",
     email: "",
@@ -1132,11 +1230,20 @@ export default function ClientesCRMPage({ params }: PageProps) {
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClient.full_name) return;
+    if (!newClient.full_name?.trim()) {
+      toastFn({
+        title: locale === "en" ? "Full Name Required" : "Nombre completo requerido",
+        description: locale === "en" ? "Please enter a name for the client." : "Por favor, ingresa el nombre del cliente.",
+        type: "warning",
+      });
+      return;
+    }
+
+    const activeAgentId = agentDbId || "1f84e2be-80d4-48f8-b391-7db1387d8549";
 
     const payload: Partial<CRMClient> & { agent_id: string } = {
       ...newClient,
-      agent_id: userId || "a1",
+      agent_id: activeAgentId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as any;
@@ -1148,32 +1255,34 @@ export default function ClientesCRMPage({ params }: PageProps) {
     setClients((prev) => [clientToInsert, ...prev]);
     setIsModalOpen(false);
     
-    // Reset modal
-    setModalStep(1);
-    setNewClient({
-      full_name: "",
-      email: "",
-      phone: "",
-      whatsapp: "",
-      client_type: "comprador",
-      stage: "nuevo",
-      budget_min: undefined,
-      budget_max: undefined,
-      budget_currency: "USD",
-      interested_zones: [],
-      interested_types: [],
-      notes: "",
-      next_action: "",
-      next_action_date: "",
-      priority: "media",
-      source: "web",
-      req_bedrooms: undefined,
-      req_bathrooms: undefined,
-      req_parking: undefined,
-      cedula_rif: "",
-      preferred_payment: "",
-      urgency: "",
-    });
+    // Reset modal state AFTER the smooth fade out transition finishes
+    setTimeout(() => {
+      setModalStep(1);
+      setNewClient({
+        full_name: "",
+        email: "",
+        phone: "",
+        whatsapp: "",
+        client_type: "comprador",
+        stage: "nuevo",
+        budget_min: undefined,
+        budget_max: undefined,
+        budget_currency: "USD",
+        interested_zones: [],
+        interested_types: [],
+        notes: "",
+        next_action: "",
+        next_action_date: "",
+        priority: "media",
+        source: "web",
+        req_bedrooms: undefined,
+        req_bathrooms: undefined,
+        req_parking: undefined,
+        cedula_rif: "",
+        preferred_payment: "",
+        urgency: "",
+      });
+    }, 300);
 
     try {
       const saved = await upsertClient(payload);
@@ -2542,15 +2651,15 @@ export default function ClientesCRMPage({ params }: PageProps) {
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              className="fixed inset-x-4 top-[10%] md:max-w-lg md:mx-auto z-50 p-6 rounded-sm border flex flex-col justify-between"
+              className="fixed inset-x-4 top-[5%] md:top-[6%] md:max-w-3xl md:mx-auto z-50 rounded-sm border flex flex-col max-h-[90vh] overflow-y-auto"
               style={{
                 background: "var(--p-surface)",
                 borderColor: "var(--p-border)",
                 boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)",
               }}
             >
-              <form onSubmit={handleCreateClient} className="space-y-5">
-                <div className="flex justify-between items-center border-b border-[var(--p-border)] pb-3">
+              <form onSubmit={handleCreateClient} className="flex flex-col h-full">
+                <div className="flex justify-between items-center border-b border-[var(--p-border)] p-5">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--p-text)]">
                     {locale === "en" ? "New Client Profile" : "Nuevo Perfil de Cliente"}
                   </h3>
@@ -2559,331 +2668,689 @@ export default function ClientesCRMPage({ params }: PageProps) {
                   </span>
                 </div>
 
-                {/* Step 1: Basic Info */}
-                {modalStep === 1 && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                        {locale === "en" ? "Full Name *" : "Nombre Completo *"}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newClient.full_name || ""}
-                        onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })}
-                        placeholder="Ej. Alejandra Rivas"
-                        className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                        {locale === "en" ? "Email Address" : "Correo Electrónico"}
-                      </label>
-                      <input
-                        type="email"
-                        value={newClient.email || ""}
-                        onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                        placeholder="ejemplo@correo.com"
-                        className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Phone Number" : "Teléfono"}
-                        </label>
-                        <input
-                          type="text"
-                          value={newClient.phone || ""}
-                          onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                          placeholder="+58 412 1234567"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          WhatsApp
-                        </label>
-                        <input
-                          type="text"
-                          value={newClient.whatsapp || ""}
-                          onChange={(e) => setNewClient({ ...newClient, whatsapp: e.target.value })}
-                          placeholder="+58 412 1234567"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Priority" : "Prioridad"}
-                        </label>
-                        <select
-                          value={newClient.priority || "media"}
-                          onChange={(e) => setNewClient({ ...newClient, priority: e.target.value as any })}
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono"
-                        >
-                          <option value="alta">{locale === "en" ? "High" : "Alta"}</option>
-                          <option value="media">{locale === "en" ? "Medium" : "Media"}</option>
-                          <option value="baja">{locale === "en" ? "Low" : "Baja"}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Lead Source" : "Origen del Lead"}
-                        </label>
-                        <select
-                          value={newClient.source || "web"}
-                          onChange={(e) => setNewClient({ ...newClient, source: e.target.value })}
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        >
-                          <option value="instagram">Instagram</option>
-                          <option value="web">Web Portal</option>
-                          <option value="referido">{locale === "en" ? "Referral" : "Referido"}</option>
-                          <option value="portal">{locale === "en" ? "Real Estate Portal" : "Portal Inmobiliario"}</option>
-                          <option value="otro">{locale === "en" ? "Other" : "Otro"}</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 2: Profile settings */}
-                {modalStep === 2 && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                        {locale === "en" ? "Client profile type *" : "Tipo Perfil del Cliente *"}
-                      </label>
-                      <select
-                        value={newClient.client_type || "comprador"}
-                        onChange={(e) =>
-                          setNewClient({ ...newClient, client_type: e.target.value as ClientType })
-                        }
-                        className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                      >
-                        <option value="comprador">Comprador</option>
-                        <option value="arrendatario">Arrendatario</option>
-                        <option value="propietario">Propietario</option>
-                        <option value="inversor">Inversor</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="col-span-2">
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Budget Max" : "Presupuesto Máximo"}
-                        </label>
-                        <input
-                          type="number"
-                          value={newClient.budget_max || ""}
-                          onChange={(e) =>
-                            setNewClient({
-                              ...newClient,
-                              budget_max: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                          }
-                          placeholder="Ej. 120000"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Currency" : "Moneda"}
-                        </label>
-                        <select
-                          value={newClient.budget_currency || "USD"}
-                          onChange={(e) =>
-                            setNewClient({ ...newClient, budget_currency: e.target.value })
-                          }
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        >
-                          <option value="USD">USD ($)</option>
-                          <option value="EUR">EUR (€)</option>
-                          <option value="VES">VES (Bs.)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 border-t border-[var(--p-border)] pt-3">
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Bedrooms" : "Habitaciones"}
-                        </label>
-                        <input
-                          type="number"
-                          value={newClient.req_bedrooms || ""}
-                          onChange={(e) =>
-                            setNewClient({
-                              ...newClient,
-                              req_bedrooms: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                          }
-                          placeholder="Min"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Bathrooms" : "Baños"}
-                        </label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          value={newClient.req_bathrooms || ""}
-                          onChange={(e) =>
-                            setNewClient({
-                              ...newClient,
-                              req_bathrooms: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                          }
-                          placeholder="Min"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Parking spaces" : "Puestos de Estacionamiento"}
-                        </label>
-                        <input
-                          type="number"
-                          value={newClient.req_parking || ""}
-                          onChange={(e) =>
-                            setNewClient({
-                              ...newClient,
-                              req_parking: e.target.value ? Number(e.target.value) : undefined,
-                            })
-                          }
-                          placeholder="Min"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {newClient.client_type === "arrendatario" && (
-                      <div className="border-t border-[var(--p-border)] pt-3 space-y-1">
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Bathroom Preference" : "Preferencia de Baño"}
-                        </label>
-                        <select
-                          value={newClient.bath_preference || "indiferente"}
-                          onChange={(e) =>
-                            setNewClient({
-                              ...newClient,
-                              bath_preference: e.target.value as any,
-                            })
-                          }
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
-                        >
-                          <option value="indiferente">{locale === "en" ? "Indifferent" : "Indiferente (Privado o Compartido)"}</option>
-                          <option value="privado">{locale === "en" ? "Private" : "Baño Privado"}</option>
-                          <option value="compartido">{locale === "en" ? "Shared" : "Baño Compartido"}</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Step 3: Zones and notes */}
-                {modalStep === 3 && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                        {locale === "en" ? "Zone of Interest" : "Zona de Interés"}
-                      </label>
-                      <select
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val && !newClient.interested_zones?.includes(val)) {
-                            setNewClient({
-                              ...newClient,
-                              interested_zones: [...(newClient.interested_zones || []), val],
-                            });
-                          }
+                <div className="p-6 flex-1 min-h-[450px] flex flex-col justify-start overflow-visible relative">
+                  <AnimatePresence mode="wait" custom={animationDirection} initial={false}>
+                    {modalStep === 1 && (
+                      <motion.div
+                        key="step-1"
+                        custom={animationDirection}
+                        variants={{
+                          enter: (dir: number) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
+                          center: { x: 0, opacity: 1 },
+                          exit: (dir: number) => ({ x: dir < 0 ? 50 : -50, opacity: 0 })
                         }}
-                        className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.22, ease: "easeInOut" }}
+                        className="space-y-4"
                       >
-                        <option value="">{locale === "en" ? "-- Select --" : "-- Seleccionar --"}</option>
-                        {(zonesList.length > 0 ? zonesList : MERIDA_ZONES).map((z) => (
-                          <option key={z.value} value={z.value}>
-                            {z.label}
-                          </option>
-                        ))}
-                      </select>
-                      {newClient.interested_zones && newClient.interested_zones.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {newClient.interested_zones.map((zone) => (
-                            <span
-                              key={zone}
-                              className="px-2 py-0.5 rounded-xs text-[10px] bg-white/5 border border-white/10 text-white/80 flex items-center gap-1"
-                            >
-                              {zoneLabelMap[zone] || zone}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setNewClient({
-                                    ...newClient,
-                                    interested_zones: newClient.interested_zones?.filter(
-                                      (z) => z !== zone
-                                    ),
-                                  })
-                                }
-                              >
-                                <X size={10} />
-                              </button>
-                            </span>
-                          ))}
+                        {/* Fila 1: Nombre Completo y Cédula/RIF */}
+                        <div className="grid grid-cols-9 gap-3">
+                          <div className="col-span-5">
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Full Name *" : "Nombre Completo *"}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={newClient.full_name || ""}
+                              onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })}
+                              placeholder="Ej. Alejandra Rivas"
+                              className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                              style={{ borderRadius: "var(--p-radius)" }}
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "ID / RIF" : "Cédula / RIF"}
+                            </label>
+                            <input
+                              type="text"
+                              value={newClient.cedula_rif || ""}
+                              onChange={(e) => setNewClient({ ...newClient, cedula_rif: formatCedula(e.target.value) })}
+                              placeholder="V-12.345.678"
+                              className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono h-[38px]"
+                              style={{ borderRadius: "var(--p-radius)" }}
+                            />
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                        {locale === "en" ? "Initial description & notes" : "Notas Iniciales y Requerimientos"}
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={newClient.notes || ""}
-                        onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                        placeholder="Ej. Busca apartamento de 2 hab con estacionamiento."
-                        className="w-full p-2.5 text-xs rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] transition-all resize-none text-white"
-                      />
-                    </div>
-                  </div>
-                )}
+                        {/* Fila 2: Correo Electrónico */}
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                            {locale === "en" ? "Email Address" : "Correo Electrónico"}
+                          </label>
+                          <input
+                            type="email"
+                            value={newClient.email || ""}
+                            onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                            placeholder="ejemplo@correo.com"
+                            className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                            style={{ borderRadius: "var(--p-radius)" }}
+                          />
+                        </div>
 
-                {/* Steps Controller buttons */}
-                <div className="flex justify-between items-center pt-3 border-t border-[var(--p-border)] mt-4">
+                        {/* Fila 3: WhatsApp y Teléfono */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              WhatsApp
+                            </label>
+                            <div className="relative text-white/30 text-xs">
+                              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-green-400">
+                                <MessageSquare size={13} />
+                              </span>
+                              <input
+                                type="text"
+                                value={newClient.whatsapp || ""}
+                                onChange={(e) => setNewClient({ ...newClient, whatsapp: formatPhone(e.target.value) })}
+                                placeholder=""
+                                className="w-full text-xs pl-8 p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                                style={{ borderRadius: "var(--p-radius)" }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Phone Number" : "Teléfono"}
+                            </label>
+                            <div className="relative text-white/30 text-xs">
+                              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <Phone size={13} />
+                              </span>
+                              <input
+                                type="text"
+                                value={newClient.phone || ""}
+                                onChange={(e) => setNewClient({ ...newClient, phone: formatPhone(e.target.value) })}
+                                placeholder=""
+                                className="w-full text-xs pl-8 p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                                style={{ borderRadius: "var(--p-radius)" }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fila 4: Tipo Perfil, Prioridad y Origen */}
+                        <div className="grid grid-cols-3 gap-3 border-t border-[var(--p-border)] pt-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Profile Type *" : "Tipo Perfil *"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.client_type || ""}
+                              onChange={(val) =>
+                                setNewClient({ ...newClient, client_type: val as ClientType })
+                              }
+                              options={[
+                                { value: "comprador", label: "Comprador" },
+                                { value: "arrendatario", label: "Arrendatario" },
+                                { value: "propietario", label: "Propietario" },
+                                { value: "inversor", label: "Inversor" },
+                              ]}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Priority" : "Prioridad"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.priority || ""}
+                              onChange={(val) => setNewClient({ ...newClient, priority: val as any })}
+                              options={[
+                                { value: "alta", label: locale === "en" ? "High" : "Alta" },
+                                { value: "media", label: locale === "en" ? "Medium" : "Media" },
+                                { value: "baja", label: locale === "en" ? "Low" : "Baja" },
+                              ]}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Lead Source" : "Origen"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.source || ""}
+                              onChange={(val) => setNewClient({ ...newClient, source: val })}
+                              options={[
+                                { value: "instagram", label: "Instagram" },
+                                { value: "web", label: "Web" },
+                                { value: "referido", label: locale === "en" ? "Referral" : "Referido" },
+                                { value: "portal", label: locale === "en" ? "Real Estate Portal" : "Portal Inmobiliario" },
+                                { value: "otro", label: locale === "en" ? "Other" : "Otro" },
+                              ]}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {modalStep === 2 && (
+                      <motion.div
+                        key="step-2"
+                        custom={animationDirection}
+                        variants={{
+                          enter: (dir: number) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
+                          center: { x: 0, opacity: 1 },
+                          exit: (dir: number) => ({ x: dir < 0 ? 50 : -50, opacity: 0 })
+                        }}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.22, ease: "easeInOut" }}
+                        className="space-y-4"
+                      >
+                        {/* Presupuesto Máximo, Forma de Pago y Urgencia */}
+                        <div className="grid grid-cols-[1fr_1.2fr_1.1fr] gap-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Budget Max" : "Presupuesto Máximo"}
+                            </label>
+                            <input
+                              type="text"
+                              value={formatThousands(newClient.budget_max)}
+                              onChange={(e) =>
+                                setNewClient({
+                                  ...newClient,
+                                  budget_max: parseThousands(e.target.value),
+                                })
+                              }
+                              placeholder="Ej. 120.000"
+                              className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                              style={{ borderRadius: "var(--p-radius)" }}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Preferred Payment" : "Forma de Pago"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.preferred_payment || ""}
+                              onChange={(val) => {
+                                const currency = val === "pago_movil" ? "VES" : "USD";
+                                setNewClient({ ...newClient, preferred_payment: val, budget_currency: currency });
+                              }}
+                              options={[
+                                { value: "", label: locale === "en" ? "Select..." : "Seleccionar..." },
+                                { value: "zelle", label: "Zelle (USD)" },
+                                { value: "efectivo", label: "Efectivo (USD)" },
+                                { value: "transferencia_int", label: "Transferencia (Panama/EEUU)" },
+                                { value: "pago_movil", label: "Pago Móvil (Bs.)" },
+                                { value: "usdt", label: "USDT (Cripto)" },
+                              ]}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Urgency" : "Urgencia"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.urgency || ""}
+                              onChange={(val) => setNewClient({ ...newClient, urgency: val })}
+                              options={[
+                                { value: "", label: locale === "en" ? "Select..." : "Seleccionar..." },
+                                { value: "inmediata", label: locale === "en" ? "Immediate (1-30 days)" : "Inmediata (1-30 días)" },
+                                { value: "corto_plazo", label: locale === "en" ? "Short (1-3 months)" : "Corto Plazo (1-3 meses)" },
+                                { value: "mediano_plazo", label: locale === "en" ? "Medium (3-6 months)" : "Mediano Plazo (3-6 meses)" },
+                                { value: "largo_plazo", label: locale === "en" ? "Long (+6 months)" : "Largo Plazo (+6 meses)" },
+                                { value: "explorando", label: locale === "en" ? "Exploring" : "Explorando" },
+                              ]}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Habitaciones, Baños y Estacionamientos */}
+                        <div className="grid grid-cols-3 gap-3 border-t border-[var(--p-border)] pt-3">
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Bedrooms" : "Habitaciones"}
+                            </label>
+                            <NumberStepper
+                              value={newClient.req_bedrooms?.toString() || "0"}
+                              onChange={(val) =>
+                                setNewClient({
+                                  ...newClient,
+                                  req_bedrooms: val ? Number(val) : undefined,
+                                })
+                              }
+                              min={0}
+                              step={1}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Bathrooms" : "Baños"}
+                            </label>
+                            <NumberStepper
+                              value={newClient.req_bathrooms?.toString() || "0"}
+                              onChange={(val) =>
+                                setNewClient({
+                                  ...newClient,
+                                  req_bathrooms: val ? Number(val) : undefined,
+                                })
+                              }
+                              min={0}
+                              step={0.5}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block whitespace-nowrap">
+                              {locale === "en" ? "Parking" : "Estacionamientos"}
+                            </label>
+                            <NumberStepper
+                              value={newClient.req_parking?.toString() || "0"}
+                              onChange={(val) =>
+                                setNewClient({
+                                  ...newClient,
+                                  req_parking: val ? Number(val) : undefined,
+                                })
+                              }
+                              min={0}
+                              step={1}
+                            />
+                          </div>
+                        </div>
+
+                        {newClient.client_type === "arrendatario" && (
+                          <div className="border-t border-[var(--p-border)] pt-3 space-y-1">
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                              {locale === "en" ? "Bathroom Preference" : "Preferencia de Baño"}
+                            </label>
+                            <CustomSelect
+                              value={newClient.bath_preference || "indiferente"}
+                              onChange={(val) =>
+                                setNewClient({
+                                  ...newClient,
+                                  bath_preference: val as any,
+                                })
+                              }
+                              options={[
+                                { value: "indiferente", label: locale === "en" ? "Indifferent" : "Indiferente (Privado o Compartido)" },
+                                { value: "privado", label: locale === "en" ? "Private" : "Baño Privado" },
+                                { value: "compartido", label: locale === "en" ? "Shared" : "Baño Compartido" },
+                              ]}
+                            />
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {modalStep === 3 && (
+                      <motion.div
+                        key="step-3"
+                        custom={animationDirection}
+                        variants={{
+                          enter: (dir: number) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
+                          center: { x: 0, opacity: 1 },
+                          exit: (dir: number) => ({ x: dir < 0 ? 50 : -50, opacity: 0 })
+                        }}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.22, ease: "easeInOut" }}
+                        className="space-y-4"
+                      >
+                        {/* Zonas de Interés */}
+                        <div className="p-3.5 rounded-sm bg-white/[0.01] border border-white/5 space-y-2 relative">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] block">
+                              {locale === "en" ? "Zones of Interest" : "Zonas de Interés"}
+                            </label>
+                          </div>
+
+                          <div ref={newClientZoneDropdownRef} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewClientIsZoneDropdownOpen(!newClientIsZoneDropdownOpen);
+                                if (newClientIsTypeDropdownOpen) setNewClientIsTypeDropdownOpen(false);
+                              }}
+                              className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors h-[38px]"
+                              style={{ borderRadius: "var(--p-radius)" }}
+                            >
+                              <span>
+                                {newClient.interested_zones && newClient.interested_zones.length > 0
+                                  ? `${newClient.interested_zones.length} ${locale === "en" ? "zones selected" : "zonas seleccionadas"}`
+                                  : (locale === "en" ? "Select Zones of Interest..." : "Seleccionar Zonas de Interés...")}
+                              </span>
+                              <ChevronDown size={14} className="text-[var(--p-text-3)]" />
+                            </button>
+
+                            <AnimatePresence>
+                              {newClientIsZoneDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="relative mt-2 z-10 w-full bg-[var(--p-sidebar)] border border-[var(--p-border)] rounded-sm shadow-xl p-3 space-y-2 overflow-hidden"
+                                  style={{ background: "var(--p-surface-3)" }}
+                                >
+                                  <div className="flex items-center justify-end pb-1 border-b border-white/5">
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const allVals = (zonesList.length > 0 ? zonesList : MERIDA_ZONES).map((z) => z.value);
+                                          setNewClient({ ...newClient, interested_zones: allVals });
+                                        }}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-[#C9962A]/10 border border-[#C9962A]/20 text-[#C9962A] hover:bg-[#C9962A]/20 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Select All" : "Marcar Todos"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setNewClient({ ...newClient, interested_zones: [] })}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Deselect All" : "Desmarcar Todos"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setNewClient({ ...newClient, interested_zones: [] })}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Clear" : "Limpiar"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={newClientZoneSearchQuery}
+                                    onChange={(e) => setNewClientZoneSearchQuery(e.target.value)}
+                                    placeholder={locale === "en" ? "Search zone..." : "Buscar zona..."}
+                                    className="w-full text-xs p-1.5 rounded-xs border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
+                                    autoFocus
+                                  />
+
+                                  <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 p-1 bg-black/10 rounded-xs border border-white/5">
+                                    {(zonesList.length > 0 ? zonesList : MERIDA_ZONES)
+                                      .filter((z) => {
+                                        return !newClientZoneSearchQuery || z.label.toLowerCase().includes(newClientZoneSearchQuery.toLowerCase());
+                                      })
+                                      .map((z) => {
+                                        const isSelected = newClient.interested_zones?.includes(z.value);
+                                        return (
+                                          <button
+                                            key={z.value}
+                                            type="button"
+                                            onClick={() => {
+                                              const exists = newClient.interested_zones?.includes(z.value) || false;
+                                              const updated = exists
+                                                ? (newClient.interested_zones || []).filter((x) => x !== z.value)
+                                                : [...(newClient.interested_zones || []), z.value];
+                                              setNewClient({ ...newClient, interested_zones: updated });
+                                            }}
+                                            className="flex items-center gap-2 px-1 py-0.5 rounded-xs hover:bg-white/5 cursor-pointer text-white text-left transition-colors select-none w-full"
+                                          >
+                                            <div
+                                              className={`h-3.5 w-3.5 shrink-0 rounded-xs border flex items-center justify-center transition-all ${
+                                                isSelected
+                                                  ? "bg-[var(--p-blue)] border-transparent text-black"
+                                                  : "bg-[var(--p-surface-3)] border-white/10 text-transparent"
+                                              }`}
+                                            >
+                                              {isSelected && <Check size={10} strokeWidth={4} />}
+                                            </div>
+                                            <span className="text-[11px] truncate" title={z.label}>
+                                              {z.label}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          <AnimatePresence>
+                            {newClient.interested_zones && newClient.interested_zones.length > 0 && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="flex flex-wrap gap-1 mt-1.5 p-1 bg-white/[0.01] border border-white/5 rounded-xs">
+                                  {newClient.interested_zones?.map((zoneValue) => {
+                                    const zoneObj = (zonesList.length > 0 ? zonesList : MERIDA_ZONES).find((x) => x.value === zoneValue);
+                                    const label = zoneObj ? zoneObj.label : zoneValue;
+                                    return (
+                                      <button
+                                        key={zoneValue}
+                                        type="button"
+                                        onClick={() => {
+                                          setNewClient({
+                                            ...newClient,
+                                            interested_zones: newClient.interested_zones?.filter((x) => x !== zoneValue) || []
+                                          });
+                                        }}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] bg-[rgba(96,165,250,0.08)] border border-[rgba(96,165,250,0.2)] text-[var(--p-blue)] hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-colors cursor-pointer"
+                                      >
+                                        {label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Tipos de Propiedad de Interés */}
+                        <div className="p-3.5 rounded-sm bg-white/[0.01] border border-white/5 space-y-2 relative">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] block">
+                              {locale === "en" ? "Property Types" : "Tipos de Propiedad"}
+                            </label>
+                          </div>
+
+                          <div ref={newClientTypeDropdownRef} className="relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewClientIsTypeDropdownOpen(!newClientIsTypeDropdownOpen);
+                                if (newClientIsZoneDropdownOpen) setNewClientIsZoneDropdownOpen(false);
+                              }}
+                              className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors h-[38px]"
+                              style={{ borderRadius: "var(--p-radius)" }}
+                            >
+                              <span>
+                                {newClient.interested_types && newClient.interested_types.length > 0
+                                  ? `${newClient.interested_types.length} ${locale === "en" ? "types selected" : "tipos seleccionados"}`
+                                  : (locale === "en" ? "Select Property Types..." : "Seleccionar Tipos de Propiedad...")}
+                              </span>
+                              <ChevronDown size={14} className="text-[var(--p-text-3)]" />
+                            </button>
+
+                            <AnimatePresence>
+                              {newClientIsTypeDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="relative mt-2 z-10 w-full bg-[var(--p-sidebar)] border border-[var(--p-border)] rounded-sm shadow-xl p-3 space-y-2 overflow-hidden"
+                                  style={{ background: "var(--p-surface-3)" }}
+                                >
+                                  <div className="flex items-center justify-end pb-1 border-b border-white/5">
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const allVals = Object.keys(PROP_TYPE_LABEL);
+                                          setNewClient({ ...newClient, interested_types: allVals });
+                                        }}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-[#C9962A]/10 border border-[#C9962A]/20 text-[#C9962A] hover:bg-[#C9962A]/20 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Select All" : "Marcar Todos"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setNewClient({ ...newClient, interested_types: [] })}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Deselect All" : "Desmarcar Todos"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setNewClient({ ...newClient, interested_types: [] })}
+                                        className="px-1.5 py-0.5 rounded-[3px] text-[8px] font-medium bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer"
+                                      >
+                                        {locale === "en" ? "Clear" : "Limpiar"}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 p-1 bg-black/10 rounded-xs border border-white/5">
+                                    {Object.entries(PROP_TYPE_LABEL).map(([value, label]) => {
+                                      const isSelected = newClient.interested_types?.includes(value);
+                                      return (
+                                        <button
+                                          key={value}
+                                          type="button"
+                                          onClick={() => {
+                                            const exists = newClient.interested_types?.includes(value) || false;
+                                            const updated = exists
+                                              ? (newClient.interested_types || []).filter((x) => x !== value)
+                                              : [...(newClient.interested_types || []), value];
+                                            setNewClient({ ...newClient, interested_types: updated });
+                                          }}
+                                          className="flex items-center gap-2 px-1 py-0.5 rounded-xs hover:bg-white/5 cursor-pointer text-white text-left transition-colors select-none w-full"
+                                        >
+                                          <div
+                                            className={`h-3.5 w-3.5 shrink-0 rounded-xs border flex items-center justify-center transition-all ${
+                                              isSelected
+                                                ? "bg-[var(--p-blue)] border-transparent text-black"
+                                                : "bg-[var(--p-surface-3)] border-white/10 text-transparent"
+                                            }`}
+                                          >
+                                            {isSelected && <Check size={10} strokeWidth={4} />}
+                                          </div>
+                                          <span className="text-[11px] truncate">
+                                            {label}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          <AnimatePresence>
+                            {newClient.interested_types && newClient.interested_types.length > 0 && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="flex flex-wrap gap-1 mt-1.5 p-1 bg-white/[0.01] border border-white/5 rounded-xs">
+                                  {newClient.interested_types.map((typeValue) => {
+                                    const label = PROP_TYPE_LABEL[typeValue as any] || typeValue;
+                                    return (
+                                      <button
+                                        key={typeValue}
+                                        type="button"
+                                        onClick={() => {
+                                          setNewClient({
+                                            ...newClient,
+                                            interested_types: newClient.interested_types?.filter((x) => x !== typeValue) || []
+                                          });
+                                        }}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded-[3px] text-[9px] bg-[rgba(96,165,250,0.08)] border border-[rgba(96,165,250,0.2)] text-[var(--p-blue)] hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-colors cursor-pointer"
+                                      >
+                                        {label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Notas Iniciales */}
+                        <div>
+                          <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                            {locale === "en" ? "Initial description & notes" : "Notas Iniciales y Requerimientos"}
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={newClient.notes || ""}
+                            onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                            placeholder="Ej. Busca apartamento de 2 hab con estacionamiento."
+                            className="w-full p-2.5 text-xs rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] transition-all resize-none text-white font-sans"
+                            style={{ borderRadius: "var(--p-radius)" }}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex justify-between items-center p-5 border-t border-[var(--p-border)] bg-[var(--p-surface)]">
+                  {/* Botón Izquierdo: Cancelar (visible en todos los pasos) */}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (modalStep > 1) setModalStep(modalStep - 1);
-                      else setIsModalOpen(false);
-                    }}
-                    className="px-4 py-2 text-xs font-semibold rounded-sm border border-[var(--p-border)] text-white hover:bg-white/5 cursor-pointer transition-colors"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-5 py-2.5 text-[13px] font-medium rounded-sm border border-[var(--p-border)] text-white hover:bg-white/5 cursor-pointer transition-colors"
+                    style={{ borderRadius: "var(--p-radius)" }}
                   >
-                    {modalStep > 1 ? (locale === "en" ? "Back" : "Atrás") : (locale === "en" ? "Cancel" : "Cancelar")}
+                    {locale === "en" ? "Cancel" : "Cancelar"}
                   </button>
 
-                  {modalStep < 3 ? (
-                    <button
-                      type="button"
-                      onClick={() => setModalStep(modalStep + 1)}
-                      className="px-4 py-2 text-xs font-bold rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90"
-                    >
-                      {locale === "en" ? "Next step" : "Siguiente"}
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      className="px-5 py-2 text-xs font-bold rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90"
-                    >
-                      {locale === "en" ? "Save Profile" : "Guardar Cliente"}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {/* Botón Navegar Atrás (si es paso > 1) */}
+                    {modalStep > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAnimationDirection(-1);
+                          setModalStep(modalStep - 1);
+                        }}
+                        className="px-5 py-2.5 text-[13px] font-medium rounded-sm border border-[var(--p-border)] text-white hover:bg-white/5 cursor-pointer transition-colors"
+                        style={{ borderRadius: "var(--p-radius)" }}
+                      >
+                        {locale === "en" ? "Back" : "Atrás"}
+                      </button>
+                    )}
+
+                    {/* Botón Navegar Adelante / Guardar */}
+                    {modalStep < 3 ? (
+                      <button
+                        key="btn-next"
+                        type="button"
+                        onClick={() => {
+                          if (modalStep === 1 && !newClient.full_name?.trim()) {
+                            toastFn({
+                              title: locale === "en" ? "Full Name Required" : "Nombre completo requerido",
+                              description: locale === "en" ? "Please fill in the client's full name to continue." : "Por favor, ingresa el nombre completo del cliente para continuar.",
+                              type: "warning",
+                            });
+                            return;
+                          }
+                          setAnimationDirection(1);
+                          setModalStep(modalStep + 1);
+                        }}
+                        className="px-6 py-2.5 text-[13px] font-medium rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90 font-semibold"
+                        style={{ borderRadius: "var(--p-radius)" }}
+                      >
+                        {locale === "en" ? "Next step" : "Siguiente"}
+                      </button>
+                    ) : (
+                      <button
+                        key="btn-submit"
+                        type="submit"
+                        className="px-6 py-2.5 text-[13px] font-medium rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90 font-semibold"
+                        style={{ borderRadius: "var(--p-radius)" }}
+                      >
+                        {locale === "en" ? "Save Profile" : "Guardar Cliente"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </motion.div>

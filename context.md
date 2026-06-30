@@ -99,19 +99,38 @@ knordica/
 
 ### 1. Tablas Principales
 
-#### 1.1. `zones`
+#### 1.1. `states`
 
 - `id` (UUID): Identificador único
+- `name` (text): Nombre del estado (ej. Mérida)
+- `slug` (text): Slug único
+- `created_at` (timestamp with time zone): Fecha de creación
+
+#### 1.2. `municipalities`
+
+- `id` (UUID): Identificador único
+- `state_id` (UUID): Referencia al estado
+- `name` (text): Nombre del municipio (ej. Libertador)
+- `slug` (text): Slug único
+- `active` (boolean): Indica si el municipio está activo en la plataforma
+- `created_at` (timestamp with time zone): Fecha de creación
+
+#### 1.3. `zones`
+
+- `id` (UUID): Identificador único
+- `municipality_id` (UUID): Referencia al municipio
 - `name_es` (text): Nombre en español
 - `name_en` (text): Nombre en inglés
 - `description_es` (text): Descripción en español
 - `description_en` (text): Descripción en inglés
 - `lat` (double precision): Latitud
 - `lng` (double precision): Longitud
+- `featured` (boolean): Indica si es una zona destacada
+- `active` (boolean): Indica si está activa
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.2. `agents`
+#### 1.4. `agents`
 
 - `id` (UUID): Identificador único
 - `user_id` (UUID): Referencia a Supabase Auth
@@ -122,13 +141,13 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.3. `properties`
+#### 1.5. `properties`
 
 - `id` (UUID): Identificador único
 - `agent_id` (UUID): Referencia al agente propietario
 - `operation` (text): Operación (venta, alquiler, vacacional)
 - `property_type` (text): Tipo de propiedad (apartamento, casa, etc.)
-- `status` (text): Estado (activa, reservada, vendida, alquilada, cerrada)
+- `status` (text): Estado (activa, reservada, vendida, alquilada, inactiva)
 - `listing_badge` (text): Distintivo de listado (basico, destacado, premium)
 - `featured` (boolean): Destacado
 - `exclusive` (boolean): Exclusivo
@@ -161,8 +180,8 @@ knordica/
 - `property_age` (integer): Edad de la propiedad (años)
 - `year_built` (integer): Año de construcción
 - `condition` (text): Condición (nuevo, excelente, buen_estado, por_remodelar, en_gris)
-- `furnished` (text): Amueblado (no, parcial, completo)
-- `municipio` (text): Municipio
+- `furnished` (text): Amueblado (sin_muebles, semi_amoblado, amoblado)
+- `municipio` (text): Municipio (slug)
 - `zone_id` (UUID): Referencia a la zona
 - `address_es` (text): Dirección en español
 - `address_en` (text): Dirección en inglés
@@ -173,7 +192,7 @@ knordica/
 - `has_water_tank` (boolean): Tanque de agua
 - `has_hot_water` (boolean): Agua caliente
 - `has_generator` (boolean): Generador
-- `gas_type` (text): Tipo de gas (natural, butano, propano)
+- `gas_type` (text): Tipo de gas (central, bombona, no_tiene)
 - `has_internet` (boolean): Internet
 - `has_security_24h` (boolean): Seguridad 24h
 - `has_electric_gate` (boolean): Puerta eléctrica
@@ -183,12 +202,12 @@ knordica/
 - `has_armored_door` (boolean): Puerta blindada
 - `has_ac` (boolean): Aire acondicionado
 - `has_heating` (boolean): Calefacción
-- `kitchen_type` (text): Tipo de cocina (moderna, tradicional, americana)
-- `bathroom_type` (text): Tipo de baño (común, privado, en suite)
-- `host_housing_type` (text): Tipo de vivienda del anfitrión (mismo edificio, mismo piso, otro lugar)
-- `cohabitation` (text): Convivencia (no, si, solo mujeres, solo hombres)
+- `kitchen_type` (text): Tipo de cocina (gas, electrica, induccion, mixta, no_tiene)
+- `bathroom_type` (text): Tipo de baño
+- `host_housing_type` (text): Tipo de vivienda del anfitrión
+- `cohabitation` (text): Convivencia
 - `occupants_count` (integer): Número de ocupantes
-- `gender_policy` (text): Política de género (mixto, mujeres, hombres)
+- `gender_policy` (text): Política de género
 - `deposit_required` (boolean): Depósito requerido
 - `deposit_amount` (numeric): Monto del depósito
 - `allows_pets` (boolean): Permite mascotas
@@ -205,7 +224,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.4. `property_translations`
+#### 1.6. `property_translations`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -215,7 +234,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.5. `property_images`
+#### 1.7. `property_images`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -225,7 +244,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.6. `property_features`
+#### 1.8. `property_features`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -234,14 +253,14 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.7. `favorites`
+#### 1.9. `favorites`
 
 - `id` (UUID): Identificador único
 - `user_id` (UUID): Referencia al usuario
 - `property_id` (UUID): Referencia a la propiedad
 - `created_at` (timestamp with time zone): Fecha de creación
 
-#### 1.8. `leads`
+#### 1.10. `leads`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -249,11 +268,31 @@ knordica/
 - `email` (text): Correo electrónico
 - `phone` (text): Teléfono
 - `message` (text): Mensaje
-- `status` (text): Estado (nuevo, contactado, convertido)
+- `status` (text): Estado pipeline CRM (nuevo, contactado, visita, negociacion, cerrado, perdido)
+- `cedula_rif` (text): Cédula o RIF (mercado venezolano)
+- `preferred_payment` (text): Método de pago preferido (zelle, efectivo, transferencia_int, transferencia_ves)
+- `urgency` (text): Urgencia (inmediata, corto_plazo, mediano_plazo, explorando)
+- `client_type` (text): Tipo de cliente (comprador, arrendatario, propietario, inversor)
+- `budget_min` (numeric): Presupuesto mínimo
+- `budget_max` (numeric): Presupuesto máximo
+- `budget_currency` (text): Moneda del presupuesto
+- `interested_zones` (text[]): Zonas de interés
+- `interested_types` (text[]): Tipos de propiedad de interés
+- `next_action` (text): Siguiente acción programada
+- `next_action_date` (date): Fecha de la siguiente acción
+- `properties_shown` (uuid[]): Propiedades mostradas al cliente
+- `notes` (text): Notas de seguimiento
+- `last_contact` (date): Fecha de último contacto
+- `priority` (text): Prioridad (alta, media, baja)
+- `source` (text): Origen del lead (web, etc.)
+- `req_bedrooms` (integer): Requerimiento de habitaciones
+- `req_bathrooms` (numeric): Requerimiento de baños
+- `req_parking` (integer): Requerimiento de puestos de estacionamiento
+- `bath_preference` (text): Preferencia de tipo de baño
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.9. `lead_notes`
+#### 1.11. `lead_notes`
 
 - `id` (UUID): Identificador único
 - `lead_id` (UUID): Referencia al lead
@@ -261,7 +300,7 @@ knordica/
 - `created_by` (UUID): Usuario que creó la nota
 - `created_at` (timestamp with time zone): Fecha de creación
 
-#### 1.10. `appointments`
+#### 1.12. `appointments`
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
@@ -273,7 +312,7 @@ knordica/
 - `created_at` (timestamp with time zone): Fecha de creación
 - `updated_at` (timestamp with time zone): Fecha de actualización
 
-#### 1.11. `blog_posts`
+#### 1.13. `blog_posts`
 
 - `id` (UUID): Identificador único
 - `title_es` (text): Título en español
@@ -301,47 +340,37 @@ Las políticas de seguridad a nivel de fila (RLS) se implementan en las tablas c
 
 ### 3. Triggers y Funciones de Base de Datos
 
-#### 3.1. `update_completeness_score()`
+#### 3.1. `calculate_property_completeness()`
 
-Función que se ejecuta automáticamente cuando se actualiza una propiedad para recalcular la puntuación de completitud basada en los campos completados y sus pesos configurados.
+Función trigger que se ejecuta automáticamente `BEFORE INSERT OR UPDATE` en la tabla `properties` para validar y limitar la puntuación de completitud (`completeness_score`) entre 0 y 100, y asignar el distintivo (`listing_badge`) correspondiente ('basico', 'completo', 'premium') si es nulo o de valor estándar.
 
 ```sql
-CREATE OR REPLACE FUNCTION update_completeness_score()
+CREATE OR REPLACE FUNCTION calculate_property_completeness()
 RETURNS TRIGGER AS $$
-DECLARE
-    total_weight NUMERIC := 0;
-    completed_weight NUMERIC := 0;
-    field_name TEXT;
-    field_value ANYELEMENT;
-    field_config RECORD;
 BEGIN
-    -- Calcular peso total y completado
-    FOR field_config IN SELECT field, weight FROM completeness_config LOOP
-        field_name := field_config.field;
-        EXECUTE 'SELECT $1.' || field_name INTO field_value USING NEW;
-        
-        total_weight := total_weight + field_config.weight;
-        
-        -- Verificar si el campo está completado
-        IF field_value IS NOT NULL AND field_value != '' THEN
-            -- Para campos booleanos, verificar que no sean NULL
-            IF typeof(field_value) = 'boolean' THEN
-                IF field_value THEN
-                    completed_weight := completed_weight + field_config.weight;
-                END IF;
-            ELSE
-                completed_weight := completed_weight + field_config.weight;
-            END IF;
-        END IF;
-    END LOOP;
-    
-    -- Calcular puntuación de completitud
-    IF total_weight > 0 THEN
-        NEW.completeness_score := (completed_weight / total_weight) * 100;
-    ELSE
+    -- Validar y limitar completeness_score
+    IF NEW.completeness_score IS NULL OR NEW.completeness_score < 0 THEN
         NEW.completeness_score := 0;
+    ELSIF NEW.completeness_score > 100 THEN
+        NEW.completeness_score := 100;
     END IF;
-    
+
+    -- Asignar badge basado en completeness_score
+    IF NEW.listing_badge IS NULL 
+       OR NEW.listing_badge = '' 
+       OR NEW.listing_badge = 'basico' 
+       OR NEW.listing_badge = 'completo' 
+       OR NEW.listing_badge = 'premium' 
+    THEN
+        IF NEW.completeness_score <= 40 THEN
+            NEW.listing_badge := 'basico';
+        ELSIF NEW.completeness_score <= 70 THEN
+            NEW.listing_badge := 'completo';
+        ELSE
+            NEW.listing_badge := 'premium';
+        END IF;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -353,227 +382,178 @@ $$ LANGUAGE plpgsql;
 
 ```typescript
 export const PROPERTY_OPERATIONS = [
-  "venta",
-  "alquiler",
-  "vacacional"
-] as const;
+  { value: "venta",      label_es: "Venta",      label_en: "For Sale" },
+  { value: "alquiler",   label_es: "Alquiler",   label_en: "For Rent" },
+  { value: "vacacional", label_es: "Vacacional", label_en: "Vacation" },
+];
 ```
 
 ### 2. Tipos de Propiedad
 
 ```typescript
 export const PROPERTY_TYPES = [
-  "apartamento",
-  "casa",
-  "townhouse",
-  "anexo",
-  "edificio",
-  "galpon",
-  "habitacion",
-  "hacienda_finca",
-  "local",
-  "oficina",
-  "terreno_lote"
-] as const;
+  { value: "casa",          label_es: "Casa",             label_en: "House",           icon: "Home" },
+  { value: "apartamento",   label_es: "Apartamento",      label_en: "Apartment",       icon: "Building2" },
+  { value: "townhouse",     label_es: "Townhouse",        label_en: "Townhouse",       icon: "Layers" },
+  { value: "anexo",         label_es: "Anexo",            label_en: "Annex",           icon: "DoorOpen" },
+  { value: "habitacion",    label_es: "Habitación",       label_en: "Room",            icon: "BedDouble" },
+  { value: "edificio",      label_es: "Edificio",         label_en: "Building",        icon: "Building" },
+  { value: "galpon",        label_es: "Galpón",           label_en: "Warehouse",       icon: "Warehouse" },
+  { value: "hacienda_finca",label_es: "Hacienda / Finca", label_en: "Farm / Estate",   icon: "Tractor" },
+  { value: "local",         label_es: "Local Comercial",  label_en: "Commercial Space",icon: "Store" },
+  { value: "oficina",       label_es: "Oficina",          label_en: "Office",          icon: "Briefcase" },
+  { value: "terreno_lote",  label_es: "Terreno / Lote",   label_en: "Land / Lot",      icon: "TreePine" },
+];
 ```
 
 ### 3. Estados de Propiedad
 
 ```typescript
 export const PROPERTY_STATUSES = [
-  "activa",
-  "reservada",
-  "vendida",
-  "alquilada",
-  "cerrada"
-] as const;
+  { value: "activa",    label_es: "Activa",    label_en: "Active",    color: "green" },
+  { value: "reservada", label_es: "Reservada", label_en: "Reserved",  color: "yellow" },
+  { value: "vendida",   label_es: "Vendida",   label_en: "Sold",      color: "blue" },
+  { value: "alquilada", label_es: "Alquilada", label_en: "Rented",    color: "blue" },
+  { value: "inactiva",  label_es: "Inactiva",  label_en: "Inactive",  color: "gray" },
+];
 ```
 
 ### 4. Condiciones de Propiedad
 
 ```typescript
 export const PROPERTY_CONDITIONS = [
-  "nuevo",
-  "excelente",
-  "buen_estado",
-  "por_remodelar",
-  "en_gris"
-] as const;
+  { value: "nuevo",         label_es: "Nuevo / A estrenar", label_en: "New / Move-in ready" },
+  { value: "excelente",     label_es: "Excelente",          label_en: "Excellent" },
+  { value: "buen_estado",   label_es: "Buen estado",        label_en: "Good condition" },
+  { value: "por_remodelar", label_es: "Por remodelar",      label_en: "Needs renovation" },
+  { value: "en_gris",       label_es: "En obra gris",       label_en: "Unfinished / Shell" },
+];
 ```
 
 ### 5. Opciones de Amueblado
 
 ```typescript
 export const FURNISHED_OPTIONS = [
-  "no",
-  "parcial",
-  "completo"
-] as const;
+  { value: "sin_muebles",    label_es: "Sin muebles",  label_en: "Unfurnished" },
+  { value: "semi_amoblado",  label_es: "Semi amoblado", label_en: "Partially furnished" },
+  { value: "amoblado",       label_es: "Amoblado",      label_en: "Fully furnished" },
+];
 ```
 
 ### 6. Tipos de Gas
 
 ```typescript
 export const GAS_TYPES = [
-  "natural",
-  "butano",
-  "propano"
-] as const;
+  { value: "central",  label_es: "Gas Central",  label_en: "Central Gas" },
+  { value: "bombona",  label_es: "Bombona",       label_en: "Gas Cylinder" },
+  { value: "no_tiene", label_es: "No tiene",      label_en: "No gas" },
+];
 ```
 
 ### 7. Tipos de Cocina
 
 ```typescript
 export const KITCHEN_TYPES = [
-  "moderna",
-  "tradicional",
-  "americana"
-] as const;
+  { value: "gas",       label_es: "A gas",      label_en: "Gas" },
+  { value: "electrica", label_es: "Eléctrica",  label_en: "Electric" },
+  { value: "induccion", label_es: "Inducción",  label_en: "Induction" },
+  { value: "mixta",     label_es: "Mixta",      label_en: "Mixed" },
+  { value: "no_tiene",  label_es: "No tiene",   label_en: "None" },
+];
 ```
 
 ### 8. Municipios
 
 ```typescript
 export const MUNICIPIOS = [
-  "baruta",
-  "chacao",
-  "el_hilario",
-  "la_guaira",
-  "los_rodillos",
-  "maturin",
-  "merida",
-  "petare",
-  "santa_lucia",
-  "vargas",
-  "zulia"
-] as const;
+  { value: "libertador",      label_es: "Municipio Libertador" },
+  { value: "campo_elias",     label_es: "Campo Elías" },
+  { value: "santos_marquina", label_es: "Santos Marquina" },
+  { value: "sucre",           label_es: "Sucre" },
+  { value: "rangel",          label_es: "Rangel" },
+];
 ```
 
 ### 9. Categorías de Características
 
 ```typescript
 export const FEATURE_CATEGORIES = [
-  "estructura",
-  "servicios",
-  "seguridad",
-  "comodidades",
-  "medio_ambiente",
-  "otros"
-] as const;
+  { value: "servicios_basicos", label_es: "Servicios Básicos", label_en: "Basic Services" },
+  { value: "seguridad",         label_es: "Seguridad",         label_en: "Security" },
+  { value: "amenidades",        label_es: "Amenidades",        label_en: "Amenities" },
+  { value: "equipamiento",      label_es: "Equipamiento",      label_en: "Equipment" },
+  { value: "habitacion",        label_es: "Habitación",        label_en: "Room" },
+  { value: "vacacional",        label_es: "Vacacional",        label_en: "Vacation" },
+  { value: "general",           label_es: "General",           label_en: "General" },
+];
 ```
 
 ### 10. Opciones de Amenidades
 
 ```typescript
 export const AMENITIES_OPTIONS = [
-  "piscina",
-  "gimnasio",
-  "jardin",
-  "terraza",
-  "balcon",
-  "aire_acondicionado",
-  "calefaccion",
-  "lavanderia",
-  "ascensor",
-  "parque",
-  "estacionamiento",
-  "seguridad_24h",
-  "cctv",
-  "intercomunicador",
-  "puerta_blindada",
-  "agua_caliente",
-  "tanque_de_agua",
-  "generador",
-  "internet",
-  "puerta_electrica",
-  "valla_electrica",
-  "casa_de_cuidadores",
-  "sala_de_juegos",
-  "salon_de_fiestas",
-  "parrilla",
-  "cancha_deportiva"
-] as const;
+  { value: "piscina",       label_es: "Piscina",            label_en: "Pool",            icon: "Waves" },
+  { value: "gimnasio",      label_es: "Gimnasio",           label_en: "Gym",             icon: "Dumbbell" },
+  { value: "salon_social",  label_es: "Salón Social",       label_en: "Social Hall",     icon: "Users" },
+  { value: "bbq",           label_es: "Área de BBQ",        label_en: "BBQ Area",        icon: "Flame" },
+  { value: "jardines",      label_es: "Jardines",           label_en: "Gardens",         icon: "Leaf" },
+  { value: "cancha_tenis",  label_es: "Cancha de Tenis",    label_en: "Tennis Court",    icon: "Circle" },
+  { value: "cancha_padel",  label_es: "Cancha de Pádel",    label_en: "Padel Court",     icon: "Zap" },
+  { value: "area_juegos",   label_es: "Área Infantil",      label_en: "Kids Area",       icon: "Star" },
+  { value: "spa",           label_es: "Spa",                label_en: "Spa",             icon: "Sparkles" },
+  { value: "conserje",      label_es: "Conserje",           label_en: "Concierge",       icon: "UserCheck" },
+];
 ```
 
 ### 11. Opciones de Mobiliario
 
 ```typescript
 export const FURNITURE_OPTIONS = [
-  "sofa",
-  "cama",
-  "mesa",
-  "silla",
-  "armario",
-  "televisor",
-  "refrigerador",
-  "horno",
-  "microondas",
-  "lavadora",
-  "secadora",
-  "aire_acondicionado",
-  "calefaccion",
-  "ventilador",
-  "cortinas",
-  "alfombra",
-  "espejo",
-  "lampara",
-  "estanteria",
-  "escritorio"
-] as const;
+  { value: "cama_individual",   label_es: "Cama Individual",   category: "dormitorio", icon: "BedSingle" },
+  { value: "cama_matrimonial",  label_es: "Cama Matrimonial",  category: "dormitorio", icon: "BedDouble" },
+  { value: "cama_king",         label_es: "Cama King",         category: "dormitorio", icon: "BedDouble" },
+  { value: "armario",           label_es: "Armario/Closet",    category: "dormitorio", icon: "Package" },
+  { value: "sofa",              label_es: "Sofá",              category: "sala",       icon: "Sofa" },
+  { value: "tv",                label_es: "Televisor",         category: "sala",       icon: "Tv" },
+  { value: "nevera",            label_es: "Nevera",            category: "cocina",     icon: "Thermometer" },
+  { value: "cocina_fogon",      label_es: "Cocina/Fogón",      category: "cocina",     icon: "Flame" },
+  { value: "horno",             label_es: "Horno",             category: "cocina",     icon: "UtensilsCrossed" },
+  { value: "microondas",        label_es: "Microondas",        category: "cocina",     icon: "Zap" },
+  { value: "lavadora",          label_es: "Lavadora",          category: "lavanderia", icon: "WashingMachine" },
+  { value: "secadora",          label_es: "Secadora",          category: "lavanderia", icon: "Wind" },
+];
 ```
 
 ### 12. Servicios Incluidos
 
 ```typescript
 export const SERVICES_INCLUDED_OPTIONS = [
-  "agua",
-  "luz",
-  "gas",
-  "internet",
-  "limpieza",
-  "mantenimiento",
-  "seguridad",
-  "jardin",
-  "piscina",
-  "gimnasio",
-  "estacionamiento",
-  "cable",
-  "telefono",
-  "basura",
-  "conserje"
-] as const;
+  { value: "agua",     label_es: "Agua",     icon: "Droplets" },
+  { value: "luz",      label_es: "Luz",      icon: "Zap" },
+  { value: "internet", label_es: "Internet", icon: "Wifi" },
+  { value: "gas",      label_es: "Gas",      icon: "Flame" },
+];
 ```
 
 ### 13. Servicios de Zona
 
 ```typescript
 export const ZONE_SERVICES_OPTIONS = [
-  "escuelas",
-  "hospitales",
-  "centros_comerciales",
-  "parques",
-  "transporte_publico",
-  "supermercados",
-  "farmacias",
-  "restaurantes",
-  "bancos",
-  "estaciones_de_servicio",
-  "centros_deportivos",
-  "bibliotecas",
-  "iglesias",
-  "policias",
-  "bomberos"
-] as const;
+  { value: "agua",     label_es: "Agua",     icon: "Droplets" },
+  { value: "luz",      label_es: "Luz",      icon: "Zap" },
+  { value: "cloacas",  label_es: "Cloacas",  icon: "ArrowDownToLine" },
+  { value: "asfalto",  label_es: "Asfalto",  icon: "MapPin" },
+];
 ```
 
 ### 14. Distintivos de Listado
 
 ```typescript
 export const LISTING_BADGES = [
-  "basico",
-  "destacado",
-  "premium"
-] as const;
+  { value: "basico",    label_es: "Básico",    color: "gray" },
+  { value: "completo",  label_es: "Completo",  color: "blue" },
+  { value: "premium",   label_es: "Premium",   color: "gold" },
+];
 ```
 
 ## Lógica de Discriminación de Campos
@@ -583,8 +563,6 @@ La lógica de discriminación de campos determina qué campos se muestran en el 
 ```typescript
 export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string): boolean => {
   switch (fieldOrGroup) {
-    case "maintenance_fee":
-      return op === "renta" || op === "venta_renta";
     case "price_per_night":
     case "price_weekend":
     case "min_nights":
@@ -593,62 +571,71 @@ export const checkFieldApplies = (fieldOrGroup: string, type: string, op: string
     case "checkout_time":
     case "house_rules":
     case "includes_breakfast":
-      return op === "renta" || op === "venta_renta";
-    case "has_water_tank":
-    case "has_hot_water":
-    case "has_generator":
-    case "gas_type":
-    case "has_internet":
-    case "has_security_24h":
-    case "has_electric_gate":
-    case "has_cctv":
-    case "has_electric_fence":
-    case "has_intercom":
-    case "has_armored_door":
-    case "has_ac":
-    case "has_heating":
-    case "kitchen_type":
-    case "bathroom_type":
-    case "host_housing_type":
-    case "cohabitation":
-    case "occupants_count":
-    case "gender_policy":
-    case "deposit_required":
-    case "deposit_amount":
-    case "allows_pets":
-    case "allows_cooking":
-    case "has_independent_entrance":
-      return type === "apartamento" || type === "casa" || type === "townhouse" || type === "anexo" || type === "habitacion";
+    case "vacational_section":
+      return op === "vacacional";
+    case "price":
+      return op !== "vacacional";
+    case "bedrooms":
+      return !["terreno_lote", "local", "oficina", "galpon", "edificio"].includes(type);
+    case "bathrooms":
+    case "half_bathrooms":
+    case "year_built":
+    case "condition":
+      return type !== "terreno_lote";
+    case "furnished":
+      return !["terreno_lote", "galpon", "edificio"].includes(type);
+    case "has_elevator":
+    case "elevator":
+      return ["apartamento", "edificio", "local", "oficina", "townhouse"].includes(type);
+    case "parking_spaces":
+    case "parking":
+      return type !== "terreno_lote";
+
+    case "unit_count":
+      return type === "edificio";
+    case "floors":
+      return ["apartamento", "oficina", "local", "edificio"].includes(type);
+    case "total_floors":
+      return ["apartamento", "edificio", "local", "oficina", "townhouse"].includes(type);
+    case "maintenance":
+    case "maintenance_fee":
+      return op !== "vacacional" && (
+        ["apartamento", "casa", "townhouse", "habitacion"].includes(type) ||
+        (type === "edificio" && op === "alquiler")
+      );
+    case "area_hectares":
+      return ["hacienda_finca"].includes(type);
     case "topography":
     case "land_use":
     case "access_type":
     case "current_use":
     case "has_own_water":
-    case "area_hectares":
-      return type === "terreno_lote" || type === "hacienda_finca";
-    case "area_built":
-    case "area_total":
-    case "bedrooms":
-    case "bathrooms":
-    case "half_bathrooms":
-    case "parking_spaces":
-    case "parking_covered":
-    case "total_floors":
+      return ["hacienda_finca", "terreno_lote"].includes(type);
+    case "shared_section":
+    case "bathroom_type":
+    case "host_housing_type":
+    case "cohabitation":
+    case "occupants_count":
+    case "gender_policy":
+    case "allows_pets":
+    case "allows_cooking":
+      return ["habitacion", "anexo"].includes(type) && op === "alquiler";
+    case "deposit_required":
+    case "deposit_amount":
+      return op === "alquiler";
+    case "has_independent_entrance":
+      return ["habitacion", "anexo"].includes(type);
+    case "land_section":
+      return ["terreno_lote", "hacienda_finca"].includes(type);
+    case "services_section":
+    case "security_section":
+      return type !== "terreno_lote";
+    case "has_electric_fence":
+      return ["casa", "townhouse", "edificio", "galpon", "hacienda_finca", "terreno_lote"].includes(type);
     case "floor_number":
-    case "property_age":
-    case "year_built":
-    case "condition":
-    case "furnished":
-    case "municipio":
-    case "zone_id":
-    case "address_es":
-    case "address_en":
-    case "lat":
-    case "lng":
-    case "show_exact_location":
-      return true;
+      return ["apartamento", "oficina", "local"].includes(type);
     default:
-      return false;
+      return true;
   }
 };
 ```
@@ -657,17 +644,10 @@ La función `isCombinationInconsistent` valida combinaciones incompatibles:
 
 ```typescript
 export const isCombinationInconsistent = (type: string, op: string): boolean => {
-  // No se permite la operación "intercambio" con ciertos tipos de propiedad
-  if (op === "intercambio" && (type === "terreno_lote" || type === "hacienda_finca")) {
-    return true;
-  }
-  
-  // No se permite la operación "venta" con propiedades que requieren renta
-  if (op === "venta" && (type === "habitacion")) {
-    return true;
-  }
-  
-  return false;
+  return (
+    (op === "venta" && type === "habitacion") ||
+    (op === "vacacional" && ["galpon", "local", "oficina", "terreno_lote", "edificio"].includes(type))
+  );
 };
 ```
 
@@ -1528,8 +1508,12 @@ La aplicación incluye:
 - **2026-06-24**: Implementadas políticas RLS para las tablas `properties`, `property_translations`, `property_images` y `property_features` para garantizar la seguridad de los datos.
 - **2026-06-24**: Eliminados los valores por defecto de las columnas booleanas y actualizada la función de trigger para el cálculo de la puntuación de completitud.
 - **2026-06-26**: Normalizados los valores de los enums para `condition`, `furnished` y `kitchen_type` para asegurar consistencia en los datos.
+- **2026-06-29**: Implementación del sistema de zonas jerárquico (`states`, `municipalities`, `zones`) con Mérida como estado base y 23 municipios registrados (con Libertador activo).
+- **2026-06-29**: Extensión de la tabla `leads` con campos CRM enriquecidos (presupuesto, zonas y tipos de interés, prioridades, seguimiento y método de pago preferido / urgencia para Venezuela).
+- **2026-06-29**: Renombrado de estado de propiedad `cerrada` a `inactiva` y actualización de constraints de base de datos correspondientes.
+- **2026-06-29**: Migración de la lógica de cálculo de completitud hacia el frontend (`propertyCompleteness.ts`) y simplificación de la función trigger en Supabase (`calculate_property_completeness`) para confiar en el score cliente.
 
-El sistema ha evolucionado desde una plataforma básica de listado de propiedades hasta una solución completa de gestión inmobiliaria con un sistema de puntuación de completitud, lógica de discriminación de campos y soporte multilingüe.
+El sistema ha evolucionado desde una plataforma básica de listado de propiedades hasta una solución completa de gestión inmobiliaria con un sistema de puntuación de completitud, lógica de discriminación de campos, soporte multilingüe y CRM Kanban integrado.
 
 <!-- ════════════════════════════════════════════════
      BLOQUE B — CONTEXTO DE SESIÓN
@@ -1546,6 +1530,22 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
 - **Regla**: Drag-and-Drop desactivado en favor de layout fijo.
   - *Justificación*: En React 19, el reordenamiento dinámico causaba loops infinitos de actualización de estado y colisiones de gestos en el acordeón de tarjetas.
   - *Decisión*: Reemplazar con flexbox estático de dos columnas en `PropertyForm`.
+  - *Alcance*: Tarjetas de sección del formulario de propiedades.
+
+- **Regla**: Moneda Implícita por Forma de Pago.
+  - *Justificación*: Evitar que el usuario seleccione manualmente la divisa. Si es Pago Móvil, se infiere bolívares (`VES`). Si es Zelle, Efectivo, Transferencia Internacional o USDT, se infiere dólares (`USD`).
+  - *Decisión*: Sincronizar automáticamente el campo `budget_currency` con base en el valor de `preferred_payment` al guardar o cambiar.
+  - *Alcance*: Edición de perfiles de clientes en el CRM.
+
+- **Regla**: Normalización Consecutiva de Plazos de Urgencia.
+  - *Justificación*: Los plazos de urgencia para el mercado venezolano deben ser lógicos y secuenciales.
+  - *Decisión*: Normalizar las opciones a: "Inmediata (1 - 30 días)", "Corto Plazo (1 - 3 meses)", "Mediano Plazo (3 - 6 meses)", "Largo Plazo (+6 meses)", y "Solo Explorando".
+  - *Alcance*: Campo de Urgencia en el formulario de clientes del CRM.
+
+- **Regla**: Chips de Acción Condicionados a Menú Abierto.
+  - *Justificación*: Mostrar chips de marcado y desmarcado rápido de forma permanente en la cabecera causaba clicks accidentales al operar el formulario.
+  - *Decisión*: Ocultar los chips "Marcar Todos", "Desmarcar todos" y "Limpiar" a menos que el dropdown correspondiente esté expandido.
+  - *Alcance*: Componentes multiselect de Zonas de Interés y Tipos de Propiedad en el CRM.
 
 ## Decisiones Técnicas Tomadas
 
@@ -1555,12 +1555,30 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Motivo*: Preservar la base de conocimiento acumulada por agentes previos y minimizar el desperdicio de tokens.
   - *Fecha*: 2026-06-28.
 
+- **DT-11: Estandarización de Controles Multiselect en CRM**
+  - *Qué se decidió*: Rediseñar la sección de "Tipos de Propiedad" para que herede la arquitectura de dropdown de multiselección por grilla de checkboxes de "Zonas de Interés".
+  - *Contexto*: Ambas secciones presentaban diseños inconsistentes (botones planos expuestos vs dropdown dinámico).
+  - *Motivo*: Optimizar el espacio vertical del Drawer y homogeneizar la interacción de la interfaz.
+  - *Fecha*: 2026-06-29.
+
+- **DT-12: Estandarización de Botones Principales del Panel**
+  - *Qué se decidió*: Adaptar todos los botones de Cancelar/Guardar del Drawer de clientes para usar la escala tipográfica `text-[13px] font-medium`, el relleno `py-2` (cabecera) / `py-2.5` (pie) y el redondeado `var(--p-radius)` provenientes de `PropertyForm.tsx`.
+  - *Contexto*: Los controles de acción del CRM se veían pequeños y no estandarizados con el resto del panel.
+  - *Motivo*: Lograr uniformidad en la jerarquía de botones de acción en todo el panel.
+  - *Fecha*: 2026-06-29.
+
+- **DT-13: Retraso de Cierre Cinematográfico del Drawer**
+  - *Qué se decidió*: Modificar el Drawer para cerrarse mediante una animación de 0.65s (cubic-bezier easing) y dilatar el cierre real del formulario 450ms al guardar.
+  - *Contexto*: El cierre abrupto ocultaba el toast de éxito inmediatamente impidiendo que el usuario leyera la confirmación.
+  - *Motivo*: Ofrecer una experiencia de guardado fluida y visible.
+  - *Fecha*: 2026-06-29.
+
 ## Backlog Técnico Priorizado
 
-- **Validación de Integración de Formularios** (🔴 Alta)
-  - *Descripción*: Verificar que el unificado de PropertyForm opera sin errores en los endpoints de nueva/editar tras la unificación y el Fast-Forward merge a `main`.
-  - *Archivos*: `src/components/panel/PropertyForm.tsx`, `src/app/[locale]/panel/propiedades/`.
-  - *Notas*: Probar con un nuevo registro desde cero y guardar.
+- **Pruebas de Regresión en Flujo Inmobiliario** (🟡 Media)
+  - *Descripción*: Monitorear la creación y edición de propiedades con `PropertyForm.tsx` para asegurar que las adaptaciones visuales no hayan interferido con las validaciones de guardado.
+  - *Archivos*: `src/components/panel/PropertyForm.tsx`.
+  - *Notas*: Comprobar que el autosave y el save manual persistan las traducciones correctamente.
 
 ## Patrones a Evitar
 
@@ -1568,8 +1586,12 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Por qué falla*: Elimina conocimiento histórico insustituible que el modelo no puede inferir solo leyendo el código actual.
   - *Qué hacer*: Usar `multi_replace_file_content` o `replace_file_content` para realizar parches controlados y específicos.
 
+- **Anti-patrón**: Exponer permanentemente botones de borrado masivo en cabeceras de secciones compactas cuando el selector de opciones está cerrado.
+  - *Por qué falla*: Aumenta drásticamente la tasa de clicks erróneos y la pérdida temporal de información ingresada.
+  - *Qué hacer*: Condicionar la renderización de los chips de acción al estado abierto del dropdown asociado.
+
 ## Contexto de Sesión Activa
 
-- **Qué se trabajó**: Restauración de `context.md` al estado original tras borrado destructivo. Corrección manual y quirúrgica de discrepancias críticas de constantes y versiones de framework.
-- **En qué punto quedó**: Sincronización de constantes inmobiliarias (`PROPERTY_OPERATIONS`, `PROPERTY_STATUSES`, `PROPERTY_CONDITIONS`) y versión de Next.js.
-- **Siguiente paso concreto**: Ejecutar validaciones en el entorno de desarrollo y continuar con las tareas del Backlog.
+- **Qué se trabajó**: Homologación del estilo dropdown en Tipos de Propiedad, ocultamiento condicional de chips masivos, estandarización visual de botones de cabecera y pie con el diseño premium de `PropertyForm`, verificación de tipados, merge de la rama `feature/clients` y push exitoso a la rama `main` de GitHub.
+- **En qué punto quedó**: El Drawer de edición de clientes del CRM ha quedado unificado estéticamente, optimizado en UX y subido de forma segura al repositorio remoto.
+- **Siguiente paso concreto**: Coordinar con el usuario el desarrollo de las vistas de listados de clientes, filtros Kanban o métricas del pipeline.
