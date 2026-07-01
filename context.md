@@ -17,10 +17,11 @@ La aplicación sigue un enfoque de componentes reutilizables con un sistema de f
 
 - **Framework**: Next.js 16.2.9 con App Router y Server Components
 - **Estilos**: Tailwind CSS con personalizaciones y utilidades propias
-- **Animaciones**: Framer Motion para transiciones suaves y efectos de arrastre
+- **Animaciones**: Framer Motion para transiciones suaves, modales de 3 pasos con transiciones físicas spring y efectos de arrastre
 - **Tipado**: TypeScript completo en todo el códigobase
 - **Internacionalización**: Soporte completo para español (es) e inglés (en)
-- **Gestión de estado**: Zustand para store de filtros, panel y notificaciones
+- **Gestión de estado**: Zustand para store de filtros, panel, notificaciones y CRM
+- **Gestión de Drag-and-Drop**: @dnd-kit/core y @dnd-kit/sortable para el Kanban CRM (remplazando la librería @hello-pangea/dnd incompatible con React 19)
 - **Componentes UI**: Componentes personalizados para formularios, selectores, botones y tarjetas
 
 ### 2. Backend
@@ -51,7 +52,8 @@ knordica/
 │   │   │   │   │   ├── editar/[id]/page.tsx  # Edición de propiedades
 │   │   │   │   │   ├── nueva/page.tsx        # Creación de nuevas propiedades
 │   │   │   │   │   └── page.tsx              # Lista de propiedades
-│   │   │   │   └── ...         # Otras secciones del panel
+│   │   │   │   └── clientes/
+│   │   │   │       └── page.tsx              # CRM Clientes
 │   │   │   └── ...             # Rutas del cliente
 │   │   └── ...                 # Rutas públicas
 │   ├── components/             # Componentes UI reutilizables
@@ -62,6 +64,7 @@ knordica/
 │   │   ├── queries/            # Consultas a Supabase
 │   │   │   ├── properties.ts   # Consultas de propiedades
 │   │   │   ├── zones.ts        # Consultas de zonas
+│   │   │   ├── clients.ts      # Consultas de clientes (CRM)
 │   │   │   └── ...             # Otras consultas
 │   │   ├── seo/                # Metadatos SEO y datos estructurados
 │   │   │   ├── metadata.ts     # Generación de metadatos
@@ -79,6 +82,7 @@ knordica/
 │   │       └── property.ts     # Valores permitidos para propiedades
 │   ├── types/                  # Definiciones de tipos TypeScript
 │   │   └── property.ts         # Interfaces de datos
+│   │   └── panel.ts            # Interfaces y tipos del panel (CRM, roles)
 │   ├── utils/                  # Lógica de negocio
 │   │   ├── propertyCompleteness.ts # Cálculo de puntuación de completitud
 │   │   └── propertyDiscrimination.ts # Lógica de discriminación de campos
@@ -91,7 +95,13 @@ knordica/
 │       ├── 20260623_add_missing_form_columns.sql # Añade columnas faltantes
 │       ├── 20260624_add_rls_write_policies.sql # Políticas RLS
 │       ├── 20260624_adjust_schema_and_trigger.sql # Ajustes de esquema y trigger
-│       └── 20260626_normalize_enum_values.sql # Normalización de valores
+│       ├── 20260626_normalize_enum_values.sql # Normalización de valores
+│       ├── 20260626_normalize_enum_values_v2.sql # Segunda normalización de enums
+│       ├── 20260629_add_venezuelan_market_fields.sql # Campos de presupuesto y tipo cliente
+│       ├── 20260629_extend_leads_for_crm.sql # Extensión de la tabla leads
+│       ├── 20260629_hierarchical_zones.sql # Sistema de zonas jerárquico
+│       ├── 20260629_rename_status_cerrada_to_inactiva.sql # Renombra status cerrada a inactiva
+│       └── 20260629_seed_crm_leads.sql # Semilla de leads de prueba
 └── ...                         # Otros archivos del proyecto
 ```
 
@@ -264,14 +274,14 @@ knordica/
 
 - `id` (UUID): Identificador único
 - `property_id` (UUID): Referencia a la propiedad
-- `name` (text): Nombre
+- `full_name` (text): Nombre completo
 - `email` (text): Correo electrónico
 - `phone` (text): Teléfono
 - `message` (text): Mensaje
 - `status` (text): Estado pipeline CRM (nuevo, contactado, visita, negociacion, cerrado, perdido)
 - `cedula_rif` (text): Cédula o RIF (mercado venezolano)
-- `preferred_payment` (text): Método de pago preferido (zelle, efectivo, transferencia_int, transferencia_ves)
-- `urgency` (text): Urgencia (inmediata, corto_plazo, mediano_plazo, explorando)
+- `preferred_payment` (text): Método de pago preferido (zelle, efectivo, transferencia_int, pago_movil, usdt)
+- `urgency` (text): Urgencia (inmediata, corto_plazo, mediano_plazo, largo_plazo, explorando)
 - `client_type` (text): Tipo de cliente (comprador, arrendatario, propietario, inversor)
 - `budget_min` (numeric): Presupuesto mínimo
 - `budget_max` (numeric): Presupuesto máximo
@@ -1499,6 +1509,95 @@ La aplicación incluye:
 - Sistema de reportes y análisis de ventas
 - Aplicación móvil nativa
 
+## Sistema de Diseño Implementado
+
+### 1. Paleta de Colores
+
+El sistema de diseño cuenta con variables CSS definidas en [globals.css](file:///c:/Github/knordica/src/app/globals.css) para temas oscuro (por defecto) y claro.
+
+#### 1.1. Modo Oscuro (Default)
+- **Fondo General (`--color-bg`)**: `#141210` (negro cálido carbón)
+- **Superficie Principal (`--color-surface`)**: `#1A1815` (mármol oscuro)
+- **Superficie Secundaria (`--color-surface-2`)**: `#1F1D1A`
+- **Bordes y Divisiones (`--color-border`)**: `#353028`
+- **Texto Principal (`--color-text`)**: `#E8E4DE` (champán claro)
+- **Texto Secundario (`--text-2`)**: `#D0C9C0` (legibilidad contrastada)
+- **Color de Acento / Oro (`--color-gold`)**: `#C9962A`
+
+#### 1.2. Modo Claro
+- **Fondo General (`--color-bg`)**: `#F4F2EE`
+- **Superficie Principal (`--color-surface`)**: `#F8F6F2`
+- **Superficie Secundaria (`--color-surface-2`)**: `#FDFCFA`
+- **Bordes y Divisiones (`--color-border`)**: `#BEB9AF`
+- **Texto Principal (`--color-text`)**: `#111010` (carbón oscuro)
+- **Color de Acento / Oro (`--color-gold`)**: `#A8864A`
+
+### 2. Tipografía
+- **Títulos (`h1` a `h6`)**: Fuente `"Cabinet Grotesk"` (variable, sans-serif, bold/display).
+- **Cuerpo de texto (`body`, `p`)**: Fuente `"Satoshi"` (variable, sans-serif, regular/medium).
+- **Datos y Admin (`font-mono`)**: Fuente `"IBM Plex Mono"`.
+
+### 3. Animaciones de Interfaz
+- **Física de Tarjetas Kanban**: Desplazamiento spring suave con Framer Motion: `stiffness: 60`, `damping: 18`.
+- **Transiciones de Modal**: Escala suave y opacidad con `duration: 0.22` y flexión de pasos en 3 etapas.
+- **Drawer de Detalle Lateral**: Desplazamiento horizontal `tween` con `duration: 0.65` y easing `[0.16, 1, 0.3, 1]`.
+
+## Roles y Permisos
+
+### 1. Roles del Sistema
+- **`admin`**: Acceso completo a todas las propiedades y todos los leads de clientes creados en la plataforma.
+- **`agent`**: Acceso restringido. Solo visualiza y modifica las propiedades y leads donde `agent_id = auth.uid()`.
+- **`client` / `user`**: Vista pública sin privilegios de edición en el panel de control.
+
+### 2. Políticas RLS (Row Level Security)
+Implementadas a nivel de base de datos en Supabase para las tablas críticas:
+- **`properties`**: `agent_id = auth.uid()` para operaciones de escritura (INSERT, UPDATE, DELETE).
+- **`leads`**: `agent_id = auth.uid()` para restringir el acceso a clientes entre agentes.
+
+## Estado del Proyecto por Módulo
+
+### 1. Módulo de Propiedades
+- **Estado**: ✅ Completo
+- **Descripción**: Formulario dinámico adaptable con validaciones, barra de completitud al 99% máximo si hay advertencias pendientes, carga de imágenes y autoguardado de 1 minuto.
+- **Archivos**: [PropertyForm.tsx](file:///c:/Github/knordica/src/components/panel/PropertyForm.tsx), [propertyCompleteness.ts](file:///c:/Github/knordica/src/utils/propertyCompleteness.ts)
+
+### 2. Módulo CRM / Clientes
+- **Estado**: ✅ Completo
+- **Descripción**: Vista Kanban con drag-and-drop basado en `@dnd-kit` y vista tabular. Modal de adición en 3 pasos con transiciones spring y animaciones. Drawer lateral enriquecido para edición (formas de pago de Venezuela, cálculo automático de moneda implícita y plazos de urgencia).
+- **Archivos**: [page.tsx](file:///c:/Github/knordica/src/app/%5Blocale%5D/panel/clientes/page.tsx), [clients.ts](file:///c:/Github/knordica/src/lib/queries/clients.ts)
+
+### 3. Base de Datos y Migraciones
+- **Estado**: ✅ Completo
+- **Descripción**: Estructura de base de datos relacional en Supabase con estados, municipios y zonas jerárquicas; trigger de completitud de propiedades y seed con datos CRM simulados.
+
+## Errores con Rastro en Código
+
+### 1. Loops Infinitos de Actualización en React 19
+- **Descripción**: El uso de grids dinámicos interactivos con drag-and-drop dentro del formulario de propiedades generaba llamadas recursivas de estado.
+- **Solución**: Desactivación del DnD en `PropertyForm` y uso de un layout flexbox de dos columnas fijo (`.prop-form-two-col` en `globals.css`).
+
+### 2. Colisión en Drag-and-Drop en Kanban
+- **Descripción**: En la vista de clientes CRM, `@hello-pangea/dnd` colisionaba con los ciclos de renderizado de React 19.
+- **Solución**: Reemplazado por `@dnd-kit/core` y `@dnd-kit/sortable` con limitadores de arrastre y sensor Pointer configurado a distancia mínima de 8px.
+
+### 3. Cierre Inmediato del Drawer al Guardar
+- **Descripción**: El modal/drawer se cerraba abruptamente ocultando las alertas de toast y éxito.
+- **Solución**: Dilatación del cierre del drawer por 450ms mediante un delay de `setTimeout` en la acción de guardado.
+
+## Historial Git Relevante
+
+### 1. Ramas y Estado Actual
+- **Ramas**: `main` (desarrollo base a la cabeza).
+- **Ramas de trabajo**: `feat/clientes-refinamientos` (recientemente integrada mediante merge).
+
+### 2. Commits de Peso Semántico
+- **`a2f945f`**: feat(clientes): refinamientos de UX en modal y buscador de zonas.
+- **`9087d62`**: feat(clientes): rediseno modal nuevo cliente con 3 pasos y animaciones.
+- **`d1dbc42`**: feat(crm): unify dropdown and chip styles, add Venezuela market payments and urgency plazos, standardize crm edit buttons.
+- **`f7c62ef`**: feat(crm): crm cnd animations, exact width overlay, and sidebar persistence.
+- **`6875714`**: feat(crm): implement premium clients kanban crm, extend leads table and seed 20 mock crm leads.
+- **`b61cbaa`**: fix(status): rename property status cerrada to inactiva...
+
 ## Cambios Detectados
 
 - **2026-06-19**: Esquema inicial de la base de datos con tablas para zonas, agentes, propiedades, traducciones, imágenes, características, favoritos, leads, notas de leads, citas y publicaciones de blog.
@@ -1512,6 +1611,7 @@ La aplicación incluye:
 - **2026-06-29**: Extensión de la tabla `leads` con campos CRM enriquecidos (presupuesto, zonas y tipos de interés, prioridades, seguimiento y método de pago preferido / urgencia para Venezuela).
 - **2026-06-29**: Renombrado de estado de propiedad `cerrada` a `inactiva` y actualización de constraints de base de datos correspondientes.
 - **2026-06-29**: Migración de la lógica de cálculo de completitud hacia el frontend (`propertyCompleteness.ts`) y simplificación de la función trigger en Supabase (`calculate_property_completeness`) para confiar en el score cliente.
+- **2026-06-30**: Rediseño completo del modal para agregar nuevos clientes utilizando un asistente de 3 pasos con transiciones de Framer Motion. Refinamiento en buscador de zonas con filtros por municipio y buscador de texto. Sincronización de divisas basada en la forma de pago (Bs. para Pago Móvil, USD para el resto). Reemplazo definitivo de HTML5 popups nativos por toasts interactivos en validaciones y merge/push a `main`.
 
 El sistema ha evolucionado desde una plataforma básica de listado de propiedades hasta una solución completa de gestión inmobiliaria con un sistema de puntuación de completitud, lógica de discriminación de campos, soporte multilingüe y CRM Kanban integrado.
 
