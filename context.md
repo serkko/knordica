@@ -1647,6 +1647,16 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Decisión*: Ocultar los chips "Marcar Todos", "Desmarcar todos" y "Limpiar" a menos que el dropdown correspondiente esté expandido.
   - *Alcance*: Componentes multiselect de Zonas de Interés y Tipos de Propiedad en el CRM.
 
+- **Regla**: Cierre de Modal Diferido vs Toast Instantáneo.
+  - *Justificación*: El usuario debe recibir retroalimentación visual inmediata al presionar guardar para no sentir que el sistema se congela, mientras que el modal debe esperar 300ms para reiniciar su estado interno y evitar parpadeos visuales durante su desaparición animada.
+  - *Decisión*: Invocar `toastFn` inmediatamente al hacer submit y demorar el reinicio del estado del modal con un `setTimeout` de 300ms.
+  - *Alcance*: Asistente de creación de nuevos clientes.
+
+- **Regla**: Pre-carga de Identidad de Base de Datos.
+  - *Justificación*: Evitar consultas asíncronas encadenadas al Supabase Auth y tabla de agentes en el momento del submit para no congelar la UI.
+  - *Decisión*: Pre-cargar `agentDbId` en un `useEffect` al montar y guardarlo en el estado del componente.
+  - *Alcance*: Módulo CRM / Clientes.
+
 ## Decisiones Técnicas Tomadas
 
 - **DT-10: Edición quirúrgica de documentación de contexto**
@@ -1673,6 +1683,18 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Motivo*: Ofrecer una experiencia de guardado fluida y visible.
   - *Fecha*: 2026-06-29.
 
+- **DT-14: Keys de reconciliación en botones de alternancia**
+  - *Qué se decidió*: Asignar `key="btn-next"` y `key="btn-submit"` a los botones de navegación del modal de creación de cliente.
+  - *Contexto*: React reutilizaba el elemento del DOM y alteraba su tipo de `button` a `submit` a mitad del ciclo de clic del usuario, enviando el formulario antes de tiempo.
+  - *Motivo*: Prevenir envíos prematuros de formulario al pasar del paso 2 al paso 3.
+  - *Fecha*: 2026-06-30.
+
+- **DT-15: Desfragmentación de AnimatePresence**
+  - *Qué se decidió*: Separar el fondo del modal (`modal-backdrop`) y el modal (`modal`) en condicionales JSX independientes y remover el fragment (`<> ... </>`) envolvente.
+  - *Contexto*: Framer Motion no lograba realizar el seguimiento de los nodos desmontados en salida si estaban agrupados en un fragmento de React.
+  - *Motivo*: Permitir animaciones de salida (exit) fluidas.
+  - *Fecha*: 2026-06-30.
+
 ## Backlog Técnico Priorizado
 
 - **Pruebas de Regresión en Flujo Inmobiliario** (🟡 Media)
@@ -1690,8 +1712,17 @@ El sistema ha evolucionado desde una plataforma básica de listado de propiedade
   - *Por qué falla*: Aumenta drásticamente la tasa de clicks erróneos y la pérdida temporal de información ingresada.
   - *Qué hacer*: Condicionar la renderización de los chips de acción al estado abierto del dropdown asociado.
 
+- **Anti-patrón**: Ejecutar consultas de red secuenciales críticas en manejadores de eventos síncronos de UI.
+  - *Por qué falla*: Congela la interfaz del navegador por varios segundos, dando una sensación de lag al guardar.
+  - *Qué hacer*: Pre-cargar las referencias de base de datos (`agents.id`) en el montaje del componente o realizar el guardado en segundo plano sin bloquear la UI.
+
 ## Contexto de Sesión Activa
 
-- **Qué se trabajó**: Homologación del estilo dropdown en Tipos de Propiedad, ocultamiento condicional de chips masivos, estandarización visual de botones de cabecera y pie con el diseño premium de `PropertyForm`, verificación de tipados, merge de la rama `feature/clients` y push exitoso a la rama `main` de GitHub.
-- **En qué punto quedó**: El Drawer de edición de clientes del CRM ha quedado unificado estéticamente, optimizado en UX y subido de forma segura al repositorio remoto.
-- **Siguiente paso concreto**: Coordinar con el usuario el desarrollo de las vistas de listados de clientes, filtros Kanban o métricas del pipeline.
+### Sesión Actual
+- **Qué se trabajó**: Creación y refinamiento completo del modal de adición de clientes en 3 pasos lógicos con transiciones Framer Motion fluidas. Estandarización de inputs sin placeholders de teléfono, agregada opción de cancelar en todos los pasos e integración del buscador unificado en el selector de zonas (con botón 'X' de borrado rápido y borrado automático al colapsar). Pre-carga del UUID real de agente para eliminar retardos al guardar y key de reconciliación para evitar envíos prematuros de formulario. Habilitada deselección en dropdowns de Tipo de Perfil, Prioridad y Origen en el Paso 1.
+- **En qué punto quedó**: El asistente de creación de clientes está completamente operativo, libre de latencia en UI al guardar y subido a la rama `main` y de refinamientos.
+- **Siguiente paso concreto**: Coordinar con el usuario si procedemos a pulir listados avanzados, kanban o nos movemos a otro módulo.
+
+### Historial de Sesiones Anteriores
+- **2026-06-29**: Homologación del estilo dropdown en Tipos de Propiedad, ocultamiento condicional de chips masivos, estandarización visual de botones de cabecera y pie con el diseño premium de `PropertyForm`, verificación de tipados, merge de la rama `feature/clients` y push exitoso a la rama `main` de GitHub.
+- **2026-06-28**: Ajuste de completitud al 99% máximo para propiedades incompletas, desactivación de DnD recursivo en `PropertyForm` en favor de grilla flexbox estática y corrección del retraso del drawer de edición.
