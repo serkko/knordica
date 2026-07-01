@@ -53,6 +53,10 @@ import {
   Home,
   TrendingUp,
   Minus,
+  BedDouble,
+  Bath,
+  Car,
+  User,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { CRMStage, ClientType, CRMClient } from "@/types/panel";
@@ -779,19 +783,9 @@ function NumberStepper({
 
 // ─── HELPER FORMATTING FUNCTIONS ─────────────────────────────────────────────
 function formatCedula(val: string): string {
-  const cleaned = val.replace(/[^a-zA-Z0-9]/g, "");
+  const cleaned = val.replace(/[^0-9]/g, "");
   if (!cleaned) return "";
-  let prefix = "V";
-  let numberPart = cleaned;
-  const firstChar = cleaned[0]?.toUpperCase();
-  if (firstChar && ["V", "E", "J", "G"].includes(firstChar)) {
-    prefix = firstChar;
-    numberPart = cleaned.slice(1);
-  }
-  numberPart = numberPart.replace(/[^0-9]/g, "");
-  if (!numberPart) return `${prefix}-`;
-  const formattedNumber = Number(numberPart).toLocaleString("de-DE");
-  return `${prefix}-${formattedNumber}`;
+  return Number(cleaned).toLocaleString("de-DE");
 }
 
 function formatPhone(val: string): string {
@@ -895,6 +889,8 @@ export default function ClientesCRMPage({ params }: PageProps) {
 
   const newClientZoneDropdownRef = useRef<HTMLDivElement>(null);
   const newClientTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const editZoneDropdownRef = useRef<HTMLDivElement>(null);
+  const editTypeDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -925,10 +921,17 @@ export default function ClientesCRMPage({ params }: PageProps) {
       if (newClientIsTypeDropdownOpen && newClientTypeDropdownRef.current && !newClientTypeDropdownRef.current.contains(e.target as Node)) {
         setNewClientIsTypeDropdownOpen(false);
       }
+      if (isZoneDropdownOpen && editZoneDropdownRef.current && !editZoneDropdownRef.current.contains(e.target as Node)) {
+        setIsZoneDropdownOpen(false);
+        setZoneSearchQuery("");
+      }
+      if (isTypeDropdownOpen && editTypeDropdownRef.current && !editTypeDropdownRef.current.contains(e.target as Node)) {
+        setIsTypeDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [newClientIsZoneDropdownOpen, newClientIsTypeDropdownOpen]);
+  }, [newClientIsZoneDropdownOpen, newClientIsTypeDropdownOpen, isZoneDropdownOpen, isTypeDropdownOpen]);
 
   const [newClient, setNewClient] = useState<Partial<CRMClient>>({
     full_name: "",
@@ -1177,10 +1180,9 @@ export default function ClientesCRMPage({ params }: PageProps) {
       type: "success",
     });
 
-    // 0.45 segundos después se esconde suavemente el drawer
+    // 0.45 segundos después se regresa a la vista de lectura sin cerrar el drawer
     setTimeout(() => {
       setIsEditingClient(false);
-      handleCloseDrawer();
     }, 450);
 
     try {
@@ -1724,31 +1726,77 @@ export default function ClientesCRMPage({ params }: PageProps) {
                       onSubmit={handleSaveClientEdit}
                       className="space-y-4"
                     >
-                    {/* Fila 1: Nombre Completo (55%) y Cédula/RIF (45%) */}
-                    <div className="grid grid-cols-9 gap-3">
-                      <div className="col-span-5">
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "Full Name *" : "Nombre Completo *"}
-                        </label>
+                    {/* Cabecera de Identidad Dorada/Mármol en Modo Edición */}
+                    <div 
+                      className="p-4 rounded-sm border flex items-start gap-4 relative overflow-hidden shadow-sm mb-4"
+                      style={{
+                        background: "linear-gradient(135deg, var(--p-surface-2) 0%, rgba(26,24,21,0.6) 100%)",
+                        borderColor: "var(--p-border)"
+                      }}
+                    >
+                      <div className="relative group shrink-0">
                         <input
-                          type="text"
-                          required
-                          value={editForm.full_name || ""}
-                          onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
+                          type="file"
+                          accept="image/*"
+                          id="edit-client-photo-input"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setEditForm({ ...editForm, photo_url: reader.result as string });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
                         />
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById("edit-client-photo-input")?.click()}
+                          className="w-14 h-14 rounded-[3px] flex items-center justify-center text-lg font-bold font-display shadow-inner select-none bg-gradient-to-br from-[#C9962A] to-[#A8864A] text-[#141210] overflow-hidden hover:opacity-90 transition-opacity cursor-pointer relative"
+                        >
+                          {editForm.photo_url ? (
+                            <img src={editForm.photo_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            (() => {
+                              const name = editForm.full_name || selectedClient?.full_name || "";
+                              return name.split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+                            })()
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] text-white font-bold">
+                            {locale === "en" ? "Change" : "Subir"}
+                          </div>
+                        </button>
                       </div>
-                      <div className="col-span-4">
-                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                          {locale === "en" ? "ID / RIF" : "Cédula / RIF"}
-                        </label>
-                        <input
-                          type="text"
-                          value={editForm.cedula_rif || ""}
-                          onChange={(e) => setEditForm({ ...editForm, cedula_rif: e.target.value })}
-                          placeholder="V-12345678-0"
-                          className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono"
-                        />
+
+                      <div className="flex-grow grid grid-cols-9 gap-3">
+                        <div className="col-span-5">
+                          <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                            {locale === "en" ? "Full Name *" : "Nombre Completo *"}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={editForm.full_name || ""}
+                            onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                            className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                            style={{ borderRadius: "var(--p-radius)" }}
+                          />
+                        </div>
+                        <div className="col-span-4">
+                          <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                            {locale === "en" ? "ID / RIF" : "Cédula / RIF"}
+                          </label>
+                          <input
+                            type="text"
+                            value={editForm.cedula_rif || ""}
+                            onChange={(e) => setEditForm({ ...editForm, cedula_rif: formatCedula(e.target.value) })}
+                            placeholder="V-12.345.678"
+                            className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono h-[38px]"
+                            style={{ borderRadius: "var(--p-radius)" }}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -1778,7 +1826,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                           <input
                             type="text"
                             value={editForm.whatsapp || ""}
-                            onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })}
+                            onChange={(e) => setEditForm({ ...editForm, whatsapp: formatPhone(e.target.value) })}
                             className="w-full text-xs pl-8 p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
                             placeholder="+58 ..."
                           />
@@ -1795,7 +1843,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                           <input
                             type="text"
                             value={editForm.phone || ""}
-                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            onChange={(e) => setEditForm({ ...editForm, phone: formatPhone(e.target.value) })}
                             className="w-full text-xs pl-8 p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white"
                             placeholder="+58 ..."
                           />
@@ -1810,7 +1858,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                           {locale === "en" ? "Profile Type *" : "Tipo Perfil *"}
                         </label>
                         <CustomSelect
-                          value={editForm.client_type || "comprador"}
+                          value={editForm.client_type || ""}
                           onChange={(val) =>
                             setEditForm({ ...editForm, client_type: val as ClientType })
                           }
@@ -1827,7 +1875,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                           {locale === "en" ? "Priority" : "Prioridad"}
                         </label>
                         <CustomSelect
-                          value={editForm.priority || "media"}
+                          value={editForm.priority || ""}
                           onChange={(val) => setEditForm({ ...editForm, priority: val as any })}
                           options={[
                             { value: "alta", label: locale === "en" ? "High" : "Alta" },
@@ -1841,7 +1889,7 @@ export default function ClientesCRMPage({ params }: PageProps) {
                           {locale === "en" ? "Lead Source" : "Origen"}
                         </label>
                         <CustomSelect
-                          value={editForm.source || "web"}
+                          value={editForm.source || ""}
                           onChange={(val) => setEditForm({ ...editForm, source: val })}
                           options={[
                             { value: "instagram", label: "Instagram" },
@@ -1891,10 +1939,15 @@ export default function ClientesCRMPage({ params }: PageProps) {
                       </div>
 
                       {/* Multiselect Dropdown Selector */}
-                      <div className="relative">
+                      <div className="relative" ref={editZoneDropdownRef}>
                         <button
                           type="button"
-                          onClick={() => setIsZoneDropdownOpen(!isZoneDropdownOpen)}
+                          onClick={() => {
+                            const nextVal = !isZoneDropdownOpen;
+                            setIsZoneDropdownOpen(nextVal);
+                            if (!nextVal) setZoneSearchQuery("");
+                            if (isTypeDropdownOpen) setIsTypeDropdownOpen(false);
+                          }}
                           className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors"
                         >
                           <span>
@@ -1917,14 +1970,25 @@ export default function ClientesCRMPage({ params }: PageProps) {
                             >
                               <div className="p-2 bg-[var(--p-sidebar)] border border-[var(--p-border)] rounded-sm shadow-xl space-y-2">
                                 {/* Search box inside dropdown */}
-                                <input
-                                  type="text"
-                                  value={zoneSearchQuery}
-                                  onChange={(e) => setZoneSearchQuery(e.target.value)}
-                                  placeholder={locale === "en" ? "Search zone/sector..." : "Buscar zona o sector..."}
-                                  className="w-full text-xs p-1.5 rounded-xs border bg-[var(--p-surface-3)] outline-none border-[var(--p-border)] text-white"
-                                  autoFocus
-                                />
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value={zoneSearchQuery}
+                                    onChange={(e) => setZoneSearchQuery(e.target.value)}
+                                    placeholder={locale === "en" ? "Search zone/sector..." : "Buscar zona o sector..."}
+                                    className="w-full text-xs p-1.5 pr-6 rounded-xs border bg-[var(--p-surface-3)] outline-none border-[var(--p-border)] text-white"
+                                    autoFocus
+                                  />
+                                  {zoneSearchQuery && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setZoneSearchQuery("")}
+                                      className="absolute inset-y-0 right-0 pr-2 flex items-center text-[var(--p-text-3)] hover:text-white cursor-pointer"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  )}
+                                </div>
 
                                 {/* Active Zones List inside dropdown (Grid list of checkboxes in 2 columns, no scrollbar) */}
                                 <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 p-1.5 bg-black/10 rounded-xs border border-white/5">
@@ -2043,10 +2107,17 @@ export default function ClientesCRMPage({ params }: PageProps) {
                       </div>
 
                       {/* Multiselect Dropdown Selector */}
-                      <div className="relative">
+                      <div className="relative" ref={editTypeDropdownRef}>
                         <button
                           type="button"
-                          onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+                          onClick={() => {
+                            const nextVal = !isTypeDropdownOpen;
+                            setIsTypeDropdownOpen(nextVal);
+                            if (isZoneDropdownOpen) {
+                              setIsZoneDropdownOpen(false);
+                              setZoneSearchQuery("");
+                            }
+                          }}
                           className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors"
                         >
                           <span>
@@ -2307,19 +2378,113 @@ export default function ClientesCRMPage({ params }: PageProps) {
                       transition={{ duration: 0.2, ease: "easeInOut" }}
                       className="space-y-6 text-xs"
                     >
-                    {/* Pipeline Stage */}
-                    <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
-                      <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] tracking-wider block">
-                        {locale === "en" ? "Pipeline Stage" : "Etapa del Embudo Comercial (Pipeline)"}
-                      </label>
-                      <div className="grid grid-cols-5 gap-1 bg-black/20 p-0.5 border border-white/5 rounded-xs">
-                        {STAGES.map((s) => {
-                          const isActive = selectedClient.stage === s.value;
-                          return (
-                            <button
-                              key={s.value}
-                              type="button"
-                              onClick={() => {
+                      {/* Tarjeta de Identidad Premium del Cliente */}
+                      <div 
+                        className="p-5 rounded-sm border flex items-center gap-4 relative overflow-hidden shadow-sm animate-fade-in"
+                        style={{
+                          background: "linear-gradient(135deg, var(--p-surface-2) 0%, rgba(26,24,21,0.6) 100%)",
+                          borderColor: "var(--p-border)"
+                        }}
+                      >
+                        <div 
+                          className="w-14 h-14 shrink-0 rounded-[3px] flex items-center justify-center text-lg font-bold font-display shadow-inner select-none bg-gradient-to-br from-[#C9962A] to-[#A8864A] text-[#141210] overflow-hidden"
+                        >
+                          {selectedClient.photo_url ? (
+                            <img src={selectedClient.photo_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            (() => {
+                              const name = selectedClient.full_name || "";
+                              return name.split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+                            })()
+                          )}
+                        </div>
+
+                        <div className="flex-grow min-w-0 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className="px-2 py-0.5 rounded-[3px] text-[9px] font-bold font-mono uppercase tracking-wider"
+                              style={{
+                                background: CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.color || "rgba(255,255,255,0.05)",
+                                color: "var(--p-text)"
+                              }}
+                            >
+                              {locale === "en" 
+                                ? CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.label_en 
+                                : CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.label_es}
+                            </span>
+                            
+                            {selectedClient.priority && (
+                              <span
+                                className={`px-2 py-0.5 rounded-[3px] text-[9px] font-bold font-mono uppercase tracking-wider ${
+                                  selectedClient.priority === "alta"
+                                    ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                    : selectedClient.priority === "baja"
+                                    ? "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                }`}
+                              >
+                                {locale === "en" ? "Priority: " : "Prioridad: "}
+                                {selectedClient.priority === "alta"
+                                  ? (locale === "en" ? "High" : "Alta")
+                                  : selectedClient.priority === "baja"
+                                  ? (locale === "en" ? "Low" : "Baja")
+                                  : (locale === "en" ? "Medium" : "Media")}
+                              </span>
+                            )}
+
+                            {selectedClient.source && (
+                              <span className="px-2 py-0.5 rounded-[3px] text-[9px] font-bold font-mono uppercase tracking-wider bg-white/5 border border-white/10 text-[var(--p-text-3)]">
+                                {locale === "en" ? "Source: " : "Origen: "}
+                                {selectedClient.source === "referido"
+                                  ? (locale === "en" ? "Referral" : "Referido")
+                                  : selectedClient.source === "portal"
+                                  ? (locale === "en" ? "Portal" : "Portal Inmob.")
+                                  : selectedClient.source}
+                              </span>
+                            )}
+
+                            {selectedClient.urgency && (
+                              <span className="px-2 py-0.5 rounded-[3px] text-[9px] font-bold font-mono uppercase tracking-wider bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                {locale === "en" ? "Urgency: " : "Urgencia: "}
+                                {selectedClient.urgency === "inmediata"
+                                  ? (locale === "en" ? "Immediate" : "Inmediata")
+                                  : selectedClient.urgency === "corto_plazo"
+                                  ? (locale === "en" ? "Short Term" : "Corto Plazo")
+                                  : selectedClient.urgency === "mediano_plazo"
+                                  ? (locale === "en" ? "Medium Term" : "Mediano Plazo")
+                                  : selectedClient.urgency === "largo_plazo"
+                                  ? (locale === "en" ? "Long Term" : "Largo Plazo")
+                                  : (locale === "en" ? "Exploring" : "Explorando")}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-base font-bold font-display text-white truncate">
+                            {selectedClient.full_name}
+                          </h3>
+
+                          {selectedClient.cedula_rif && (
+                            <div className="flex items-center gap-1 text-[10px] text-[var(--p-text-3)] font-mono">
+                              <span>RIF/Cédula:</span>
+                              <span className="text-[var(--p-text-2)]">{selectedClient.cedula_rif}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Pipeline Stage con diseño de botones refinados */}
+                      <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
+                        <label className="text-[10px] uppercase font-bold text-[var(--p-text-3)] tracking-wider block">
+                          {locale === "en" ? "Pipeline Stage" : "Etapa del Embudo Comercial (Pipeline)"}
+                        </label>
+                        <div className="grid grid-cols-5 gap-1 bg-black/25 p-1 border border-white/5 rounded-xs">
+                          {STAGES.map((s) => {
+                            const isActive = selectedClient.stage === s.value;
+                            return (
+                              <button
+                                key={s.value}
+                                type="button"
+                                onClick={() => {
                                   setClients((prev) => {
                                     const target = prev.find((c) => c.id === selectedClient.id);
                                     if (!target) return prev;
@@ -2330,305 +2495,396 @@ export default function ClientesCRMPage({ params }: PageProps) {
                                   setSelectedClient((prev) => (prev ? { ...prev, stage: s.value } : null));
                                   updateClientStage(selectedClient.id, s.value);
                                 }}
-                              className={`py-1.5 text-[9px] uppercase tracking-wider font-bold rounded-xs transition-colors cursor-pointer ${
-                                isActive
-                                  ? "bg-[var(--p-accent)] text-black shadow-md"
-                                  : "text-[var(--p-text-3)] hover:text-white"
-                              }`}
-                            >
-                              {locale === "en" ? s.label_en : s.label_es}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Ficha de Información de Contacto */}
-                    <div className="p-5 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2">
-                        {locale === "en" ? "Contact Information" : "Información de Contacto"}
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          {selectedClient.email && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Correo Electrónico</span>
-                              <span className="flex items-center gap-1.5 text-[var(--p-text)] mt-0.5 text-xs">
-                                <Mail size={13} className="text-[var(--p-text-3)]" />
-                                <a href={`mailto:${selectedClient.email}`} className="hover:underline text-white font-medium">
-                                  {selectedClient.email}
-                                </a>
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedClient.phone && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Teléfono Móvil</span>
-                              <span className="flex items-center gap-1.5 text-[var(--p-text)] mt-0.5 text-xs">
-                                <Phone size={13} className="text-[var(--p-text-3)]" />
-                                <a href={`tel:${selectedClient.phone}`} className="hover:underline text-white font-medium">
-                                  {selectedClient.phone}
-                                </a>
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedClient.whatsapp && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">WhatsApp (Mensajería)</span>
-                              <span className="flex items-center gap-1.5 text-[var(--p-text)] mt-0.5 text-xs">
-                                <MessageSquare size={13} className="text-[var(--p-green)]" />
-                                <a
-                                  href={`https://wa.me/${selectedClient.whatsapp.replace(/[^\d]/g, "")}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="hover:underline text-[var(--p-green)] font-semibold"
-                                >
-                                  {selectedClient.whatsapp}
-                                </a>
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedClient.cedula_rif && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Cédula / RIF</span>
-                              <span className="text-white font-medium text-xs mt-0.5 font-mono">{selectedClient.cedula_rif}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Prioridad del Cliente</span>
-                            <span className="mt-1">
-                              <span
-                                className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold font-mono uppercase tracking-wider ${
-                                  selectedClient.priority === "alta"
-                                    ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                                    : selectedClient.priority === "baja"
-                                    ? "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                className={`py-2 text-[9px] uppercase tracking-wider font-bold rounded-xs transition-all cursor-pointer ${
+                                  isActive
+                                    ? "bg-[var(--p-accent)] text-[#0E0D0C] shadow-md scale-[1.02]"
+                                    : "text-[var(--p-text-3)] hover:text-white hover:bg-white/5"
                                 }`}
                               >
-                                {selectedClient.priority === "alta"
-                                  ? (locale === "en" ? "High" : "Alta")
-                                  : selectedClient.priority === "baja"
-                                  ? (locale === "en" ? "Low" : "Baja")
-                                  : (locale === "en" ? "Medium" : "Media")}
-                              </span>
-                            </span>
-                          </div>
-
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Origen de Captación (Lead)</span>
-                            <span className="font-semibold text-white capitalize text-[11px] mt-1">
-                              {selectedClient.source === "referido"
-                                ? (locale === "en" ? "Referral" : "Referido")
-                                : selectedClient.source === "portal"
-                                ? (locale === "en" ? "Real Estate Portal" : "Portal Inmobiliario")
-                                : selectedClient.source === "web"
-                                ? "Web"
-                                : selectedClient.source || "Web"}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Tipo de Perfil</span>
-                            <span
-                              className="font-semibold text-[11px] mt-1 inline-block w-fit px-2 py-0.5 rounded-xs"
-                              style={{
-                                background: CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.color || "rgba(255,255,255,0.05)",
-                                color: "var(--p-text)"
-                              }}
-                            >
-                              {locale === "en" 
-                                ? CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.label_en 
-                                : CLIENT_TYPE_CFG[selectedClient.client_type as ClientType]?.label_es}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ficha de Requerimientos de Búsqueda */}
-                    <div className="p-5 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2">
-                        {locale === "en" ? "Budget & Search Requirements" : "Presupuesto y Requerimientos de Búsqueda"}
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Presupuesto Máximo</span>
-                          <span className="font-mono font-bold text-[#C9962A] text-sm mt-0.5">
-                            {selectedClient.budget_max
-                              ? `${selectedClient.budget_currency || "USD"} ${selectedClient.budget_max.toLocaleString()}`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Zonas de Interés</span>
-                          <span className="font-semibold text-[11px] leading-relaxed text-white mt-0.5">
-                            {selectedClient.interested_zones
-                              ?.map((z) => zoneLabelMap[z] || z)
-                              .join(", ") || "N/A"}
-                          </span>
+                                {locale === "en" ? s.label_en : s.label_es}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Habitaciones (mínimo)</span>
-                          <span className="font-bold text-white font-mono text-[13px] mt-0.5">
-                            {selectedClient.req_bedrooms || "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Baños (mínimo)</span>
-                          <span className="font-bold text-white font-mono text-[13px] mt-0.5">
-                            {selectedClient.req_bathrooms || "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Puestos de Estacionamiento (mínimo)</span>
-                          <span className="font-bold text-white font-mono text-[13px] mt-0.5">
-                            {selectedClient.req_parking || "—"}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Datos de Contacto Directo */}
+                      {(selectedClient.email || selectedClient.phone || selectedClient.whatsapp) && (
+                        <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
+                          <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2">
+                            {locale === "en" ? "Contact Details" : "Detalles de Contacto"}
+                          </h4>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {selectedClient.email && (
+                              <div className="flex items-center justify-between p-2 bg-black/15 border border-white/5 rounded-xs group">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Mail size={14} className="text-[#C9962A] shrink-0" />
+                                  <div className="min-w-0">
+                                    <div className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)]">Email</div>
+                                    <a 
+                                      href={`mailto:${selectedClient.email}`}
+                                      className="text-xs text-white font-medium hover:underline truncate block font-mono"
+                                      title={selectedClient.email}
+                                    >
+                                      {selectedClient.email}
+                                    </a>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedClient.email) {
+                                      navigator.clipboard.writeText(selectedClient.email);
+                                      toastFn({
+                                        title: locale === "en" ? "Copied" : "Copiado",
+                                        description: selectedClient.email,
+                                        type: "success"
+                                      });
+                                    }
+                                  }}
+                                  className="w-6 h-6 rounded-xs hover:bg-white/10 flex items-center justify-center text-[var(--p-text-3)] hover:text-white cursor-pointer transition-colors"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            )}
 
-                      {selectedClient.client_type === "arrendatario" && selectedClient.bath_preference && (
-                        <div className="border-t border-white/5 pt-3 flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Preferencia de Baño</span>
-                          <span className="font-semibold text-white mt-0.5">
-                            {selectedClient.bath_preference === "privado"
-                              ? (locale === "en" ? "Private Bathroom" : "Baño Privado")
-                              : selectedClient.bath_preference === "compartido"
-                              ? (locale === "en" ? "Shared Bathroom" : "Baño Compartido")
-                              : (locale === "en" ? "Indifferent" : "Indiferente (Privado o Compartido)")}
-                          </span>
+                            {selectedClient.phone && (
+                              <div className="flex items-center justify-between p-2 bg-black/15 border border-white/5 rounded-xs group">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Phone size={14} className="text-[#C9962A] shrink-0" />
+                                  <div className="min-w-0">
+                                    <div className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)]">{locale === "en" ? "Phone" : "Teléfono"}</div>
+                                    <a 
+                                      href={`tel:${selectedClient.phone}`}
+                                      className="text-xs text-white font-medium hover:underline truncate block font-mono"
+                                    >
+                                      {selectedClient.phone}
+                                    </a>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedClient.phone) {
+                                      navigator.clipboard.writeText(selectedClient.phone);
+                                      toastFn({
+                                        title: locale === "en" ? "Copied" : "Copiado",
+                                        description: selectedClient.phone,
+                                        type: "success"
+                                      });
+                                    }
+                                  }}
+                                  className="w-6 h-6 rounded-xs hover:bg-white/10 flex items-center justify-center text-[var(--p-text-3)] hover:text-white cursor-pointer transition-colors"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            )}
+
+                            {selectedClient.whatsapp && (
+                              <div className="flex items-center justify-between p-2 bg-black/15 border border-white/5 rounded-xs md:col-span-2 group">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <MessageSquare size={14} className="text-[var(--p-green)] shrink-0" />
+                                  <div className="min-w-0">
+                                    <div className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)]">WhatsApp</div>
+                                    <span className="text-xs text-white font-medium block font-mono">
+                                      {selectedClient.whatsapp}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <a 
+                                    href={`https://wa.me/${selectedClient.whatsapp.replace(/[^\d]/g, "")}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 rounded-[3px] bg-[var(--p-green)]/15 border border-[var(--p-green)]/20 text-[var(--p-green)] hover:bg-[var(--p-green)] hover:text-black font-semibold text-[10px] transition-all cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Send size={10} />
+                                    {locale === "en" ? "Chat" : "WhatsApp"}
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (selectedClient.whatsapp) {
+                                        navigator.clipboard.writeText(selectedClient.whatsapp);
+                                        toastFn({
+                                          title: locale === "en" ? "Copied" : "Copiado",
+                                          description: selectedClient.whatsapp,
+                                          type: "success"
+                                        });
+                                      }
+                                    }}
+                                    className="w-6 h-6 rounded-xs hover:bg-white/10 flex items-center justify-center text-[var(--p-text-3)] hover:text-white cursor-pointer transition-colors"
+                                  >
+                                    <Copy size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
 
-                      {(selectedClient.preferred_payment || selectedClient.urgency) && (
-                        <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-3">
-                          {selectedClient.preferred_payment && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Forma de Pago</span>
-                              <span className="font-semibold text-white mt-0.5 text-xs">
-                                {selectedClient.preferred_payment === "zelle"
-                                  ? "Zelle (USD)"
-                                  : selectedClient.preferred_payment === "efectivo"
-                                  ? "Efectivo (USD)"
-                                  : selectedClient.preferred_payment === "transferencia_int"
-                                  ? "Transferencia (Panama/EEUU)"
-                                  : selectedClient.preferred_payment === "pago_movil"
-                                  ? "Pago Móvil (Bs.)"
-                                  : selectedClient.preferred_payment === "usdt"
-                                  ? "USDT (Cripto)"
-                                  : selectedClient.preferred_payment}
-                              </span>
+                      {/* Demand & Property Preferences */}
+                      {(selectedClient.budget_max || selectedClient.preferred_payment || selectedClient.urgency || 
+                        (selectedClient.interested_zones && selectedClient.interested_zones.length > 0) || 
+                        (selectedClient.interested_types && selectedClient.interested_types.length > 0) || 
+                        selectedClient.req_bedrooms || selectedClient.req_bathrooms || selectedClient.req_parking) && (
+                        
+                        <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-4">
+                          <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2">
+                            {locale === "en" ? "Demand & Property Preferences" : "Demanda y Preferencias de Inmuebles"}
+                          </h4>
+
+                          {/* Budget & Urgency Overview */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {selectedClient.budget_max ? (
+                              <div className="p-3 bg-black/15 border border-white/5 rounded-xs flex flex-col justify-between min-h-[64px]">
+                                <span className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)] block font-semibold">{locale === "en" ? "Budget Max" : "Presupuesto Máximo"}</span>
+                                <span className="font-mono font-bold text-[#C9962A] text-[15px] mt-1 block">
+                                  {(() => {
+                                    const symbol = selectedClient.budget_currency === "VES" ? "Bs." : "$";
+                                    return `${symbol} ${selectedClient.budget_max.toLocaleString()}`;
+                                  })()}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            {selectedClient.preferred_payment ? (
+                              <div className="p-3 bg-black/15 border border-white/5 rounded-xs flex flex-col justify-between min-h-[64px]">
+                                <span className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)] block font-semibold">{locale === "en" ? "Payment Mode" : "Forma de Pago"}</span>
+                                <span className="text-white font-semibold text-xs mt-1 block truncate">
+                                  {selectedClient.preferred_payment === "zelle"
+                                    ? "Zelle (USD)"
+                                    : selectedClient.preferred_payment === "efectivo"
+                                    ? "Efectivo (USD)"
+                                    : selectedClient.preferred_payment === "transferencia_int"
+                                    ? "Transferencia Int."
+                                    : selectedClient.preferred_payment === "pago_movil"
+                                    ? "Pago Móvil (Bs.)"
+                                    : selectedClient.preferred_payment === "usdt"
+                                    ? "USDT (Cripto)"
+                                    : selectedClient.preferred_payment}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            {selectedClient.urgency ? (
+                              <div className="p-3 bg-black/15 border border-white/5 rounded-xs flex flex-col justify-between min-h-[64px]">
+                                <span className="text-[8px] uppercase tracking-wider text-[var(--p-text-3)] block font-semibold">{locale === "en" ? "Urgency" : "Urgencia"}</span>
+                                <span className="text-white font-semibold text-xs mt-1 block truncate">
+                                  {selectedClient.urgency === "inmediata"
+                                    ? (locale === "en" ? "Immediate (1-30d)" : "Inmediata (1-30 días)")
+                                    : selectedClient.urgency === "corto_plazo"
+                                    ? (locale === "en" ? "Short (1-3m)" : "Corto Plazo (1-3 meses)")
+                                    : selectedClient.urgency === "mediano_plazo"
+                                    ? (locale === "en" ? "Medium (3-6m)" : "Mediano Plazo (3-6 meses)")
+                                    : selectedClient.urgency === "largo_plazo"
+                                    ? (locale === "en" ? "Long (+6m)" : "Largo Plazo (+6 meses)")
+                                    : selectedClient.urgency === "explorando"
+                                    ? (locale === "en" ? "Exploring" : "Solo Explorando")
+                                    : selectedClient.urgency}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {/* Rooms & Features Stepper Badges */}
+                          {(selectedClient.req_bedrooms || selectedClient.req_bathrooms || selectedClient.req_parking || 
+                            (selectedClient.client_type === "arrendatario" && selectedClient.bath_preference)) ? (
+                            <div className="flex flex-wrap gap-2.5 p-3 bg-black/10 border border-white/5 rounded-xs">
+                              {selectedClient.req_bedrooms ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-[3px] bg-white/5 border border-white/10 text-[var(--p-text-2)] font-medium">
+                                  <BedDouble size={13} className="text-[#C9962A]" />
+                                  <span>{selectedClient.req_bedrooms} {locale === "en" ? "Beds" : "Hab"}</span>
+                                </div>
+                              ) : null}
+                              
+                              {selectedClient.req_bathrooms ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-[3px] bg-white/5 border border-white/10 text-[var(--p-text-2)] font-medium">
+                                  <Bath size={13} className="text-[#C9962A]" />
+                                  <span>{selectedClient.req_bathrooms} {locale === "en" ? "Baths" : "Baños"}</span>
+                                </div>
+                              ) : null}
+
+                              {selectedClient.req_parking ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-[3px] bg-white/5 border border-white/10 text-[var(--p-text-2)] font-medium">
+                                  <Car size={13} className="text-[#C9962A]" />
+                                  <span>{selectedClient.req_parking} {locale === "en" ? "Parkings" : "Puestos"}</span>
+                                </div>
+                              ) : null}
+
+                              {selectedClient.client_type === "arrendatario" && selectedClient.bath_preference ? (
+                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-[3px] bg-white/5 border border-white/10 text-[var(--p-text-2)] font-medium">
+                                  <Bookmark size={13} className="text-[#C9962A]" />
+                                  <span>
+                                    {selectedClient.bath_preference === "privado"
+                                      ? (locale === "en" ? "Private Bath" : "Baño Privado")
+                                      : selectedClient.bath_preference === "compartido"
+                                      ? (locale === "en" ? "Shared Bath" : "Baño Compartido")
+                                      : (locale === "en" ? "Indifferent" : "Baño Indiferente")}
+                                  </span>
+                                </div>
+                              ) : null}
                             </div>
-                          )}
-                          {selectedClient.urgency && (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)]">Urgencia</span>
-                              <span className="font-semibold text-white mt-0.5 text-xs">
-                                {selectedClient.urgency === "inmediata"
-                                  ? "Inmediata (1 - 30 días)"
-                                  : selectedClient.urgency === "corto_plazo"
-                                  ? "Corto Plazo (1 - 3 meses)"
-                                  : selectedClient.urgency === "mediano_plazo"
-                                  ? "Mediano Plazo (3 - 6 meses)"
-                                  : selectedClient.urgency === "largo_plazo"
-                                  ? "Largo Plazo (+6 meses)"
-                                  : selectedClient.urgency === "explorando"
-                                  ? "Solo Explorando"
-                                  : selectedClient.urgency}
+                          ) : null}
+
+                          {/* Zones of Interest */}
+                          {selectedClient.interested_zones && selectedClient.interested_zones.length > 0 ? (
+                            <div className="space-y-1.5">
+                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)] block tracking-wider">
+                                {locale === "en" ? "Zones of Interest" : "Zonas de Interés"}
                               </span>
+                              <div className="flex flex-wrap gap-1.5 p-2.5 bg-black/10 border border-white/5 rounded-xs">
+                                {selectedClient.interested_zones.map((zoneValue) => {
+                                  const label = zoneLabelMap[zoneValue] || zoneValue;
+                                  return (
+                                    <span
+                                      key={zoneValue}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[3px] text-[10px] bg-[#C9962A]/10 border border-[#C9962A]/25 text-[#C9962A] font-medium"
+                                    >
+                                      <MapPin size={9} />
+                                      {label}
+                                    </span>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          )}
+                          ) : null}
+
+                          {/* Property Types of Interest */}
+                          {selectedClient.interested_types && selectedClient.interested_types.length > 0 ? (
+                            <div className="space-y-1.5">
+                              <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)] block tracking-wider">
+                                {locale === "en" ? "Preferred Property Types" : "Tipos de Propiedades de Interés"}
+                              </span>
+                              <div className="flex flex-wrap gap-1.5 p-2.5 bg-black/10 border border-white/5 rounded-xs">
+                                {selectedClient.interested_types.map((typeValue) => {
+                                  const label = PROP_TYPE_LABEL[typeValue] || typeValue;
+                                  return (
+                                    <span
+                                      key={typeValue}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[3px] text-[10px] bg-[#3B82F6]/10 border border-[#3B82F6]/25 text-[#60A5FA] font-medium"
+                                    >
+                                      <Building size={9} />
+                                      {label}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       )}
-                    </div>
 
-                    {/* Planificación Próxima Acción */}
-                    <div className="p-5 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-4">
-                      <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2 flex items-center gap-1.5">
-                        <Calendar size={12} />
-                        {locale === "en" ? "Next Scheduled Action" : "Planificación de Próxima Acción"}
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)] mb-1">Fecha Programada</span>
-                          <input
-                            type="date"
-                            defaultValue={selectedClient.next_action_date || ""}
-                            onChange={(e) =>
-                              handleSaveNextActionLocal(
-                                selectedClient.next_action || "",
-                                e.target.value || null
-                              )
-                            }
-                            className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-3)] outline-none border-[var(--p-border)] text-[var(--p-text)]"
-                          />
+                      {/* Tarea / Próxima Acción Programada */}
+                      <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                          <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display flex items-center gap-1.5">
+                            <Calendar size={12} className="text-[#C9962A]" />
+                            {locale === "en" ? "Next Scheduled Task" : "Planificación de Próxima Acción"}
+                          </h4>
+                          {(() => {
+                            const dateStr = selectedClient?.next_action_date;
+                            if (!dateStr) return null;
+                            const todayStr = new Date().toISOString().split("T")[0] || "";
+                            const isOverdue = dateStr < todayStr;
+                            return (
+                              <span 
+                                className={`px-2 py-0.5 rounded-[3px] text-[9px] font-bold font-mono uppercase tracking-wider border ${
+                                  isOverdue
+                                    ? "bg-red-500/15 border-red-500/30 text-red-400 animate-pulse"
+                                    : "bg-[#C9962A]/10 border-[#C9962A]/20 text-[#C9962A]"
+                                }`}
+                              >
+                                {isOverdue
+                                  ? (locale === "en" ? "Overdue" : "Vencida")
+                                  : (locale === "en" ? "Pending" : "Pendiente")}
+                              </span>
+                            );
+                          })()}
                         </div>
-                        <div className="md:col-span-2 flex flex-col gap-0.5">
-                          <span className="text-[9px] uppercase font-bold text-[var(--p-text-3)] mb-1">Descripción de la Tarea</span>
-                          <input
-                            type="text"
-                            placeholder={locale === "en" ? "Task description..." : "Descripción de la tarea..."}
-                            defaultValue={selectedClient.next_action || ""}
-                            onBlur={(e) =>
-                              handleSaveNextActionLocal(
-                                e.target.value,
-                                selectedClient.next_action_date || null
-                              )
-                            }
-                            className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-3)] outline-none border-[var(--p-border)] text-[var(--p-text)]"
-                          />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[8px] uppercase font-bold text-[var(--p-text-3)] tracking-wider">Fecha Programada</span>
+                            <input
+                              type="date"
+                              defaultValue={selectedClient?.next_action_date || ""}
+                              onChange={(e) =>
+                                handleSaveNextActionLocal(
+                                  selectedClient?.next_action || "",
+                                  e.target.value || null
+                                )
+                              }
+                              className="w-full text-xs p-2 rounded-sm border bg-black/20 outline-none border-[var(--p-border)] text-white font-mono h-[36px] focus:border-[#C9962A] transition-colors"
+                            />
+                          </div>
+                          
+                          <div className="md:col-span-2 flex flex-col gap-1">
+                            <span className="text-[8px] uppercase font-bold text-[var(--p-text-3)] tracking-wider">Descripción de la Tarea</span>
+                            <input
+                              type="text"
+                              placeholder={locale === "en" ? "Describe task..." : "Escribe la tarea de seguimiento..."}
+                              defaultValue={selectedClient?.next_action || ""}
+                              onBlur={(e) =>
+                                handleSaveNextActionLocal(
+                                  e.target.value,
+                                  selectedClient?.next_action_date || null
+                                )
+                              }
+                              className="w-full text-xs p-2 rounded-sm border bg-black/20 outline-none border-[var(--p-border)] text-white h-[36px] focus:border-[#C9962A] transition-colors"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Notas e Historial */}
-                    <div className="p-5 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
-                      <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2 flex items-center gap-1.5">
-                        <FileText size={12} />
-                        {locale === "en" ? "Notes & Interaction History" : "Notas e Historial de Interacciones"}
-                      </h4>
-                      <textarea
-                        rows={4}
-                        defaultValue={selectedClient.notes || ""}
-                        onBlur={(e) => handleSaveNotesLocal(e.target.value)}
-                        placeholder={locale === "en" ? "Add private notes..." : "Agrega notas privadas de seguimiento..."}
-                        className="w-full p-2.5 text-xs rounded-sm border bg-[var(--p-surface-3)] outline-none border-[var(--p-border)] transition-all resize-none text-[var(--p-text)]"
-                      />
-                      <p className="text-[9px] text-[var(--p-text-3)] italic">
-                        {locale === "en" ? "Changes save automatically on blur." : "Los cambios se guardan automáticamente al desenfocar."}
-                      </p>
-                    </div>
+                      {/* Notas e Historial de Seguimiento */}
+                      <div className="p-4 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] space-y-3">
+                        <h4 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--p-text-3)] font-display border-b border-white/5 pb-2 flex items-center gap-1.5">
+                          <FileText size={12} className="text-[#C9962A]" />
+                          {locale === "en" ? "Private Agent Notes" : "Notas Privadas y Seguimiento"}
+                        </h4>
+                        
+                        <div className="relative rounded-xs border border-white/5 bg-black/15 overflow-hidden focus-within:border-[#C9962A] transition-all">
+                          <textarea
+                            rows={4}
+                            defaultValue={selectedClient?.notes || ""}
+                            onBlur={(e) => handleSaveNotesLocal(e.target.value)}
+                            placeholder={locale === "en" ? "Enter tracking details, client preferences, or conversation summaries..." : "Añade notas del cliente, resúmenes de llamadas, requerimientos especiales..."}
+                            className="w-full p-3 text-xs outline-none bg-transparent resize-none text-[var(--p-text)] border-none focus:ring-0 leading-relaxed"
+                          />
+                        </div>
+                        <p className="text-[9px] text-[var(--p-text-3)] italic flex items-center gap-1">
+                          <Clock size={10} />
+                          {locale === "en" ? "Changes save automatically when you click outside the textarea." : "Los cambios se guardan automáticamente al hacer clic fuera del campo."}
+                        </p>
+                      </div>
 
-                    {/* Footer Action Buttons */}
-                    <div className="border-t border-[var(--p-border)] pt-4 mt-6 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleArchiveClientLocal(selectedClient.id)}
-                        className="flex-1 py-2 bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-500/10 text-xs font-semibold rounded-sm transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
-                      >
-                        <Trash2 size={13} />
-                        {locale === "en" ? "Archive Client (Lost)" : "Archivar Cliente (Perdido)"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCloseDrawer}
-                        className="flex-1 py-2 text-xs font-bold rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90 text-center"
-                      >
-                        {locale === "en" ? "Close" : "Listo"}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                      {/* Botones de Acción del Pie */}
+                      <div className="border-t border-[var(--p-border)] pt-4 mt-6 flex gap-2.5">
+                        {selectedClient?.stage !== "perdido" && (
+                          <button
+                            type="button"
+                            onClick={() => selectedClient && handleArchiveClientLocal(selectedClient.id)}
+                            className="flex-1 py-2.5 bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-500/10 text-[11px] font-bold uppercase tracking-wider rounded-sm transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
+                          >
+                            <Trash2 size={13} />
+                            {locale === "en" ? "Archive (Lost)" : "Archivar (Perdido)"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleCloseDrawer}
+                          className="flex-1 py-2.5 text-[11px] font-bold uppercase tracking-wider rounded-sm cursor-pointer transition-colors bg-[var(--p-accent)] text-black hover:opacity-90 text-center"
+                        >
+                          {locale === "en" ? "Done" : "Listo"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
               </AnimatePresence>
             </div>
             </motion.div>
@@ -2687,34 +2943,72 @@ export default function ClientesCRMPage({ params }: PageProps) {
                         transition={{ duration: 0.22, ease: "easeInOut" }}
                         className="space-y-4"
                       >
-                        {/* Fila 1: Nombre Completo y Cédula/RIF */}
-                        <div className="grid grid-cols-9 gap-3">
-                          <div className="col-span-5">
-                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                              {locale === "en" ? "Full Name *" : "Nombre Completo *"}
-                            </label>
+                        {/* Fila 1: Foto del Cliente + Nombre Completo y Cédula/RIF */}
+                        <div className="flex gap-4 items-start border-b border-[var(--p-border)] pb-4">
+                          <div className="relative group shrink-0">
                             <input
-                              type="text"
-                              required
-                              value={newClient.full_name || ""}
-                              onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })}
-                              placeholder="Ej. Alejandra Rivas"
-                              className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
-                              style={{ borderRadius: "var(--p-radius)" }}
+                              type="file"
+                              accept="image/*"
+                              id="new-client-photo-input"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setNewClient({ ...newClient, photo_url: reader.result as string });
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
                             />
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById("new-client-photo-input")?.click()}
+                              className="w-14 h-14 rounded-[3px] flex items-center justify-center text-lg font-bold font-display shadow-inner select-none bg-gradient-to-br from-[#C9962A] to-[#A8864A] text-[#141210] overflow-hidden hover:opacity-90 transition-opacity cursor-pointer relative"
+                            >
+                              {newClient.photo_url ? (
+                                <img src={newClient.photo_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                (() => {
+                                  const name = newClient.full_name || "";
+                                  return name.split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
+                                })()
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] text-white font-bold">
+                                {locale === "en" ? "Upload" : "Subir"}
+                              </div>
+                            </button>
                           </div>
-                          <div className="col-span-4">
-                            <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
-                              {locale === "en" ? "ID / RIF" : "Cédula / RIF"}
-                            </label>
-                            <input
-                              type="text"
-                              value={newClient.cedula_rif || ""}
-                              onChange={(e) => setNewClient({ ...newClient, cedula_rif: formatCedula(e.target.value) })}
-                              placeholder="V-12.345.678"
-                              className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono h-[38px]"
-                              style={{ borderRadius: "var(--p-radius)" }}
-                            />
+
+                          <div className="flex-grow grid grid-cols-9 gap-3">
+                            <div className="col-span-5">
+                              <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                                {locale === "en" ? "Full Name *" : "Nombre Completo *"}
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={newClient.full_name || ""}
+                                onChange={(e) => setNewClient({ ...newClient, full_name: e.target.value })}
+                                placeholder="Ej. Alejandra Rivas"
+                                className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white h-[38px]"
+                                style={{ borderRadius: "var(--p-radius)" }}
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <label className="text-[10px] uppercase font-bold text-[var(--p-text-2)] mb-1 block">
+                                {locale === "en" ? "ID / RIF" : "Cédula / RIF"}
+                              </label>
+                              <input
+                                type="text"
+                                value={newClient.cedula_rif || ""}
+                                onChange={(e) => setNewClient({ ...newClient, cedula_rif: formatCedula(e.target.value) })}
+                                placeholder="V-12.345.678"
+                                className="w-full text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] outline-none border-[var(--p-border)] text-white font-mono h-[38px]"
+                                style={{ borderRadius: "var(--p-radius)" }}
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -3168,7 +3462,10 @@ export default function ClientesCRMPage({ params }: PageProps) {
                               type="button"
                               onClick={() => {
                                 setNewClientIsTypeDropdownOpen(!newClientIsTypeDropdownOpen);
-                                if (newClientIsZoneDropdownOpen) setNewClientIsZoneDropdownOpen(false);
+                                if (newClientIsZoneDropdownOpen) {
+                                  setNewClientIsZoneDropdownOpen(false);
+                                  setNewClientZoneSearchQuery("");
+                                }
                               }}
                               className="w-full text-left text-xs p-2 rounded-sm border bg-[var(--p-surface-2)] border-[var(--p-border)] text-white flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors h-[38px]"
                               style={{ borderRadius: "var(--p-radius)" }}

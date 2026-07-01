@@ -127,6 +127,7 @@ export interface CRMClient {
   cedula_rif?: string | null;
   preferred_payment?: string | null;
   urgency?: string | null;
+  photo_url?: string | null;
   created_at: string;
   updated_at: string;
 }
